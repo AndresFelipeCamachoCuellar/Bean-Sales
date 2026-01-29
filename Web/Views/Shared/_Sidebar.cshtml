@@ -1,0 +1,49 @@
+@using Microsoft.AspNetCore.Identity
+@using Web.Models
+@using Web.Services
+@using Web.Constants
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject IPermissionService PermissionService
+
+@{
+    var currentUser = await UserManager.GetUserAsync(User);
+}
+
+@if (SignInManager.IsSignedIn(User) && currentUser != null)
+{
+    <div id="floating-sidebar" class="sidebar-right">
+        <div class="sidebar-header">
+            <h5 class="m-0">Menú</h5>
+            <button id="sidebar-toggle" class="btn btn-link text-white text-decoration-none">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="sidebar-content">
+            <ul class="nav flex-column">
+                @if (await PermissionService.HasPermissionAsync(currentUser, Modules.Users, Permissions.Read)) 
+                {
+                    <li class="nav-item">
+                        <a class="nav-link text-white" asp-area="" asp-controller="Users" asp-action="Index">
+                            <i class="fas fa-users me-2"></i> Usuarios
+                        </a>
+                    </li>
+                }
+                @if (await PermissionService.HasPermissionAsync(currentUser, Modules.Roles, Permissions.Read)) 
+                {
+                    <li class="nav-item">
+                        <a class="nav-link text-white" asp-area="" asp-controller="Roles" asp-action="Index">
+                            <i class="fas fa-user-shield me-2"></i> Roles
+                        </a>
+                    </li>
+                }
+                <!-- Add more menu items here -->
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Floating Toggle Button (Visible when sidebar is closed) -->
+    <button id="sidebar-open-btn" class="btn btn-primary floating-btn">
+        <i class="fas fa-bars"></i>
+    </button>
+}

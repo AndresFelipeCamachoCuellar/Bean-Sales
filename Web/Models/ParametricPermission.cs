@@ -14,6 +14,8 @@ public class ParametricPermission
     [Required]
     public string Code { get; set; } = string.Empty;
 
+    public string Description { get; set; } = string.Empty;
+
     [Required]
     public Guid ModuleID { get; set; }
 

@@ -5,6 +5,13 @@ namespace Web.Models;
 
 public class ApplicationUserRole : IdentityUserRole<Guid>
 {
+    public ApplicationUserRole()
+    {
+        UserRoleID = Guid.NewGuid();
+        CreatedOn = DateTime.Now;
+        Status = true;
+    }
+
     [Key]
     public Guid UserRoleID { get; set; }
 

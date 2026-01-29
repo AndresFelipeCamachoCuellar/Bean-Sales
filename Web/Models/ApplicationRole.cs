@@ -5,6 +5,13 @@ namespace Web.Models;
 
 public class ApplicationRole : IdentityRole<Guid>
 {
+    public ApplicationRole() : base() { }
+    
+    public ApplicationRole(string roleName) : base(roleName) 
+    {
+        CreatedOn = DateTime.Now;
+        Status = true;
+    }
     [Required]
     public string Description { get; set; } = string.Empty;
 

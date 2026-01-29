@@ -40,9 +40,8 @@ public class ApplicationDbContext : IdentityDbContext<
         builder.Entity<ApplicationUserRole>(b =>
         {
             // Identity defaults to Composite Key (UserId, RoleId). 
-            // User requested UserRoleID as PK.
-            // We override the Key.
-            b.HasKey(ur => ur.UserRoleID);
+            // We must respect this for Identity methods to work.
+            b.HasKey(ur => new { ur.UserId, ur.RoleId });
             
             // Map table name to AspNetUserRoles (or standard adaptation)
             b.ToTable("AspNetUserRoles");
@@ -54,8 +53,9 @@ public class ApplicationDbContext : IdentityDbContext<
             .IsUnique();
 
         // Ensure ParametricPermission Code is unique
+        // Ensure ParametricPermission Code is unique per Module
         builder.Entity<ParametricPermission>()
-            .HasIndex(p => p.Code)
+            .HasIndex(p => new { p.ModuleID, p.Code })
             .IsUnique();
     }
 }

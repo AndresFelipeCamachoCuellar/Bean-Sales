@@ -1,0 +1,15 @@
+  Determinando los proyectos que se van a restaurar...
+  Todos los proyectos están actualizados para la restauración.
+D:\Bean-Sales\Web\Services\PermissionService.cs(34,36): warning CS8602: Desreferencia de una referencia posiblemente NULL. [D:\Bean-Sales\Web\Web.csproj]
+D:\Bean-Sales\Web\Controllers\DebugController.cs(32,107): warning CS8602: Desreferencia de una referencia posiblemente NULL. [D:\Bean-Sales\Web\Web.csproj]
+D:\Bean-Sales\Web\Controllers\RolesController.cs(136,29): error CS1061: "ParametricModule" no contiene una definición para "ParametricPermissions" ni un método de extensión accesible "ParametricPermissions" que acepte un primer argumento del tipo "ParametricModule" (¿falta alguna directiva using o una referencia de ensamblado?) [D:\Bean-Sales\Web\Web.csproj]
+
+ERROR al compilar.
+
+D:\Bean-Sales\Web\Services\PermissionService.cs(34,36): warning CS8602: Desreferencia de una referencia posiblemente NULL. [D:\Bean-Sales\Web\Web.csproj]
+D:\Bean-Sales\Web\Controllers\DebugController.cs(32,107): warning CS8602: Desreferencia de una referencia posiblemente NULL. [D:\Bean-Sales\Web\Web.csproj]
+D:\Bean-Sales\Web\Controllers\RolesController.cs(136,29): error CS1061: "ParametricModule" no contiene una definición para "ParametricPermissions" ni un método de extensión accesible "ParametricPermissions" que acepte un primer argumento del tipo "ParametricModule" (¿falta alguna directiva using o una referencia de ensamblado?) [D:\Bean-Sales\Web\Web.csproj]
+    2 Advertencia(s)
+    1 Errores
+
+Tiempo transcurrido 00:00:01.33
