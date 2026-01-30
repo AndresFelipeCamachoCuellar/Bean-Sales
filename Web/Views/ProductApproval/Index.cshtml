@@ -1,0 +1,114 @@
+@model IEnumerable<Web.Models.Product>
+@using Web.Models.Enums
+
+@{
+    ViewData["Title"] = "Aprobación de Productos";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800">Aprobación y Recepción de Productos</h1>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+             <h6 class="m-0 font-weight-bold text-primary">Productos Pendientes y En Tránsito</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Proveedor</th>
+                            <th>Producto</th>
+                            <th>Países Objetivo</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@item.Provider?.Name <br/> <small>@item.Provider?.NIT</small></td>
+                                <td>
+                                    <strong>@item.Name</strong><br/>
+                                    Stock: @item.Stock | Precio: @item.Price.ToString("C")
+                                    @if (!string.IsNullOrEmpty(item.ShippingDetails))
+                                    {
+                                        <br/><small class="text-info"><i class="fas fa-shipping-fast"></i> @item.ShippingDetails</small>
+                                    }
+                                </td>
+                                <td>
+                                    @foreach(var pc in item.ProductCountries.Where(c => c.IsTargeted))
+                                    {
+                                        <span class="badge bg-light text-dark border">@pc.Country?.Name</span>
+                                    }
+                                </td>
+                                <td>
+                                    @switch(item.ProductStatus)
+                                    {
+                                        case ProductStatus.PendingApproval:
+                                            <span class="badge bg-warning text-dark">Pendiente Aprobación</span>
+                                            break;
+                                        case ProductStatus.ApprovedToShip:
+                                            <span class="badge bg-info text-white">Esperando Envío</span>
+                                            break;
+                                        case ProductStatus.Shipped:
+                                            <span class="badge bg-primary">Enviado / Por Recibir</span>
+                                            break;
+                                    }
+                                </td>
+                                <td>
+                                    @if(item.ProductStatus == ProductStatus.PendingApproval)
+                                    {
+                                        <form asp-action="Approve" asp-route-id="@item.ProductID" method="post" class="d-inline" onsubmit="return confirm('¿Aprobar producto? El proveedor será notificado para enviar.');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-success btn-sm" title="Aprobar para Envío">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </form>
+                                        
+                                        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#rejectModal-@item.ProductID" title="Rechazar">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+
+                                        <!-- Reject Modal -->
+                                        <div class="modal fade" id="rejectModal-@item.ProductID" tabindex="-1" role="dialog" aria-hidden="true">
+                                            <div class="modal-dialog" role="document">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Rechazar Producto</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <form asp-action="Reject" asp-route-id="@item.ProductID" method="post">
+                                                        <div class="modal-body">
+                                                            <div class="form-group">
+                                                                <label>Motivo del Rechazo:</label>
+                                                                <textarea name="reason" class="form-control" required rows="3"></textarea>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                            <button type="submit" class="btn btn-danger">Rechazar</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                    else if (item.ProductStatus == ProductStatus.Shipped || item.ProductStatus == ProductStatus.Active)
+                                    {
+                                        <a asp-action="Receive" asp-route-id="@item.ProductID" class="btn btn-@(item.ProductStatus == ProductStatus.Active ? "primary" : "success") btn-sm" title="@(item.ProductStatus == ProductStatus.Active ? "Gestionar Disponibilidad" : "Recibir y Activar")">
+                                            <i class="fas fa-@(item.ProductStatus == ProductStatus.Active ? "globe" : "box-open") me-1"></i> 
+                                            @(item.ProductStatus == ProductStatus.Active ? "Disponibilidad" : "Recibir")
+                                        </a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,98 @@
+@model IEnumerable<Web.Models.ViewModels.UserViewModel>
+
+@{
+    ViewData["Title"] = "Gestión de Usuarios (Empresa)";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Usuarios de la Empresa</h1>
+        
+        @using Web.Services
+        @using Web.Constants
+        @using Microsoft.AspNetCore.Identity
+        @inject IPermissionService PermissionService
+        @inject UserManager<Web.Models.ApplicationUser> UserManager
+        @{
+            var user = await UserManager.GetUserAsync(User);
+            if (await PermissionService.HasPermissionAsync(user, Modules.CompanyUsers, Permissions.Create))
+            {
+                 <a asp-action="Create" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+                    <i class="fas fa-plus fa-sm text-white-50"></i> Crear Nuevo Usuario
+                </a>
+            }
+        }
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Lista de Usuarios</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Documento</th>
+                            <th>Nombre Completo</th>
+                            <th>Email</th>
+                            <th>Roles</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@item.DocumentNumber</td>
+                                <td>@item.FullName</td>
+                                <td>@item.Email</td>
+                                <td>
+                                    @foreach (var role in item.Roles)
+                                    {
+                                        <span class="badge bg-secondary">@role</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if(item.Status)
+                                    {
+                                        <span class="badge bg-success">Activo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Inactivo</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                         @if (await PermissionService.HasPermissionAsync(user, Modules.CompanyUsers, Permissions.Update))
+                                         {
+                                            @if (item.Id != user.Id.ToString())
+                                            {
+                                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning btn-sm" title="Editar">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <form asp-action="ToggleStatus" asp-route-id="@item.Id" method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de cambiar el estado de este usuario?');">
+                                                     @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn @(item.Status ? "btn-danger" : "btn-success") btn-sm" title="@(item.Status ? "Desactivar" : "Activar")">
+                                                        <i class="fas @(item.Status ? "fa-user-slash" : "fa-user-check")"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-info">Tú</span>
+                                            }
+                                         }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

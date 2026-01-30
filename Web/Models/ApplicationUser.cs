@@ -34,6 +34,12 @@ public class ApplicationUser : IdentityUser<Guid>
     [ForeignKey("CountryID")]
     public Country? Country { get; set; }
 
+    // Multi-tenancy
+    public Guid? ProviderID { get; set; }
+    
+    [ForeignKey("ProviderID")]
+    public Provider? Provider { get; set; }
+
     public bool Status { get; set; }
 
     [Required]

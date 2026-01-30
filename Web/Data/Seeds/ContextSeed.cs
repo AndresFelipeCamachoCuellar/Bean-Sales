@@ -93,8 +93,19 @@ public static class ContextSeed
             Description = "Standard user access",
             Status = true,
             CreatedBy = "SYSTEM",
-            CreatedOn = DateTime.Now
         });
+        
+        if (!await roleManager.RoleExistsAsync(Roles.ProviderAdmin))
+        {
+            await roleManager.CreateAsync(new ApplicationRole 
+            { 
+                Name = Roles.ProviderAdmin, 
+                Description = "Administrator for a specific Provider Company",
+                Status = true,
+                CreatedBy = "SYSTEM",
+                CreatedOn = DateTime.Now
+            });
+        }
     }
 
     public static async Task SeedSuperAdminAsync(UserManager<ApplicationUser> userManager, ApplicationDbContext context)
@@ -149,14 +160,26 @@ public static class ContextSeed
     public static async Task SeedPermissionsAsync(ApplicationDbContext context, RoleManager<ApplicationRole> roleManager)
     {
         // 1. Seed Modules
-        var modules = new[] { Modules.Users, Modules.Roles };
+        var modules = new[] { Modules.Users, Modules.Roles, Modules.CompanyProfile, Modules.CompanyUsers, Modules.CompanyRoles, Modules.Products, Modules.ProductApprovals };
         foreach (var moduleCode in modules)
         {
             if (!await context.ParametricModules.AnyAsync(m => m.Code == moduleCode))
             {
+                string moduleName = moduleCode switch
+                {
+                    Modules.Users => "Usuarios",
+                    Modules.Roles => "Roles",
+                    Modules.CompanyProfile => "Perfil de Empresa",
+                    Modules.CompanyUsers => "Usuarios (Empresa)",
+                    Modules.CompanyRoles => "Roles (Empresa)",
+                    Modules.Products => "Productos (Gestión)",
+                    Modules.ProductApprovals => "Aprobación de Productos",
+                    _ => moduleCode
+                };
+
                 await context.ParametricModules.AddAsync(new ParametricModule
                 {
-                    Name = moduleCode == Modules.Users ? "Usuarios" : "Roles",
+                    Name = moduleName,
                     Code = moduleCode,
                     Status = true,
                     CreatedBy = "SYSTEM",
@@ -209,6 +232,120 @@ public static class ContextSeed
                         CreatedBy = "SYSTEM",
                         CreatedOn = DateTime.Now
                     });
+                }
+            }
+            await context.SaveChangesAsync();
+        }
+
+        // 4. Assign Permissions to ProviderAdmin Role (Company Profile)
+        var providerAdminRole = await roleManager.FindByNameAsync(Roles.ProviderAdmin);
+        var companyProfileModule = await context.ParametricModules.FirstOrDefaultAsync(m => m.Code == Modules.CompanyProfile);
+        
+        if (providerAdminRole != null && companyProfileModule != null)
+        {
+            var providerPermissions = new[] { Permissions.Read, Permissions.Update };
+            var permsToAssign = await context.ParametricPermissions
+                .Where(p => p.ModuleID == companyProfileModule.ModuleID && providerPermissions.Contains(p.Code))
+                .ToListAsync();
+
+            foreach (var perm in permsToAssign)
+            {
+                if (!await context.Permissions.AnyAsync(p => p.RoleID == providerAdminRole.Id && p.ParametricPermissionID == perm.ParametricPermissionID))
+                {
+                     await context.Permissions.AddAsync(new Permission
+                     {
+                         PermissionID = Guid.NewGuid(),
+                         RoleID = providerAdminRole.Id,
+                         ParametricPermissionID = perm.ParametricPermissionID,
+                         Status = true,
+                         CreatedBy = "SYSTEM",
+                         CreatedOn = DateTime.Now
+                     });
+                }
+            }
+            await context.SaveChangesAsync();
+        }
+
+        // 5. Assign Permissions to ProviderAdmin Role (Company Users)
+        var companyUsersModule = await context.ParametricModules.FirstOrDefaultAsync(m => m.Code == Modules.CompanyUsers);
+        
+        if (providerAdminRole != null && companyUsersModule != null)
+        {
+            var providerPermissions = new[] { Permissions.Create, Permissions.Read, Permissions.Update, Permissions.Delete };
+            var permsToAssign = await context.ParametricPermissions
+                .Where(p => p.ModuleID == companyUsersModule.ModuleID && providerPermissions.Contains(p.Code))
+                .ToListAsync();
+
+            foreach (var perm in permsToAssign)
+            {
+                if (!await context.Permissions.AnyAsync(p => p.RoleID == providerAdminRole.Id && p.ParametricPermissionID == perm.ParametricPermissionID))
+                {
+                     await context.Permissions.AddAsync(new Permission
+                     {
+                         PermissionID = Guid.NewGuid(),
+                         RoleID = providerAdminRole.Id,
+                         ParametricPermissionID = perm.ParametricPermissionID,
+                         Status = true,
+                         CreatedBy = "SYSTEM",
+                         CreatedOn = DateTime.Now
+                     });
+                }
+            }
+            await context.SaveChangesAsync();
+        }
+
+        // 6. Assign Permissions to ProviderAdmin Role (Company Roles)
+        var companyRolesModule = await context.ParametricModules.FirstOrDefaultAsync(m => m.Code == Modules.CompanyRoles);
+        
+        if (providerAdminRole != null && companyRolesModule != null)
+        {
+            var providerPermissions = new[] { Permissions.Create, Permissions.Read, Permissions.Update, Permissions.Delete };
+            var permsToAssign = await context.ParametricPermissions
+                .Where(p => p.ModuleID == companyRolesModule.ModuleID && providerPermissions.Contains(p.Code))
+                .ToListAsync();
+
+            foreach (var perm in permsToAssign)
+            {
+                if (!await context.Permissions.AnyAsync(p => p.RoleID == providerAdminRole.Id && p.ParametricPermissionID == perm.ParametricPermissionID))
+                {
+                     await context.Permissions.AddAsync(new Permission
+                     {
+                         PermissionID = Guid.NewGuid(),
+                         RoleID = providerAdminRole.Id,
+                         ParametricPermissionID = perm.ParametricPermissionID,
+                         Status = true,
+                         CreatedBy = "SYSTEM",
+                         CreatedOn = DateTime.Now
+                     });
+                }
+            }
+            await context.SaveChangesAsync();
+        }
+
+        // 7. Assign Permissions to ProviderAdmin Role (Products)
+        var productsModule = await context.ParametricModules.FirstOrDefaultAsync(m => m.Code == Modules.Products);
+        
+        if (providerAdminRole != null && productsModule != null)
+        {
+             // Provider Admin can Create, Read, Update, Delete (Drafts) products
+            var providerPermissions = new[] { Permissions.Create, Permissions.Read, Permissions.Update, Permissions.Delete };
+            var permsToAssign = await context.ParametricPermissions
+                .Where(p => p.ModuleID == productsModule.ModuleID && providerPermissions.Contains(p.Code))
+                .ToListAsync();
+
+            foreach (var perm in permsToAssign)
+            {
+                if (!await context.Permissions.AnyAsync(p => p.RoleID == providerAdminRole.Id && p.ParametricPermissionID == perm.ParametricPermissionID))
+                {
+                     await context.Permissions.AddAsync(new Permission
+                     {
+                         PermissionID = Guid.NewGuid(),
+                         RoleID = providerAdminRole.Id,
+                         ParametricPermissionID = perm.ParametricPermissionID,
+                         Status = true,
+                         CreatedBy = "SYSTEM",
+                         CreatedOn = DateTime.Now
+                     });
                 }
             }
             await context.SaveChangesAsync();

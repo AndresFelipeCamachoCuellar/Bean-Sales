@@ -45,6 +45,11 @@ public class CreateUserViewModel
     [Display(Name = "Role")]
     public Guid RoleID { get; set; }
 
+    [Required]
+    [DataType(DataType.Date)]
+    [Display(Name = "Date of Birth")]
+    public DateTime DateOfBirth { get; set; }
+
     [Display(Name = "Gender")]
     public string Gender { get; set; } = string.Empty;
 

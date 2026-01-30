@@ -71,7 +71,7 @@ public class RolesController : Controller
         var role = await _roleManager.FindByIdAsync(id);
         if (role == null) return NotFound();
 
-        if (role.Name == Roles.SuperAdmin)
+        if (role.Name == Roles.SuperAdmin || role.Name == Roles.ProviderAdmin)
         {
              return RedirectToAction(nameof(Index));
         }
@@ -94,10 +94,9 @@ public class RolesController : Controller
             var role = await _roleManager.FindByIdAsync(model.Id);
             if (role == null) return NotFound();
 
-            if (role.Name == Roles.SuperAdmin)
+            if (role.Name == Roles.SuperAdmin || role.Name == Roles.ProviderAdmin)
             {
-                ModelState.AddModelError(string.Empty, "Cannot edit SuperAdmin role.");
-                return View(model);
+                 return RedirectToAction(nameof(Index));
             }
 
             role.Name = model.Name;
@@ -122,7 +121,7 @@ public class RolesController : Controller
         var role = await _roleManager.FindByIdAsync(id);
         if (role != null)
         {
-            if (role.Name == Roles.SuperAdmin)
+            if (role.Name == Roles.SuperAdmin || role.Name == Roles.ProviderAdmin)
             {
                 return RedirectToAction(nameof(Index));
             }
@@ -140,6 +139,11 @@ public class RolesController : Controller
     {
         var role = await _roleManager.FindByIdAsync(id);
         if (role == null) return NotFound();
+
+        if (role.Name == Roles.SuperAdmin || role.Name == Roles.ProviderAdmin)
+        {
+             return RedirectToAction(nameof(Index));
+        }
 
         var model = new ManagePermissionsViewModel
         {
@@ -192,6 +196,11 @@ public class RolesController : Controller
     {
         var role = await _roleManager.FindByIdAsync(model.RoleId);
         if (role == null) return NotFound();
+
+        if (role.Name == Roles.SuperAdmin || role.Name == Roles.ProviderAdmin)
+        {
+             return RedirectToAction(nameof(Index));
+        }
 
         var existingPermissions = await _context.Permissions
             .Where(p => p.RoleID == role.Id)

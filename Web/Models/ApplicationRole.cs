@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Web.Models;
 
@@ -14,6 +15,12 @@ public class ApplicationRole : IdentityRole<Guid>
     }
     [Required]
     public string Description { get; set; } = string.Empty;
+
+    // Multi-tenancy
+    public Guid? ProviderID { get; set; }
+    
+    [ForeignKey("ProviderID")]
+    public Provider? Provider { get; set; }
 
     public bool Status { get; set; }
 

@@ -57,7 +57,8 @@ public class UsersController : Controller
                 CreatedBy = User.Identity?.Name ?? "SYSTEM",
                 CreatedOn = DateTime.Now,
                 Status = true,
-                EmailConfirmed = true 
+                EmailConfirmed = true,
+                DateOfBirth = model.DateOfBirth 
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);

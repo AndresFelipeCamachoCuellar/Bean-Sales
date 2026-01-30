@@ -145,6 +145,9 @@ namespace Web.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<Guid?>("ProviderID")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<bool>("Status")
                         .HasColumnType("bit");
 
@@ -154,6 +157,8 @@ namespace Web.Migrations
                         .IsUnique()
                         .HasDatabaseName("RoleNameIndex")
                         .HasFilter("[NormalizedName] IS NOT NULL");
+
+                    b.HasIndex("ProviderID");
 
                     b.ToTable("AspNetRoles", (string)null);
                 });
@@ -239,6 +244,9 @@ namespace Web.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<Guid?>("ProviderID")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
@@ -265,6 +273,8 @@ namespace Web.Migrations
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex")
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
+
+                    b.HasIndex("ProviderID");
 
                     b.ToTable("AspNetUsers", (string)null);
                 });
@@ -485,6 +495,172 @@ namespace Web.Migrations
                     b.ToTable("Permissions");
                 });
 
+            modelBuilder.Entity("Web.Models.Product", b =>
+                {
+                    b.Property<Guid>("ProductID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("ProductStatus")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ProviderID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ShippingDetails")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("Status")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Stock")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("ProductID");
+
+                    b.HasIndex("ProviderID");
+
+                    b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("Web.Models.ProductCountry", b =>
+                {
+                    b.Property<Guid>("ProductID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CountryID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsAvailable")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsTargeted")
+                        .HasColumnType("bit");
+
+                    b.HasKey("ProductID", "CountryID");
+
+                    b.HasIndex("CountryID");
+
+                    b.ToTable("ProductCountries");
+                });
+
+            modelBuilder.Entity("Web.Models.Provider", b =>
+                {
+                    b.Property<Guid>("ProviderID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("ApprovalDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ApprovalStatus")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NIT")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("Status")
+                        .HasColumnType("bit");
+
+                    b.HasKey("ProviderID");
+
+                    b.ToTable("Providers");
+                });
+
+            modelBuilder.Entity("Web.Models.ShoppingCartItem", b =>
+                {
+                    b.Property<Guid>("ShoppingCartItemID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ProductID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("UserID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("ShoppingCartItemID");
+
+                    b.HasIndex("ProductID");
+
+                    b.HasIndex("UserID");
+
+                    b.ToTable("ShoppingCartItems");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
                     b.HasOne("Web.Models.ApplicationRole", null)
@@ -521,6 +697,15 @@ namespace Web.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Web.Models.ApplicationRole", b =>
+                {
+                    b.HasOne("Web.Models.Provider", "Provider")
+                        .WithMany("Roles")
+                        .HasForeignKey("ProviderID");
+
+                    b.Navigation("Provider");
+                });
+
             modelBuilder.Entity("Web.Models.ApplicationUser", b =>
                 {
                     b.HasOne("Web.Models.Country", "Country")
@@ -535,9 +720,15 @@ namespace Web.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Web.Models.Provider", "Provider")
+                        .WithMany("Users")
+                        .HasForeignKey("ProviderID");
+
                     b.Navigation("Country");
 
                     b.Navigation("DocumentType");
+
+                    b.Navigation("Provider");
                 });
 
             modelBuilder.Entity("Web.Models.ApplicationUserRole", b =>
@@ -585,9 +776,73 @@ namespace Web.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("Web.Models.Product", b =>
+                {
+                    b.HasOne("Web.Models.Provider", "Provider")
+                        .WithMany()
+                        .HasForeignKey("ProviderID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Provider");
+                });
+
+            modelBuilder.Entity("Web.Models.ProductCountry", b =>
+                {
+                    b.HasOne("Web.Models.Country", "Country")
+                        .WithMany("ProductCountries")
+                        .HasForeignKey("CountryID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Web.Models.Product", "Product")
+                        .WithMany("ProductCountries")
+                        .HasForeignKey("ProductID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Country");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("Web.Models.ShoppingCartItem", b =>
+                {
+                    b.HasOne("Web.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Web.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserID");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Web.Models.Country", b =>
+                {
+                    b.Navigation("ProductCountries");
+                });
+
             modelBuilder.Entity("Web.Models.ParametricModule", b =>
                 {
                     b.Navigation("ParametricPermissions");
+                });
+
+            modelBuilder.Entity("Web.Models.Product", b =>
+                {
+                    b.Navigation("ProductCountries");
+                });
+
+            modelBuilder.Entity("Web.Models.Provider", b =>
+                {
+                    b.Navigation("Roles");
+
+                    b.Navigation("Users");
                 });
 #pragma warning restore 612, 618
         }

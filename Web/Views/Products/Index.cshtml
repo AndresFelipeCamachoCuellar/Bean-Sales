@@ -1,0 +1,142 @@
+@model IEnumerable<Web.Models.Product>
+@using Web.Models.Enums
+@inject Web.Services.IPermissionService PermissionService
+@inject Microsoft.AspNetCore.Identity.UserManager<Web.Models.ApplicationUser> UserManager
+
+@{
+    ViewData["Title"] = "Mis Productos";
+    Layout = "_Layout";
+    var user = await UserManager.GetUserAsync(User);
+}
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Mis Productos</h1>
+        @if (await PermissionService.HasPermissionAsync(user, Web.Constants.Modules.Products, Web.Constants.Permissions.Create))
+        {
+            <a asp-action="Create" class="btn btn-primary shadow-sm"><i class="fas fa-plus fa-sm text-white-50 me-1"></i> Nuevo Producto</a>
+        }
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Catálogo</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Precio</th>
+                            <th>Stock</th>
+                            <th>Países Objetivo</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@item.Name</strong>
+                                    @if(item.ProductStatus == ProductStatus.Rejected)
+                                    {
+                                        <br/>
+                                        <small class="text-danger">Motivo: @item.RejectionReason</small>
+                                    }
+                                </td>
+                                <td>@item.Price.ToString("C")</td>
+                                <td>@item.Stock</td>
+                                <td>
+                                    @foreach(var pc in item.ProductCountries.Where(c => c.IsTargeted))
+                                    {
+                                        <span class="badge bg-light text-dark border">@pc.Country?.Name</span>
+                                    }
+                                </td>
+                                <td>
+                                    @switch(item.ProductStatus)
+                                    {
+                                        case ProductStatus.Draft:
+                                            <span class="badge bg-secondary">Borrador</span>
+                                            break;
+                                        case ProductStatus.PendingApproval:
+                                            <span class="badge bg-warning text-dark">Pendiente Aprobación</span>
+                                            break;
+                                        case ProductStatus.ApprovedToShip:
+                                            <span class="badge bg-info text-white">Aprobado para Envío</span>
+                                            break;
+                                        case ProductStatus.Shipped:
+                                            <span class="badge bg-primary">Enviado</span>
+                                            break;
+                                        case ProductStatus.Active:
+                                            <span class="badge bg-success">Activo (En Venta)</span>
+                                            break;
+                                        case ProductStatus.Rejected:
+                                            <span class="badge bg-danger">Rechazado</span>
+                                            break;
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                         @if (item.ProductStatus == ProductStatus.Draft || item.ProductStatus == ProductStatus.Rejected)
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@item.ProductID" class="btn btn-warning btn-sm" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            
+                                            <form asp-action="SubmitForApproval" asp-route-id="@item.ProductID" method="post" class="d-inline" onsubmit="return confirm('¿Enviar a aprobación? No podrás editarlo hasta que se revise.');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-success btn-sm" title="Enviar a Aprobación">
+                                                    <i class="fas fa-paper-plane"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                        else if (item.ProductStatus == ProductStatus.ApprovedToShip)
+                                        {
+                                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#shipModal-@item.ProductID" title="Registrar Envío">
+                                                <i class="fas fa-shipping-fast"></i>
+                                            </button>
+
+                                            <!-- Ship Modal -->
+                                            <div class="modal fade" id="shipModal-@item.ProductID" tabindex="-1" role="dialog" aria-hidden="true">
+                                                <div class="modal-dialog" role="document">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">Registrar Envío</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <form asp-action="Ship" asp-route-id="@item.ProductID" method="post">
+                                                            <div class="modal-body">
+                                                                <p>Por favor ingresa los detalles del envío (Guía, Transportadora, etc.) para que el administrador pueda recibirlo.</p>
+                                                                <div class="form-group">
+                                                                    <label>Datos de Envío:</label>
+                                                                    <textarea name="shippingDetails" class="form-control" required rows="3" placeholder="Ej: Servientrega Guía #123456789"></textarea>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                                <button type="submit" class="btn btn-primary">Confirmar Envío</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@item.ProductID" class="btn btn-secondary btn-sm disabled">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

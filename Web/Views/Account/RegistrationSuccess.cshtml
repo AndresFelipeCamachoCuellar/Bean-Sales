@@ -1,0 +1,27 @@
+@{
+    ViewData["Title"] = "Registro Exitoso";
+    Layout = "_Layout";
+}
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-8">
+        <div class="card border-success shadow">
+            <div class="card-body text-center p-5">
+                <div class="mb-4">
+                    <i class="fas fa-check-circle text-success" style="font-size: 5rem;"></i>
+                </div>
+                <h2 class="text-success mb-3">¡Registro Recibido!</h2>
+                <p class="lead">
+                    Tu empresa y tu cuenta de administrador han sido creadas exitosamente.
+                </p>
+                <hr />
+                <p class="mb-4">
+                    Tu cuenta se encuentra actualmente en estado <strong>PENDIENTE</strong> de verificación.<br />
+                    Un administrador de la plataforma revisará tus datos y aprobará tu acceso pronto.
+                    Te notificaremos por correo electrónico una vez que tu cuenta esté activa.
+                </p>
+                <a asp-action="Login" class="btn btn-primary btn-lg">Volver al Inicio</a>
+            </div>
+        </div>
+    </div>
+</div>

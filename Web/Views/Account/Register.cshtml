@@ -1,0 +1,75 @@
+@model Web.Models.ViewModels.RegisterUserViewModel
+
+@{
+    ViewData["Title"] = "Registro de Usuario";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 mt-5">
+            <div class="card-body p-4">
+                <h2 class="text-center mb-4">Crear Cuenta</h2>
+                <form asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
+                    <div asp-validation-summary="All" class="text-danger"></div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="FirstName" class="form-label">Nombre</label>
+                            <input asp-for="FirstName" class="form-control" />
+                            <span asp-validation-for="FirstName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="LastName" class="form-label">Apellido</label>
+                            <input asp-for="LastName" class="form-control" />
+                            <span asp-validation-for="LastName" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label">Correo Electrónico</label>
+                        <input asp-for="Email" class="form-control" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="DocumentTypeID" class="form-label">Tipo Documento</label>
+                            <select asp-for="DocumentTypeID" asp-items="Model.DocumentTypes" class="form-control"></select>
+                            <span asp-validation-for="DocumentTypeID" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="DocumentNumber" class="form-label">Número Documento</label>
+                            <input asp-for="DocumentNumber" class="form-control" />
+                            <span asp-validation-for="DocumentNumber" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Password" class="form-label">Contraseña</label>
+                            <input asp-for="Password" class="form-control" />
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="ConfirmPassword" class="form-label">Confirmar Contraseña</label>
+                            <input asp-for="ConfirmPassword" class="form-control" />
+                            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary rounded-pill btn-lg">Registrarse y Continuar</button>
+                    </div>
+                </form>
+                
+                <div class="mt-4 text-center">
+                    <p>¿Ya tienes cuenta? <a asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]">Inicia Sesión aquí</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

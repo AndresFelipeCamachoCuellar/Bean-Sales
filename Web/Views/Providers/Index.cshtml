@@ -1,0 +1,73 @@
+@model IEnumerable<Web.Models.Provider>
+
+@{
+    ViewData["Title"] = "Gestión de Proveedores";
+}
+
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800">Empresas Registradas</h1>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Listado de Empresas</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>NIT</th>
+                            <th>Email</th>
+                            <th>Estado Aprobación</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@item.Name</td>
+                                <td>@item.NIT</td>
+                                <td>@item.Email</td>
+                                <td>
+                                    @if(item.ApprovalStatus == Web.Models.ApprovalStatus.Pending)
+                                    {
+                                        <span class="badge bg-warning text-dark">Pendiente</span>
+                                    }
+                                    else if(item.ApprovalStatus == Web.Models.ApprovalStatus.Approved)
+                                    {
+                                        <span class="badge bg-success">Aprobado</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Rechazado</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if(item.ApprovalStatus == Web.Models.ApprovalStatus.Pending)
+                                    {
+                                        <div class="btn-group">
+                                            <form asp-action="Approve" asp-route-id="@item.ProviderID" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-success btn-sm me-2" title="Aprobar">
+                                                    <i class="fas fa-check"></i> Aprobar
+                                                </button>
+                                            </form>
+                                            <form asp-action="Reject" asp-route-id="@item.ProviderID" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-danger btn-sm" title="Rechazar">
+                                                    <i class="fas fa-times"></i> Rechazar
+                                                </button>
+                                            </form>
+                                        </div>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

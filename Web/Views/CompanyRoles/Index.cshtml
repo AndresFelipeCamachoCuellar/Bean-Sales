@@ -1,0 +1,68 @@
+@model IEnumerable<Web.Models.ViewModels.RoleViewModel>
+@inject Web.Services.IPermissionService PermissionService
+@inject Microsoft.AspNetCore.Identity.UserManager<Web.Models.ApplicationUser> UserManager
+
+@{
+    ViewData["Title"] = "Roles (Empresa)";
+    Layout = "_Layout";
+    var user = await UserManager.GetUserAsync(User);
+}
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Gestión de Roles (Empresa)</h1>
+        @if (await PermissionService.HasPermissionAsync(user, Web.Constants.Modules.CompanyRoles, Web.Constants.Permissions.Create))
+        {
+            <a asp-action="Create" class="btn btn-primary shadow-sm"><i class="fas fa-plus fa-sm text-white-50 me-1"></i> Crear Rol</a>
+        }
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Listado de Roles</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@item.Name</td>
+                                <td>@item.Description</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                         @if (await PermissionService.HasPermissionAsync(user, Web.Constants.Modules.CompanyRoles, Web.Constants.Permissions.Update))
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning btn-sm" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a asp-action="ManagePermissions" asp-route-id="@item.Id" class="btn btn-info btn-sm text-white" title="Permisos">
+                                                <i class="fas fa-key"></i>
+                                            </a>
+                                        }
+                                         @if (await PermissionService.HasPermissionAsync(user, Web.Constants.Modules.CompanyRoles, Web.Constants.Permissions.Delete))
+                                        {
+                                             <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('¿Está seguro de eliminar este rol?');">
+                                                <button type="submit" class="btn btn-danger btn-sm" title="Eliminar">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

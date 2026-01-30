@@ -23,11 +23,17 @@ public class ApplicationDbContext : IdentityDbContext<
 
     public DbSet<Country> Countries { get; set; }
     public DbSet<DocumentType> DocumentTypes { get; set; }
+    public DbSet<Provider> Providers { get; set; }
     
     // Custom Security Core
     public DbSet<ParametricModule> ParametricModules { get; set; }
     public DbSet<ParametricPermission> ParametricPermissions { get; set; }
     public DbSet<Permission> Permissions { get; set; }
+    
+    // Product Workflow
+    public DbSet<Product> Products { get; set; }
+    public DbSet<ProductCountry> ProductCountries { get; set; }
+    public DbSet<ShoppingCartItem> ShoppingCartItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -57,5 +63,19 @@ public class ApplicationDbContext : IdentityDbContext<
         builder.Entity<ParametricPermission>()
             .HasIndex(p => new { p.ModuleID, p.Code })
             .IsUnique();
+
+        // Product Workflow Configurations
+        builder.Entity<ProductCountry>()
+            .HasKey(pc => new { pc.ProductID, pc.CountryID });
+
+        builder.Entity<ProductCountry>()
+            .HasOne(pc => pc.Product)
+            .WithMany(p => p.ProductCountries)
+            .HasForeignKey(pc => pc.ProductID);
+
+        builder.Entity<ProductCountry>()
+            .HasOne(pc => pc.Country)
+            .WithMany(c => c.ProductCountries) // Need to add this to Country.cs
+            .HasForeignKey(pc => pc.CountryID);
     }
 }

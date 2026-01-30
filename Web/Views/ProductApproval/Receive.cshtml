@@ -1,0 +1,77 @@
+@model Web.Models.Product
+
+@{
+    ViewData["Title"] = "Recibir Producto";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800">
+        @(Model.ProductStatus == Web.Models.Enums.ProductStatus.Active ? "Gestionar Disponibilidad" : "Recibir Producto")
+    </h1>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+             <h6 class="m-0 font-weight-bold text-primary">
+                 @(Model.ProductStatus == Web.Models.Enums.ProductStatus.Active ? "Actualizar Inventario por País" : "Confirmación de Recepción")
+             </h6>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <strong>Producto:</strong> @Model.Name <br/>
+                    <strong>Proveedor:</strong> @Model.Provider?.Name <br/>
+                    <strong>Estado Actual:</strong> @Model.ProductStatus
+                </div>
+                <div class="col-md-6">
+                    <strong>Stock Declarado:</strong> @Model.Stock Unidades<br/>
+                    <strong>Precio Base:</strong> @Model.Price.ToString("C")
+                </div>
+            </div>
+
+            <form asp-action="Receive" method="post">
+                <input type="hidden" name="id" value="@Model.ProductID" />
+                
+                <h5 class="mt-4 mb-3">Disponibilidad por País</h5>
+                <p class="text-muted">Selecciona los países donde este producto estará visible para la venta. Por defecto se marcan los solicitados por el proveedor.</p>
+
+                <div class="row">
+                    @foreach(var pc in Model.ProductCountries)
+                    {
+                        <div class="col-md-3 mb-2">
+                             <div class="form-check">
+                                <!-- Check if Available (if Active) OR Targeted (if Receiving for first time) -->
+                                @{
+                                    bool isChecked = pc.IsAvailable;
+                                    // If first time receiving (all false), maybe default to targeted?
+                                    // Or better: strict explicit check. Let's trust IsAvailable.
+                                    // Wait, on first load IsAvailable is false. We want to suggest Targeted.
+                                    if (Model.ProductStatus == Web.Models.Enums.ProductStatus.Shipped && pc.IsTargeted)
+                                    {
+                                        isChecked = true; 
+                                    }
+                                }
+                                <input class="form-check-input" type="checkbox" name="availableCountryIds" value="@pc.CountryID" id="c_@pc.CountryID" @(isChecked ? "checked" : "") />
+                                <label class="form-check-label" for="c_@pc.CountryID">
+                                    @pc.Country?.Name
+                                    @if(pc.IsTargeted) { <span class="badge bg-secondary ms-1">Solicitado</span> }
+                                    @if(pc.IsAvailable) { <span class="badge bg-success ms-1">Activo</span> }
+                                </label>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="alert alert-warning mt-4">
+                    <i class="fas fa-exclamation-circle me-1"></i>
+                    Al confirmar, el producto pasará a estado <strong>ACTIVO</strong> y será visible en el catálogo de los países seleccionados.
+                </div>
+
+                <div class="form-group mt-4">
+                    <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-check-circle me-1"></i> Confirmar Recepción</button>
+                    <a asp-action="Index" class="btn btn-secondary btn-lg">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
