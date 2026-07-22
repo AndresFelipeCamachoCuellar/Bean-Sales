@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #e7e4dd; font-family: 'DM Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  @keyframes floaty { 0%,100% { transform: translateY(0) rotate(45deg); } 50% { transform: translateY(-14px) rotate(52deg); } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes shimmer { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
+  @keyframes pulseDot { 0%,100% { box-shadow: 0 0 0 0 rgba(180,85,46,.45); } 50% { box-shadow: 0 0 0 10px rgba(180,85,46,0); } }
+  .bean { background-color: var(--tone); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='68' height='68' viewBox='0 0 68 68'%3E%3Cg fill='none' stroke='%23000' stroke-opacity='0.13' stroke-width='1.5'%3E%3Cellipse cx='17' cy='17' rx='7.5' ry='12' transform='rotate(28 17 17)'/%3E%3Cpath d='M17 6 q3.5 11 0 22' transform='rotate(28 17 17)'/%3E%3Cellipse cx='48' cy='44' rx='7.5' ry='12' transform='rotate(-22 48 44)'/%3E%3Cpath d='M48 33 q3.5 11 0 22' transform='rotate(-22 48 44)'/%3E%3C/g%3E%3C/svg%3E"); }
+</style>
+</helmet>
+
+<div style="padding:60px 56px 8px; max-width:1360px;">
+  <div style="font-size:13px; letter-spacing:.22em; text-transform:uppercase; color:#9a5a3a; font-weight:600;">Bean · Dirección final (4a)</div>
+  <h1 style="font-family:'Bitter',serif; font-size:40px; line-height:1.05; margin:12px 0 12px; color:#241a12; letter-spacing:-.01em;">Lado cliente — moderno, animado, trazable</h1>
+  <p style="font-size:16px; line-height:1.55; color:#57503f; max-width:720px; margin:0;">Catálogo, detalle, carrito y checkout con el sistema 4a: base oscura + terracota en gradiente, motion sutil, píldoras y trazabilidad como protagonista.</p>
+</div>
+
+<!-- ============ CATÁLOGO ============ -->
+<section data-screen-label="Catálogo" style="padding:36px 56px 0;">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+    <span style="background:#B4552E; color:#fff; font-weight:700; font-size:13px; padding:5px 11px; border-radius:7px;">Catálogo · Home</span>
+    <span style="font-size:13px; color:#7d7465;">Hero animado · marquee · grid con hover-lift</span>
+  </div>
+  <div style="width:1280px; border-radius:14px; overflow:hidden; box-shadow:0 18px 50px rgba(60,35,15,.18); border:1px solid #d8d2c6;">
+    <div style="background:#efeae2; padding:9px 14px; display:flex; align-items:center; gap:8px; border-bottom:1px solid #e0dacd;">
+      <span style="width:11px;height:11px;border-radius:50%;background:#d98a5f;"></span><span style="width:11px;height:11px;border-radius:50%;background:#e0b070;"></span><span style="width:11px;height:11px;border-radius:50%;background:#b7c99a;"></span>
+      <span style="margin-left:12px; background:#fff; border:1px solid #e5dfd3; border-radius:6px; font-size:11px; color:#9a9184; padding:3px 12px; font-family:monospace;">bean.co / catálogo</span>
+    </div>
+    <div style="background:#1d1510; color:#efe0cd;">
+      <div style="display:flex; align-items:center; gap:24px; padding:18px 36px; border-bottom:1px solid rgba(255,255,255,.08);">
+        <div style="font-family:'Bitter',serif; font-weight:800; font-size:22px; display:flex; align-items:center; gap:9px; color:#fff;"><span style="width:24px;height:24px;border-radius:50% 50% 50% 0;background:linear-gradient(135deg,#d98a5f,#B4552E);display:inline-block;transform:rotate(45deg);"></span>Bean</div>
+        <div style="display:flex; gap:22px; font-size:14px; font-weight:600; color:#b8a58f;"><span style="color:#fff; position:relative;">Catálogo<span style="position:absolute; left:0; right:0; bottom:-6px; height:2px; background:#d98a5f; border-radius:2px;"></span></span><span>Orígenes</span><span>Mayoreo</span><span>Nosotros</span></div>
+        <div style="flex:1;"></div>
+        <div style="display:flex; align-items:center; gap:7px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); border-radius:50px; padding:8px 15px; font-size:13px; font-weight:600;"><span style="width:8px; height:8px; border-radius:50%; background:#B4552E; animation:pulseDot 2.4s infinite;"></span> Envío a <strong style="color:#fff;">Colombia</strong> ▾</div>
+        <span style="font-size:13px; font-weight:700; color:#b8a58f;">ES · EN</span>
+        <span style="font-size:14px; font-weight:600; color:#b8a58f;">Entrar</span>
+        <div style="background:linear-gradient(135deg,#d98a5f,#B4552E); color:#fff; border-radius:50px; padding:9px 18px; font-size:13px; font-weight:700;">Bolsa · 2</div>
+      </div>
+      <div style="position:relative; overflow:hidden; padding:66px 36px 56px; text-align:center;">
+        <div class="bean" style="--tone:transparent; position:absolute; inset:0; opacity:.18;"></div>
+        <span style="position:absolute; top:66px; left:9%; width:46px; height:46px; border-radius:50% 50% 50% 0; background:linear-gradient(135deg,#c9a878,#a9743f); animation:floaty 5s ease-in-out infinite;"></span>
+        <span style="position:absolute; top:170px; right:12%; width:30px; height:30px; border-radius:50% 50% 50% 0; background:linear-gradient(135deg,#d98a5f,#8f5a34); animation:floaty 6.5s ease-in-out .8s infinite;"></span>
+        <span style="position:absolute; bottom:56px; left:22%; width:22px; height:22px; border-radius:50% 50% 50% 0; background:linear-gradient(135deg,#e0b070,#b98a5e); animation:floaty 4.4s ease-in-out 1.6s infinite;"></span>
+        <div style="position:relative; animation:fadeUp .7s ease both;">
+          <span style="display:inline-flex; align-items:center; gap:8px; background:rgba(217,138,95,.14); border:1px solid rgba(217,138,95,.35); color:#e8a582; font-size:12.5px; font-weight:700; padding:7px 16px; border-radius:50px; margin-bottom:22px;">☕ Tueste de esta semana ya disponible</span>
+          <div style="font-family:'Bitter',serif; font-size:70px; line-height:1; font-weight:800; letter-spacing:-.03em; color:#fff; margin-bottom:18px;">Café con origen,<br><span style="background:linear-gradient(90deg,#e8a582,#d98a5f,#c9a878,#e8a582); background-size:200% auto; -webkit-background-clip:text; background-clip:text; color:transparent; animation:shimmer 4s linear infinite;">frescura en movimiento.</span></div>
+          <div style="font-size:17px; line-height:1.55; color:#c9b8a4; max-width:480px; margin:0 auto 30px;">Micro-lotes trazables de fincas colombianas, tostados cada semana y enviados a Colombia y Canadá.</div>
+          <div style="display:flex; gap:12px; justify-content:center;">
+            <span style="background:linear-gradient(135deg,#d98a5f,#B4552E); color:#fff; font-weight:700; padding:15px 30px; border-radius:50px; font-size:15px; box-shadow:0 10px 30px rgba(180,85,46,.4);">Explorar lotes →</span>
+            <span style="border:1.5px solid rgba(255,255,255,.25); color:#fff; font-weight:700; padding:15px 30px; border-radius:50px; font-size:15px;">Mayoreo</span>
+          </div>
+          <div style="display:flex; gap:36px; justify-content:center; margin-top:38px;">
+            <div><div style="font-family:'Bitter',serif; font-size:24px; font-weight:800; color:#fff;">14</div><div style="font-size:12px; color:#a08b73;">fincas aliadas</div></div>
+            <div style="width:1px; background:rgba(255,255,255,.12);"></div>
+            <div><div style="font-family:'Bitter',serif; font-size:24px; font-weight:800; color:#fff;">4.9★</div><div style="font-size:12px; color:#a08b73;">promedio reseñas</div></div>
+            <div style="width:1px; background:rgba(255,255,255,.12);"></div>
+            <div><div style="font-family:'Bitter',serif; font-size:24px; font-weight:800; color:#fff;">48 h</div><div style="font-size:12px; color:#a08b73;">del tueste al envío</div></div>
+          </div>
+        </div>
+      </div>
+      <div style="border-top:1px solid rgba(255,255,255,.08); border-bottom:1px solid rgba(255,255,255,.08); overflow:hidden; padding:13px 0;">
+        <div style="display:flex; width:max-content; animation:marquee 22s linear infinite; font-size:12.5px; letter-spacing:.16em; text-transform:uppercase; color:#a08b73; font-weight:600;">
+          <span style="padding:0 18px;">Trazabilidad finca a taza ✦ Comercio justo ✦ Tueste semanal ✦ Envío Colombia · Canadá ✦ Reseñas verificadas ✦&nbsp;</span>
+          <span style="padding:0 18px;">Trazabilidad finca a taza ✦ Comercio justo ✦ Tueste semanal ✦ Envío Colombia · Canadá ✦ Reseñas verificadas ✦&nbsp;</span>
+        </div>
+      </div>
+      <div style="background:#FBF7F1; color:#2A2019; padding:44px 36px 52px;">
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:24px;">
+          <div><div style="font-family:'Bitter',serif; font-size:28px; font-weight:700; color:#241a12;">Lotes disponibles</div><div style="font-size:14px; color:#7A7161;">6 orígenes para envío a Colombia · precios en COP</div></div>
+          <div style="display:flex; gap:8px;"><span style="background:#241a12; color:#fff; padding:8px 16px; border-radius:50px; font-size:13px; font-weight:600;">Todos</span><span style="background:#fff; border:1px solid #EAE3D8; padding:8px 16px; border-radius:50px; font-size:13px; font-weight:600; color:#7A7161;" style-hover="border-color:#B4552E; color:#B4552E;">Lavado</span><span style="background:#fff; border:1px solid #EAE3D8; padding:8px 16px; border-radius:50px; font-size:13px; font-weight:600; color:#7A7161;" style-hover="border-color:#B4552E; color:#B4552E;">Honey</span><span style="background:#fff; border:1px solid #EAE3D8; padding:8px 16px; border-radius:50px; font-size:13px; font-weight:600; color:#7A7161;" style-hover="border-color:#B4552E; color:#B4552E;">Natural</span></div>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:22px;">
+          <sc-for list="{{ lotsAnim }}" as="p" hint-placeholder-count="6">
+            <div style="background:#fff; border:1px solid #EAE3D8; border-radius:18px; overflow:hidden; display:flex; flex-direction:column; transition:transform .35s ease, box-shadow .35s ease; animation:fadeUp .6s ease both; animation-delay:{{ p.delay }};" style-hover="transform:translateY(-8px); box-shadow:0 24px 50px rgba(60,35,15,.18);">
+              <div class="bean" style="--tone:{{ p.tone }}; height:150px; position:relative;">
+                <span style="position:absolute; top:12px; left:12px; background:rgba(42,32,25,.85); color:#f4ece0; font-size:11px; font-weight:700; padding:4px 10px; border-radius:50px;">{{ p.process }}</span>
+                <span style="position:absolute; top:12px; right:12px; background:#fff; color:#C9962F; font-size:11px; font-weight:700; padding:4px 9px; border-radius:50px;">★ {{ p.rating }}</span>
+              </div>
+              <div style="padding:16px; display:flex; flex-direction:column; flex:1;">
+                <div style="font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:#B4552E; font-weight:700;">{{ p.origin }}</div>
+                <div style="font-family:'Bitter',serif; font-size:19px; font-weight:700; margin:4px 0 2px; color:#241a12;">{{ p.name }}</div>
+                <div style="font-size:12.5px; color:#8a7761; margin-bottom:12px;">{{ p.provider }} · {{ p.altitude }}</div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;">
+                  <sc-for list="{{ p.notes }}" as="n" hint-placeholder-count="3"><span style="background:#F6EFE7; border:1px solid #EEE3D6; color:#7A6552; font-size:11px; font-weight:600; padding:3px 9px; border-radius:50px;">{{ n }}</span></sc-for>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; border-top:1px solid #F0E7D8; padding-top:13px; margin-top:auto;">
+                  <div><span style="font-family:'Bitter',serif; font-size:19px; font-weight:700; color:#241a12;">{{ p.price }}</span><span style="font-size:12px; color:#8a7761;"> / 340 g</span></div>
+                  <span style="background:linear-gradient(135deg,#d98a5f,#B4552E); color:#fff; padding:9px 17px; border-radius:50px; font-size:13px; font-weight:700; transition:transform .25s ease;" style-hover="transform:scale(1.06);">Agregar</span>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="background:#FBF7F1; padding:0 36px 48px;">
+        <div style="background:linear-gradient(135deg,#2b1c13,#1d1510); border-radius:20px; padding:36px 40px; display:grid; grid-template-columns:1.3fr .7fr; align-items:center; color:#fff; position:relative; overflow:hidden;">
+          <div class="bean" style="--tone:transparent; position:absolute; inset:0; opacity:.2;"></div>
+          <div style="position:relative;">
+            <div style="font-size:12px; letter-spacing:.16em; text-transform:uppercase; font-weight:700; color:#e8a582; margin-bottom:10px;">Para cafeterías y negocios</div>
+            <div style="font-family:'Bitter',serif; font-size:29px; font-weight:800; line-height:1.1; margin-bottom:10px;">Precios de mayoreo y cupo mensual asegurado.</div>
+            <div style="font-size:15px; color:#c9b8a4; max-width:460px; line-height:1.5;">Registra tu empresa, accede a precios por volumen y recibe tu pedido con tueste programado.</div>
+          </div>
+          <div style="position:relative; display:flex; justify-content:flex-end;"><span style="background:linear-gradient(135deg,#d98a5f,#B4552E); color:#fff; font-weight:800; padding:15px 30px; border-radius:50px; font-size:15px; box-shadow:0 10px 30px rgba(180,85,46,.35);">Registrar mi empresa →</span></div>
+        </div>
+      </div>
+      <div style="background:#17100b; color:#b8a58f; padding:32px 36px; display:grid; grid-template-columns:1.2fr 1fr 1fr 1fr; gap:24px; font-size:13px;">
+        <div>
+          <div style="font-family:'Bitter',serif; font-weight:800; font-size:20px; color:#fff; display:flex; align-items:center; gap:8px; margin-bottom:10px;"><span style="width:20px;height:20px;border-radius:50% 50% 50% 0;background:linear-gradient(135deg,#d98a5f,#B4552E);display:inline-block;transform:rotate(45deg);"></span>Bean</div>
+          <div style="line-height:1.6; max-width:230px;">Comercio internacional de café de origen, del productor a tu taza.</div>
+        </div>
+        <div><div style="color:#fff; font-weight:700; margin-bottom:10px;">Tienda</div><div style="line-height:2;">Catálogo<br>Orígenes<br>Mayoreo</div></div>
+        <div><div style="color:#fff; font-weight:700; margin-bottom:10px;">Empresa</div><div style="line-height:2;">Nosotros<br>Productores<br>Contacto</div></div>
+        <div><div style="color:#fff; font-weight:700; margin-bottom:10px;">Ayuda</div><div style="line-height:2;">Envíos<br>Devoluciones<br>Privacidad</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DETALLE ============ -->
+<section data-screen-label="Detalle de producto" style="padding:48px 56px 0;">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+    <span style="background:#B4552E; color:#fff; font-weight:700; font-size:13px; padding:5px 11px; border-radius:7px;">Detalle de producto</span>
+    <span style="font-size:13px; color:#7d7465;">Trazabilidad expuesta · cantidad · precio vivo</span>
+  </div>
+  <div style="width:1280px; border-radius:14px; overflow:hidden; box-shadow:0 18px 50px rgba(60,35,15,.18); border:1px solid #d8d2c6;">
+    <div style="background:#efeae2; padding:9px 14px; display:flex; align-items:center; gap:8px; border-bottom:1px solid #e0dacd;">
+      <span style="width:11px;height:11px;border-radius:50%;background:#d98a5f;"></span><span style="width:11px;height:11px;border-radius:50%;background:#e0b070;"></span><span style="width:11px;height:11px;border-radius:50%;background:#b7c99a;"></span>
+      <span style="margin-left:12px; background:#fff; border:1px solid #e5dfd3; border-radius:6px; font-size:11px; color:#9a9184; padding:3px 12px; font-family:monospace;">bean.co / producto / sierra-nevada-geisha</span>
+    </div>
+    <div style="background:#1d1510; color:#efe0cd;">
+      <div style="display:flex; align-items:center; gap:24px; padding:16px 36px; border-bottom:1px solid rgba(255,255,255,.08);">
+        <div style="font-family:'Bitter',serif; font-weight:800; font-size:20px; display:flex; align-items:center; gap:8px; color:#fff;"><span style="width:22px;height:22px;border-radius:50% 50% 50% 0;background:linear-gradient(135deg,#d98a5f,#B4552E);display:inline-block;transform:rotate(45deg);"></span>Bean</div>
+        <div style="flex:1;"></div>
+        <div style="display:flex; align-items:center; gap:7px; background:rgba(255,255,255,.08); border-radius:50px; padding:7px 14px; font-size:12.5px; font-weight:600;"><span style="width:7px; height:7px; border-radius:50%; background:#B4552E; animation:pulseDot 2.4s infinite;"></span> Colombia ▾</div>
+        <div style="background:linear-gradient(135deg,#d98a5f,#B4552E); color:#fff; border-radius:50px; padding:8px 16px; font-size:13px; font-weight:700;">Bolsa · 2</div>
+      </div>
+      <div style="background:#FBF7F1; color:#2A2019; padding:32px 40px 46px;">
+        <div style="font-size:13px; color:#8a7761; margin-bottom:22px;"><span style="color:#B4552E; font-weight:600;">Catálogo</span> <span style="opacity:.5;">/</span> Sierra Nevada Geisha</div>
+        <div style="display:grid; grid-template-columns:1fr 1.05fr; gap:44px;">
+          <div style="animation:fadeUp .6s ease both;">
+            <div class="bean" style="--tone:#c9a878; aspect-ratio:1/1; border-radius:20px; position:relative; display:flex; align-items:flex-end; padding:18px; overflow:hidden;">
+              <span style="background:rgba(42,32,25,.82); color:#f4ece0; font-size:12px; font-weight:600; padding:7px 13px; border-radius:8px; font-family:monospace;">[ foto del producto ]</span>
+              <span style="position:absolute; top:16px; left:16px; background:#fff; color:#4A7A54; font-size:12px; font-weight:700; padding:6px 12px; border-radius:50px;">● En stock · 120 bolsas</span>
+              <span style="position:absolute; top:16px; right:16px; background:rgba(42,32,25,.85); color:#f4ece0; font-size:11px; font-weight:700; padding:5px 11px; border-radius:50px;">Lote #SNG-2026-04</span>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:12px;">
+              <div class="bean" style="--tone:#c9a878; width:74px; height:74px; border-radius:12px; border:2px solid #B4552E;"></div>
+              <div class="bean" style="--tone:#b98a5e; width:74px; height:74px; border-radius:12px; transition:transform .25s ease;" style-hover="transform:scale(1.05);"></div>
+              <div class="bean" style="--tone:#a9743f; width:74px; height:74px; border-radius:12px; transition:transform .25s ease;" style-hover="transform:scale(1.05);"></div>
+            </div>
+          </div>
+          <div style="animation:fadeUp .6s ease .12s both;">
+            <div style="font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:#B4552E; font-weight:700;">Magdalena, Colombia · 1.750 msnm</div>
+            <div style="font-family:'Bitter',serif; font-size:38px; font-weight:800; letter-spacing:-.01em; line-height:1.05; margin:6px 0 10px; color:#241a12;">Sierra Nevada Geisha</div>
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px;">
+              <span style="color:#C9962F; font-size:15px;">★★★★★</span>
+              <span style="font-size:13px; color:#7A7161;">4.9 · 38 reseñas</span>
+              <span style="color:#d8cdbf;">·</span>
+              <span style="font-size:13px; color:#4A7A54; font-weight:600;">Finca La Victoria · pago directo</span>
+            </div>
+            <div style="font-size:15.5px; line-height:1.6; color:#5c4a3a; margin-bottom:20px;">Micro-lote lavado de variedad Geisha cultivado en la Sierra Nevada de Santa Marta. Taza limpia y floral, cuerpo sedoso y acidez brillante.</div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px;">
+              <span style="background:#F6EFE7; border:1px solid #EEE3D6; color:#7A6552; font-size:13px; font-weight:600; padding:6px 14px; border-radius:50px;">🌸 Jazmín</span>
+              <span style="background:#F6EFE7; border:1px solid #EEE3D6; color:#7A6552; font-size:13px; font-weight:600; padding:6px 14px; border-radius:50px;">🍑 Durazno</span>
+              <span style="background:#F6EFE7; border:1px solid #EEE3D6; color:#7A6552; font-size:13px; font-weight:600; padding:6px 14px; border-radius:50px;">🍊 Bergamota</span>
+            </div>
+            <div style="background:#fff; border:1px solid #EAE3D8; border-radius:16px; padding:18px 20px; margin-bottom:22px;">
+              <div style="font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:#8a7761; font-weight:700; margin-bottom:12px;">Trazabilidad</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px 20px;">
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #F0E7D8; padding-bottom:8px;"><span style="color:#7A7161; font-size:13px;">Finca</span><span style="font-weight:600; font-size:13px;">La Victoria</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #F0E7D8; padding-bottom:8px;"><span style="color:#7A7161; font-size:13px;">Altura</span><span style="font-weight:600; font-size:13px;">1.750 msnm</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #F0E7D8; padding-bottom:8px;"><span style="color:#7A7161; font-size:13px;">Proceso</span><span style="font-weight:600; font-size:13px;">Lavado</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #F0E7D8; padding-bottom:8px;"><span style="color:#7A7161; font-size:13px;">Variedad</span><span style="font-weight:600; font-size:13px;">Geisha</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#7A7161; font-size:13px;">Lote</span><span style="font-weight:600; font-size:13px;">#SNG-2026-04</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#7A7161; font-size:13px;">Tostado</span><span style="font-weight:600; font-size:13px; color:#4A7A54;">Hace 4 días</span></div>
+              </div>
+            </div>
+            <div style="margin-bottom:14px;"><span style="font-family:'Bitter',serif; font-size:30px; font-weight:800; color:#241a12;">{{ unitPriceLabel }}</span><span style="font-size:14px; color:#8a7761;"> COP / bolsa 340 g</span></div>
+            <div style="display:flex; gap:12px; align-items:stretch;">
+              <div style="display:flex; align-items:center; border:1.5px solid #EAE3D8; border-radius:50px; overflow:hidden; background:#fff;">
+                <span onClick="{{ decQty }}" style="padding:0 18px; font-size:20px; color:#8a7761; font-weight:600; cursor:pointer; user-select:none;">−</span>
+                <span style="padding:12px 6px; font-weight:700; font-size:16px; min-width:36px; text-align:center;">{{ qty }}</span>
+                <span onClick="{{ incQty }}" style="padding:0 18px; font-size:20px; color:#B4552E; font-weight:600; cursor:pointer; user-select:none;">+</span>
+              </div>
+              <span style="flex:1; background:linear-gradient(135deg,#d98a5f,#B4552E); color:#fff; font-weight:700; font-size:16px; border-radius:50px; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 10px 26px rgba(180,85,46,.32); transition:transform .25s ease; cursor:pointer;" style-hover="transform:scale(1.02);">🛍 Agregar al carrito · {{ totalLabel }}</span>
+            </div>
+            <div style="font-size:13px; color:#7A7161; margin-top:12px; display:flex; gap:18px;"><span>✓ Envío a Colombia en 3–5 días</span><span>✓ Pago directo al productor</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CARRITO ============ -->
+<section data-screen-label="Carrito" style="padding:48px 56px 0;">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+    <span style="background:#B4552E; color:#fff; font-weight:700; font-size:13px; padding:5px 11px; border-radius:7px;">Carrito</span>
+    <span style="font-size:13px; color:#7d7465;">Cantidades, resumen y sellos de pago</span>
+  </div>
+  <div style="width:1280px; border-radius:14px; overflow:hidden; box-shadow:0 18px 50px rgba(60,35,15,.18); border:1px solid #d8d2c6;">
+    <div style="background:#efeae2; padding:9px 14px; display:flex; align-items:center; gap:8px; border-bottom:1px solid #e0dacd;">
+      <span style="width:11px;height:11px;border-radius:50%;background:#d98a5f;"></span><span style="width:11px;height:11px;border-radius:50%;background:#e0b070;"></span><span style="width:11px;height:11px;border-radius:50%;background:#b7c99a;"></span>
+      <span style="margin-left:12px; background:#fff; border:1px solid #e5dfd3; border-radius:6px; font-size:11px; color:#9a9184; padding:3px 12px; font-family:monospace;">bean.co / carrito</span>
+    </div>
+    <div style="background:#1d1510;">
+      <div style="display:flex; align-items:center; gap:24px; padding:16px 36px; border-bottom:1px solid rgba(255,255,255,.08); color:#efe0cd;">
+        <div style="font-family:'Bitter',serif; font-weight:800; font-size:20px; display:flex; align-items:center; gap:8px; color:#fff;"><span style="width:22px;height:22px;border-radius:50% 50% 50% 0;background:linear-gradient(135deg,#d98a5f,#B4552E);display:inline-block;transform:rotate(45deg);"></span>Bean</div>
+        <div style="flex:1;"></div>
+        <div style="background:linear-gradient(135deg,#d98a5f,#B4552E); color:#fff; border-radius:50px; padding:8px 16px; font-size:13px; font-weight:700;">Bolsa · 3</div>
+      </div>
+      <div style="background:#FBF7F1; color:#2A2019; padding:32px 40px 46px;">
+        <div style="font-family:'Bitter',serif; font-size:30px; font-weight:800; margin-bottom:22px; color:#241a12;">Tu carrito <span style="font-size:16px; color:#7A7161; font-weight:400; font-family:'DM Sans';">· 3 bolsas · 2 lotes</span></div>
+        <div style="display:grid; grid-template-columns:1.55fr .95fr; gap:28px; align-items:start;">
+          <div style="background:#fff; border:1px solid #EAE3D8; border-radius:18px; overflow:hidden; animation:fadeUp .5s ease both;">
+            <sc-for list="{{ cartItems }}" as="c" hint-placeholder-count="2">
+              <div style="display:flex; align-items:center; gap:16px; padding:18px 20px; border-bottom:1px solid #F0E7D8;">
+                <div class="bean" style="--tone:{{ c.tone }}; width:64px; height:64px; border-radius:12px; flex-shrink:0;"></div>
+                <div style="flex:1;">
+                  <div style="font-family:'Bitter',serif; font-size:17px; font-weight:700; color:#241a12;">{{ c.name }}</div>
+                  <div style="font-size:12.5px; color:#8a7761;">{{ c.origin }} · {{ c.weight }}</div>
+                </div>
+                <div style="display:flex; align-items:center; border:1.5px solid #EAE3D8; border-radius:50px; overflow:hidden; background:#fff;">
+                  <span style="padding:6px 14px; color:#8a7761; font-weight:600; cursor:pointer;">−</span>
+                  <span style="padding:6px 4px; font-weight:700; min-width:28px; text-align:center;">{{ c.qty }}</span>
+                  <span style="padding:6px 14px; color:#B4552E; font-weight:600; cursor:pointer;">+</span>
+                </div>
+                <div style="width:96px; text-align:right; font-family:'Bitter',serif; font-weight:700; font-size:16px;">{{ c.subtotal }}</div>
+                <span style="color:#c98a8a; font-size:15px; cursor:pointer;">🗑</span>
+              </div>
+            </sc-for>
+            <div style="padding:16px 20px;"><span style="color:#B4552E; font-weight:600; font-size:14px;">← Seguir comprando</span></div>
+          </div>
+          <div style="background:#fff; border:1px solid #EAE3D8; border-radius:18px; overflow:hidden; animation:fadeUp .5s ease .1s both;">
+            <div style="padding:18px 22px; border-bottom:1px solid #F0E7D8; font-family:'Bitter',serif; font-size:18px; font-weight:700;">Resumen del pedido</div>
+            <div style="padding:20px 22px;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:14px;"><span style="color:#7A7161;">Subtotal</span><span style="font-weight:600;">$172.000</span></div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:14px;"><span style="color:#7A7161;">Envío a Colombia</span><span style="font-weight:600;">$18.000</span></div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:16px; font-size:14px;"><span style="color:#7A7161;">Impuestos</span><span style="font-weight:600;">Incluidos</span></div>
+              <div style="display:flex; justify-content:space-between; border-top:1px solid #F0E7D8; padding-top:16px; margin-bottom:20px;"><span style="font-family:'Bitter',serif; font-weight:700; font-size:18px;">Total</span><span style="font-family:'Bitter',serif; font-weight:800; font-size:20px; color:#8F4021;">$190.000 <span style="font-size:12px; color:#8a7761; font-weight:400;">COP</span></span></div>
+              <div style="background:linear-gradient(135deg,#d98a5f,#B4552E); color:#fff; font-weight:700; text-align:center; padding:14px; border-radius:50px; font-size:15px; box-shadow:0 10px 26px rgba(180,85,46,.3); transition:transform .25s ease; cursor:pointer;" style-hover="transform:scale(1.02);">Proceder al pago →</div>
+              <div style="display:flex; justify-content:center; gap:10px; margin-top:14px; align-items:center; font-size:11px; color:#9a9184;"><span>🔒 Pago seguro</span><span>·</span><span>Visa · Mastercard · PayPal · PSE</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CHECKOUT ============ -->
+<section data-screen-label="Checkout" style="padding:48px 56px 0;">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+    <span style="background:#B4552E; color:#fff; font-weight:700; font-size:13px; padding:5px 11px; border-radius:7px;">Checkout</span>
+    <span style="font-size:13px; color:#7d7465;">Pasos · Colombia/Canadá · Tarjeta, PayPal, PSE</span>
+  </div>
+  <div style="width:1280px; border-radius:14px; overflow:hidden; box-shadow:0 18px 50px rgba(60,35,15,.18); border:1px solid #d8d2c6;">
+    <div style="background:#efeae2; padding:9px 14px; display:flex; align-items:center; gap:8px; border-bottom:1px solid #e0dacd;">
+      <span style="width:11px;height:11px;border-radius:50%;background:#d98a5f;"></span><span style="width:11px;height:11px;border-radius:50%;background:#e0b070;"></span><span style="width:11px;height:11px;border-radius:50%;background:#b7c99a;"></span>
+      <span style="margin-left:12px; background:#fff; border:1px solid #e5dfd3; border-radius:6px; font-size:11px; color:#9a9184; padding:3px 12px; font-family:monospace;">bean.co / checkout</span>
+    </div>
+    <div style="background:#1d1510;">
+      <div style="display:flex; align-items:center; gap:24px; padding:16px 36px; border-bottom:1px solid rgba(255,255,255,.08); color:#efe0cd;">
+        <div style="font-family:'Bitter',serif; font-weight:800; font-size:20px; display:flex; align-items:center; gap:8px; color:#fff;"><span style="width:22px;height:22px;border-radius:50% 50% 50% 0;background:linear-gradient(135deg,#d98a5f,#B4552E);display:inline-block;transform:rotate(45deg);"></span>Bean</div>
+        <div style="flex:1;"></div>
+        <span style="font-size:12px; color:#a08b73;">🔒 Checkout seguro</span>
+      </div>
+      <div style="background:#FBF7F1; color:#2A2019; padding:28px 40px 46px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:26px; font-size:13px; font-weight:600;">
+          <span style="display:flex; align-items:center; gap:7px; color:#8F4021;"><span style="background:linear-gradient(135deg,#d98a5f,#B4552E); color:#fff; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px;">1</span>Envío</span>
+          <span style="width:26px; height:1.5px; background:#d8cbbc;"></span>
+          <span style="display:flex; align-items:center; gap:7px; color:#8F4021;"><span style="background:linear-gradient(135deg,#d98a5f,#B4552E); color:#fff; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px;">2</span>Pago</span>
+          <span style="width:26px; height:1.5px; background:#d8cbbc;"></span>
+          <span style="display:flex; align-items:center; gap:7px; color:#a89a89;"><span style="background:#e6ddce; color:#8a7761; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px;">3</span>Confirmación</span>
+        </div>
+        <div style="display:grid; grid-template-columns:1.5fr 1fr; gap:34px; align-items:start;">
+          <div style="animation:fadeUp .5s ease both;">
+            <div style="font-family:'Bitter',serif; font-size:20px; font-weight:700; margin-bottom:16px;">Dirección de envío</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+              <div><div style="font-size:12px; color:#7A7161; font-weight:600; margin-bottom:6px;">Nombre</div><div style="background:#fff; border:1px solid #EAE3D8; border-radius:12px; padding:11px 13px; font-size:14px; color:#241a12;">Andrés</div></div>
+              <div><div style="font-size:12px; color:#7A7161; font-weight:600; margin-bottom:6px;">Apellido</div><div style="background:#fff; border:1px solid #EAE3D8; border-radius:12px; padding:11px 13px; font-size:14px; color:#241a12;">Camacho</div></div>
+            </div>
+            <div style="margin-bottom:14px;"><div style="font-size:12px; color:#7A7161; font-weight:600; margin-bottom:6px;">Dirección</div><div style="background:#fff; border:1px solid #EAE3D8; border-radius:12px; padding:11px 13px; font-size:14px; color:#241a12;">Calle 123 #45-67</div></div>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-bottom:24px;">
+              <div><div style="font-size:12px; color:#7A7161; font-weight:600; margin-bottom:6px;">País</div><div style="background:#fff; border:1px solid #EAE3D8; border-radius:12px; padding:11px 13px; font-size:14px; color:#241a12; display:flex; justify-content:space-between;">Colombia <span style="color:#8a7761;">▾</span></div></div>
+              <div><div style="font-size:12px; color:#7A7161; font-weight:600; margin-bottom:6px;">Departamento</div><div style="background:#fff; border:1px solid #EAE3D8; border-radius:12px; padding:11px 13px; font-size:14px; color:#241a12; display:flex; justify-content:space-between;">Bogotá D.C. <span style="color:#8a7761;">▾</span></div></div>
+              <div><div style="font-size:12px; color:#7A7161; font-weight:600; margin-bottom:6px;">Código postal</div><div style="background:#fff; border:1px solid #EAE3D8; border-radius:12px; padding:11px 13px; font-size:14px; color:#a89a89;">110111</div></div>
+            </div>
+            <div style="font-family:'Bitter',serif; font-size:20px; font-weight:700; margin-bottom:16px;">Método de pago</div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <div style="display:flex; align-items:center; gap:12px; background:#fff; border:1.5px solid #B4552E; border-radius:14px; padding:14px 16px; box-shadow:0 6px 18px rgba(180,85,46,.12);"><span style="width:18px; height:18px; border-radius:50%; border:5px solid #B4552E;"></span><span style="font-weight:600; font-size:14px;">Tarjeta de crédito / débito</span><div style="flex:1;"></div><span style="font-size:12px; color:#9a9184; font-family:monospace;">VISA · MC</span></div>
+              <div style="display:flex; align-items:center; gap:12px; background:#fff; border:1.5px solid #EAE3D8; border-radius:14px; padding:14px 16px; transition:border-color .25s ease;" style-hover="border-color:#d8a88f;"><span style="width:18px; height:18px; border-radius:50%; border:2px solid #d8cbbc;"></span><span style="font-weight:600; font-size:14px; color:#5c4a3a;">PayPal</span></div>
+              <div style="display:flex; align-items:center; gap:12px; background:#fff; border:1.5px solid #EAE3D8; border-radius:14px; padding:14px 16px; transition:border-color .25s ease;" style-hover="border-color:#d8a88f;"><span style="width:18px; height:18px; border-radius:50%; border:2px solid #d8cbbc;"></span><span style="font-weight:600; font-size:14px; color:#5c4a3a;">PSE · Débito bancario</span></div>
+            </div>
+          </div>
+          <div style="background:#fff; border:1px solid #EAE3D8; border-radius:18px; overflow:hidden; animation:fadeUp .5s ease .1s both;">
+            <div style="padding:18px 22px; border-bottom:1px solid #F0E7D8; font-family:'Bitter',serif; font-size:18px; font-weight:700;">Tu orden</div>
+            <div style="padding:16px 22px;">
+              <sc-for list="{{ cartItems }}" as="c" hint-placeholder-count="2">
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+                  <div class="bean" style="--tone:{{ c.tone }}; width:44px; height:44px; border-radius:10px; flex-shrink:0;"></div>
+                  <div style="flex:1;"><div style="font-size:14px; font-weight:600;">{{ c.name }}</div><div style="font-size:12px; color:#8a7761;">Cant: {{ c.qty }}</div></div>
+                  <div style="font-size:14px; font-weight:600;">{{ c.subtotal }}</div>
+                </div>
+              </sc-for>
+              <div style="border-top:1px solid #F0E7D8; padding-top:14px; margin-top:6px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:14px;"><span style="color:#7A7161;">Subtotal</span><span style="font-weight:600;">$172.000</span></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:14px; font-size:14px;"><span style="color:#7A7161;">Envío</span><span style="font-weight:600;">$18.000</span></div>
+                <div style="display:flex; justify-content:space-between; border-top:1px solid #F0E7D8; padding-top:14px; margin-bottom:18px;"><span style="font-family:'Bitter',serif; font-weight:700; font-size:17px;">Total</span><span style="font-family:'Bitter',serif; font-weight:800; font-size:19px; color:#8F4021;">$190.000</span></div>
+                <div style="background:linear-gradient(135deg,#d98a5f,#B4552E); color:#fff; font-weight:700; text-align:center; padding:14px; border-radius:50px; font-size:15px; box-shadow:0 10px 26px rgba(180,85,46,.3); transition:transform .25s ease; cursor:pointer;" style-hover="transform:scale(1.02);">Pagar $190.000 COP</div>
+                <div style="text-align:center; font-size:11px; color:#9a9184; margin-top:12px;">🔒 Transacción cifrada · Devolución garantizada</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONFIRMACIÓN + SEGUIMIENTO ============ -->
+<section data-screen-label="Confirmación de pedido" style="padding:48px 56px 0;">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+    <span style="background:#B4552E; color:#fff; font-weight:700; font-size:13px; padding:5px 11px; border-radius:7px;">Confirmación · Seguimiento</span>
+    <span style="font-size:13px; color:#7d7465;">Paso 3 del checkout + línea de tiempo del envío</span>
+  </div>
+  <div style="width:1280px; border-radius:14px; overflow:hidden; box-shadow:0 18px 50px rgba(60,35,15,.18); border:1px solid #d8d2c6;">
+    <div style="background:#efeae2; padding:9px 14px; display:flex; align-items:center; gap:8px; border-bottom:1px solid #e0dacd;">
+      <span style="width:11px;height:11px;border-radius:50%;background:#d98a5f;"></span><span style="width:11px;height:11px;border-radius:50%;background:#e0b070;"></span><span style="width:11px;height:11px;border-radius:50%;background:#b7c99a;"></span>
+      <span style="margin-left:12px; background:#fff; border:1px solid #e5dfd3; border-radius:6px; font-size:11px; color:#9a9184; padding:3px 12px; font-family:monospace;">bean.co / pedido / 2864</span>
+    </div>
+    <div style="background:#1d1510;">
+      <div style="display:flex; align-items:center; gap:24px; padding:16px 36px; border-bottom:1px solid rgba(255,255,255,.08); color:#efe0cd;">
+        <div style="font-family:'Bitter',serif; font-weight:800; font-size:20px; display:flex; align-items:center; gap:8px; color:#fff;"><span style="width:22px;height:22px;border-radius:50% 50% 50% 0;background:linear-gradient(135deg,#d98a5f,#B4552E);display:inline-block;transform:rotate(45deg);"></span>Bean</div>
+        <div style="flex:1;"></div>
+        <span style="font-size:13px; font-weight:600; color:#b8a58f;">Mis pedidos</span>
+      </div>
+      <div style="background:#FBF7F1; color:#2A2019; padding:40px 40px 46px;">
+        <div style="text-align:center; margin-bottom:30px; animation:fadeUp .5s ease both;">
+          <span style="display:inline-flex; width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg,#5f9a6e,#3f7a50); color:#fff; font-size:28px; align-items:center; justify-content:center; box-shadow:0 12px 30px rgba(63,122,80,.3); margin-bottom:16px;">✓</span>
+          <div style="font-family:'Bitter',serif; font-size:32px; font-weight:800; color:#241a12;">¡Gracias, Andrés! Tu café va en camino.</div>
+          <div style="font-size:15px; color:#7A7161; margin-top:8px;">Pedido <strong style="color:#241a12;">#2864</strong> · confirmado el 17 jul 2026 · enviamos el comprobante a andres@correo.com</div>
+        </div>
+        <div style="display:grid; grid-template-columns:1.5fr 1fr; gap:28px; align-items:start;">
+          <div style="background:#fff; border:1px solid #EAE3D8; border-radius:18px; padding:24px 26px; animation:fadeUp .5s ease .1s both;">
+            <div style="font-family:'Bitter',serif; font-size:18px; font-weight:700; margin-bottom:22px;">Seguimiento del envío</div>
+            <div style="display:flex; flex-direction:column;">
+              <sc-for list="{{ tracking }}" as="t" hint-placeholder-count="4">
+                <div style="display:flex; gap:16px;">
+                  <div style="display:flex; flex-direction:column; align-items:center;">
+                    <span style="width:26px; height:26px; border-radius:50%; background:{{ t.dotBg }}; color:{{ t.dotFg }}; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; border:{{ t.dotBorder }};">{{ t.icon }}</span>
+                    <span style="width:2px; flex:1; background:{{ t.lineColor }}; min-height:26px; display:{{ t.lineDisplay }};"></span>
+                  </div>
+                  <div style="padding-bottom:22px;">
+                    <div style="font-size:14.5px; font-weight:700; color:{{ t.titleColor }};">{{ t.title }}</div>
+                    <div style="font-size:12.5px; color:#8a7761; margin-top:2px;">{{ t.desc }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="background:#F6EFE7; border-radius:12px; padding:13px 16px; font-size:13px; color:#7A6552; display:flex; gap:10px; align-items:center;"><span>📦</span><span>Entrega estimada: <strong style="color:#8F4021;">lunes 21 de julio</strong> · Guía Servientrega <strong>SV-99823410</strong></span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:18px; animation:fadeUp .5s ease .2s both;">
+            <div style="background:#fff; border:1px solid #EAE3D8; border-radius:18px; overflow:hidden;">
+              <div style="padding:16px 22px; border-bottom:1px solid #F0E7D8; font-family:'Bitter',serif; font-size:16px; font-weight:700;">Resumen</div>
+              <div style="padding:16px 22px;">
+                <sc-for list="{{ cartItems }}" as="c" hint-placeholder-count="2">
+                  <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                    <div class="bean" style="--tone:{{ c.tone }}; width:40px; height:40px; border-radius:9px; flex-shrink:0;"></div>
+                    <div style="flex:1;"><div style="font-size:13.5px; font-weight:600;">{{ c.name }}</div><div style="font-size:11.5px; color:#8a7761;">Cant: {{ c.qty }}</div></div>
+                    <div style="font-size:13.5px; font-weight:600;">{{ c.subtotal }}</div>
+                  </div>
+                </sc-for>
+                <div style="display:flex; justify-content:space-between; border-top:1px solid #F0E7D8; padding-top:12px;"><span style="font-family:'Bitter',serif; font-weight:700; font-size:15px;">Total pagado</span><span style="font-family:'Bitter',serif; font-weight:800; font-size:16px; color:#8F4021;">$190.000 COP</span></div>
+                <div style="font-size:12px; color:#9a9184; margin-top:6px;">Tarjeta ···· 4412 · Calle 123 #45-67, Bogotá</div>
+              </div>
+            </div>
+            <div style="background:linear-gradient(135deg,#2b1c13,#1d1510); border-radius:18px; padding:20px 22px; color:#efe0cd;">
+              <div style="font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:#e8a582; font-weight:700; margin-bottom:8px;">Mientras llega</div>
+              <div style="font-family:'Bitter',serif; font-size:17px; font-weight:700; color:#fff; line-height:1.3; margin-bottom:12px;">Conoce la Finca La Victoria y su proceso de lavado.</div>
+              <span style="display:inline-block; border:1.5px solid rgba(255,255,255,.3); color:#fff; font-weight:700; font-size:12.5px; padding:9px 18px; border-radius:50px;">Leer la historia →</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MIS PEDIDOS ============ -->
+<section data-screen-label="Mis pedidos" style="padding:48px 56px 0;">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+    <span style="background:#B4552E; color:#fff; font-weight:700; font-size:13px; padding:5px 11px; border-radius:7px;">Mis pedidos · Cliente</span>
+    <span style="font-size:13px; color:#7d7465;">Historial con estados, reordenar en un clic</span>
+  </div>
+  <div style="width:1280px; border-radius:14px; overflow:hidden; box-shadow:0 18px 50px rgba(60,35,15,.18); border:1px solid #d8d2c6;">
+    <div style="background:#efeae2; padding:9px 14px; display:flex; align-items:center; gap:8px; border-bottom:1px solid #e0dacd;">
+      <span style="width:11px;height:11px;border-radius:50%;background:#d98a5f;"></span><span style="width:11px;height:11px;border-radius:50%;background:#e0b070;"></span><span style="width:11px;height:11px;border-radius:50%;background:#b7c99a;"></span>
+      <span style="margin-left:12px; background:#fff; border:1px solid #e5dfd3; border-radius:6px; font-size:11px; color:#9a9184; padding:3px 12px; font-family:monospace;">bean.co / cuenta / pedidos</span>
+    </div>
+    <div style="background:#1d1510;">
+      <div style="display:flex; align-items:center; gap:24px; padding:16px 36px; border-bottom:1px solid rgba(255,255,255,.08); color:#efe0cd;">
+        <div style="font-family:'Bitter',serif; font-weight:800; font-size:20px; display:flex; align-items:center; gap:8px; color:#fff;"><span style="width:22px;height:22px;border-radius:50% 50% 50% 0;background:linear-gradient(135deg,#d98a5f,#B4552E);display:inline-block;transform:rotate(45deg);"></span>Bean</div>
+        <div style="flex:1;"></div>
+        <span style="width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg,#d98a5f,#B4552E); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:12px;">A</span>
+      </div>
+      <div style="background:#FBF7F1; color:#2A2019; padding:32px 40px 46px; display:grid; grid-template-columns:220px 1fr; gap:30px;">
+        <div>
+          <div style="font-family:'Bitter',serif; font-size:20px; font-weight:800; color:#241a12; margin-bottom:18px;">Hola, Andrés</div>
+          <div style="display:flex; flex-direction:column; gap:4px; font-size:14px; font-weight:600; color:#7A7161;">
+            <div style="background:#F6E9E1; color:#8F4021; border-radius:10px; padding:10px 14px;">Mis pedidos</div>
+            <div style="padding:10px 14px;">Direcciones</div>
+            <div style="padding:10px 14px;">Métodos de pago</div>
+            <div style="padding:10px 14px;">Mis reseñas</div>
+            <div style="padding:10px 14px;">Cerrar sesión</div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;">
+            <div style="font-family:'Bitter',serif; font-size:24px; font-weight:800; color:#241a12;">Mis pedidos</div>
+            <div style="display:flex; gap:8px;"><span style="background:#241a12; color:#fff; padding:7px 14px; border-radius:50px; font-size:12.5px; font-weight:600;">Todos</span><span style="background:#fff; border:1px solid #EAE3D8; padding:7px 14px; border-radius:50px; font-size:12.5px; font-weight:600; color:#7A7161;">En camino</span><span style="background:#fff; border:1px solid #EAE3D8; padding:7px 14px; border-radius:50px; font-size:12.5px; font-weight:600; color:#7A7161;">Entregados</span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <sc-for list="{{ orders }}" as="o" hint-placeholder-count="3">
+              <div style="background:#fff; border:1px solid #EAE3D8; border-radius:16px; padding:16px 20px; display:grid; grid-template-columns:auto 1.5fr 1fr auto auto; gap:18px; align-items:center; animation:fadeUp .5s ease both; animation-delay:{{ o.delay }};">
+                <div style="display:flex;">
+                  <div class="bean" style="--tone:{{ o.tone1 }}; width:44px; height:44px; border-radius:10px; border:2px solid #fff;"></div>
+                  <div class="bean" style="--tone:{{ o.tone2 }}; width:44px; height:44px; border-radius:10px; border:2px solid #fff; margin-left:-14px;"></div>
+                </div>
+                <div><div style="font-size:14.5px; font-weight:700; color:#241a12;">Pedido {{ o.id }}</div><div style="font-size:12px; color:#8a7761;">{{ o.date }} · {{ o.items }}</div></div>
+                <div><div style="font-size:11.5px; color:#9a9184;">Total</div><div style="font-size:14.5px; font-weight:700; font-family:'Bitter',serif;">{{ o.total }}</div></div>
+                <span style="background:{{ o.badgeBg }}; color:{{ o.badgeFg }}; font-size:11px; font-weight:700; padding:5px 12px; border-radius:50px; white-space:nowrap;">{{ o.status }}</span>
+                <span style="border:1.5px solid #B4552E; color:#B4552E; font-weight:700; font-size:12.5px; padding:8px 16px; border-radius:50px; cursor:pointer; white-space:nowrap;" style-hover="background:#B4552E; color:#fff;">{{ o.action }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ACCESO / REGISTRO ============ -->
+<section data-screen-label="Acceso y registro" style="padding:48px 56px 0;">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+    <span style="background:#B4552E; color:#fff; font-weight:700; font-size:13px; padding:5px 11px; border-radius:7px;">Acceso · Registro</span>
+    <span style="font-size:13px; color:#7d7465;">Entrar + elección clara: cliente o empresa (mayoreo)</span>
+  </div>
+  <div style="width:1280px; border-radius:14px; overflow:hidden; box-shadow:0 18px 50px rgba(60,35,15,.18); border:1px solid #d8d2c6;">
+    <div style="background:#efeae2; padding:9px 14px; display:flex; align-items:center; gap:8px; border-bottom:1px solid #e0dacd;">
+      <span style="width:11px;height:11px;border-radius:50%;background:#d98a5f;"></span><span style="width:11px;height:11px;border-radius:50%;background:#e0b070;"></span><span style="width:11px;height:11px;border-radius:50%;background:#b7c99a;"></span>
+      <span style="margin-left:12px; background:#fff; border:1px solid #e5dfd3; border-radius:6px; font-size:11px; color:#9a9184; padding:3px 12px; font-family:monospace;">bean.co / entrar</span>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1.1fr; min-height:560px;">
+      <div style="background:#1d1510; color:#efe0cd; position:relative; overflow:hidden; padding:44px; display:flex; flex-direction:column;">
+        <div class="bean" style="--tone:transparent; position:absolute; inset:0; opacity:.2;"></div>
+        <div style="position:relative; font-family:'Bitter',serif; font-weight:800; font-size:22px; display:flex; align-items:center; gap:9px; color:#fff;"><span style="width:24px;height:24px;border-radius:50% 50% 50% 0;background:linear-gradient(135deg,#d98a5f,#B4552E);display:inline-block;transform:rotate(45deg);"></span>Bean</div>
+        <div style="position:relative; margin-top:auto;">
+          <div style="font-family:'Bitter',serif; font-size:38px; font-weight:800; line-height:1.05; color:#fff; margin-bottom:14px;">Tu café te está esperando.</div>
+          <div style="font-size:15px; color:#c9b8a4; line-height:1.55; max-width:340px;">Guarda tus lotes favoritos, sigue tus envíos y recibe primero el tueste de cada semana.</div>
+          <div style="display:flex; gap:22px; margin-top:26px; font-size:13px; color:#a08b73;"><span>✓ Trazabilidad total</span><span>✓ Comercio justo</span></div>
+        </div>
+      </div>
+      <div style="background:#FBF7F1; color:#2A2019; padding:44px 52px; display:flex; flex-direction:column; justify-content:center;">
+        <div style="display:flex; background:#F0E9DD; border-radius:50px; padding:4px; margin-bottom:26px; width:fit-content;">
+          <span style="background:#fff; color:#241a12; font-weight:700; font-size:13.5px; padding:9px 22px; border-radius:50px; box-shadow:0 2px 8px rgba(60,35,15,.1);">Entrar</span>
+          <span style="color:#7A7161; font-weight:600; font-size:13.5px; padding:9px 22px;">Crear cuenta</span>
+        </div>
+        <div style="margin-bottom:14px;"><div style="font-size:12px; color:#7A7161; font-weight:600; margin-bottom:6px;">Correo electrónico</div><div style="background:#fff; border:1px solid #EAE3D8; border-radius:12px; padding:12px 14px; font-size:14px; color:#241a12;">andres@correo.com</div></div>
+        <div style="margin-bottom:8px;"><div style="font-size:12px; color:#7A7161; font-weight:600; margin-bottom:6px;">Contraseña</div><div style="background:#fff; border:1.5px solid #B4552E; border-radius:12px; padding:12px 14px; font-size:14px; color:#241a12; display:flex; justify-content:space-between;">••••••••<span style="color:#9a9184; font-size:12px;">Mostrar</span></div></div>
+        <div style="font-size:12.5px; color:#B4552E; font-weight:600; margin-bottom:20px;">¿Olvidaste tu contraseña?</div>
+        <div style="background:linear-gradient(135deg,#d98a5f,#B4552E); color:#fff; font-weight:700; text-align:center; padding:14px; border-radius:50px; font-size:15px; box-shadow:0 10px 26px rgba(180,85,46,.3); margin-bottom:24px;">Entrar</div>
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px;"><span style="flex:1; height:1px; background:#EAE3D8;"></span><span style="font-size:12px; color:#9a9184;">¿Compras para tu negocio?</span><span style="flex:1; height:1px; background:#EAE3D8;"></span></div>
+        <div style="border:1.5px solid #EAE3D8; background:#fff; border-radius:16px; padding:16px 18px; display:flex; align-items:center; gap:14px; transition:border-color .25s ease;" style-hover="border-color:#B4552E;">
+          <span style="font-size:22px;">🏪</span>
+          <div style="flex:1;"><div style="font-size:14px; font-weight:700; color:#241a12;">Registra tu empresa</div><div style="font-size:12.5px; color:#8a7761;">Precios de mayoreo, cupo mensual y facturación.</div></div>
+          <span style="color:#B4552E; font-weight:700;">→</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ESTADOS VACÍOS ============ -->
+<section data-screen-label="Estados vacíos" style="padding:48px 56px 90px;">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+    <span style="background:#B4552E; color:#fff; font-weight:700; font-size:13px; padding:5px 11px; border-radius:7px;">Estados vacíos</span>
+    <span style="font-size:13px; color:#7d7465;">Carrito vacío · sin resultados · sin stock en tu país</span>
+  </div>
+  <div style="display:flex; gap:24px;">
+    <div style="width:410px; background:#FBF7F1; border:1px solid #d8d2c6; border-radius:14px; padding:44px 32px; text-align:center;">
+      <span style="display:inline-flex; width:58px; height:58px; border-radius:50%; background:#F6E9E1; align-items:center; justify-content:center; font-size:24px; margin-bottom:16px;">🛍</span>
+      <div style="font-family:'Bitter',serif; font-size:20px; font-weight:800; color:#241a12; margin-bottom:8px;">Tu carrito está vacío</div>
+      <div style="font-size:13.5px; color:#7A7161; line-height:1.5; margin-bottom:20px;">El tueste de esta semana ya está disponible — 6 lotes con envío a Colombia.</div>
+      <span style="display:inline-block; background:linear-gradient(135deg,#d98a5f,#B4552E); color:#fff; font-weight:700; padding:12px 24px; border-radius:50px; font-size:14px;">Explorar catálogo</span>
+    </div>
+    <div style="width:410px; background:#FBF7F1; border:1px solid #d8d2c6; border-radius:14px; padding:44px 32px; text-align:center;">
+      <span style="display:inline-flex; width:58px; height:58px; border-radius:50%; background:#F6E9E1; align-items:center; justify-content:center; font-size:24px; margin-bottom:16px;">🔍</span>
+      <div style="font-family:'Bitter',serif; font-size:20px; font-weight:800; color:#241a12; margin-bottom:8px;">Sin resultados para “gesha rosa”</div>
+      <div style="font-size:13.5px; color:#7A7161; line-height:1.5; margin-bottom:20px;">Prueba con otra nota de cata u origen. Quizá buscabas:</div>
+      <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+        <span style="background:#fff; border:1px solid #EAE3D8; color:#7A6552; font-size:12.5px; font-weight:600; padding:7px 14px; border-radius:50px;">Geisha</span>
+        <span style="background:#fff; border:1px solid #EAE3D8; color:#7A6552; font-size:12.5px; font-weight:600; padding:7px 14px; border-radius:50px;">Pink Bourbon</span>
+        <span style="background:#fff; border:1px solid #EAE3D8; color:#7A6552; font-size:12.5px; font-weight:600; padding:7px 14px; border-radius:50px;">Floral</span>
+      </div>
+    </div>
+    <div style="width:410px; background:#FBF7F1; border:1px solid #d8d2c6; border-radius:14px; padding:44px 32px; text-align:center;">
+      <span style="display:inline-flex; width:58px; height:58px; border-radius:50%; background:#F6E9E1; align-items:center; justify-content:center; font-size:24px; margin-bottom:16px;">◍</span>
+      <div style="font-family:'Bitter',serif; font-size:20px; font-weight:800; color:#241a12; margin-bottom:8px;">Este lote no llega a Canadá aún</div>
+      <div style="font-size:13.5px; color:#7A7161; line-height:1.5; margin-bottom:20px;">“Tolima Decaf” solo tiene envío a Colombia por ahora. Te avisamos cuando cruce la frontera.</div>
+      <span style="display:inline-block; border:1.5px solid #B4552E; color:#B4552E; font-weight:700; padding:12px 24px; border-radius:50px; font-size:14px;">Avisarme cuando llegue</span>
+    </div>
+  </div>
+</section></x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { qty: 2 };
+  renderVals() {
+    const products = [
+      { name: 'Sierra Nevada Geisha', origin: 'Magdalena, Colombia', provider: 'Finca La Victoria', altitude: '1.750 msnm', process: 'Lavado', rating: '4.9', price: '$62.000', tone: '#c9a878', notes: ['Jazmín','Durazno','Bergamota'] },
+      { name: 'Huila Reserva', origin: 'Huila, Colombia', provider: 'Coop. Pitalito', altitude: '1.600 msnm', process: 'Honey', rating: '4.8', price: '$48.000', tone: '#b98a5e', notes: ['Panela','Cacao','Naranja'] },
+      { name: 'Nariño Alto', origin: 'Nariño, Colombia', provider: 'Finca El Mirador', altitude: '2.100 msnm', process: 'Lavado', rating: '4.9', price: '$54.000', tone: '#a9743f', notes: ['Cereza','Miel','Cítricos'] },
+      { name: 'Antioquia Natural', origin: 'Antioquia, Colombia', provider: 'Hacienda Támesis', altitude: '1.550 msnm', process: 'Natural', rating: '4.7', price: '$45.000', tone: '#8f5a34', notes: ['Fresa','Vino','Chocolate'] },
+      { name: 'Yirgacheffe G1', origin: 'Yirgacheffe, Etiopía', provider: 'Import · Konga', altitude: '2.000 msnm', process: 'Lavado', rating: '5.0', price: '$68.000', tone: '#c2925a', notes: ['Limón','Té negro','Floral'] },
+      { name: 'Tolima Decaf', origin: 'Tolima, Colombia', provider: 'Coop. Planadas', altitude: '1.700 msnm', process: 'Descaf.', rating: '4.6', price: '$52.000', tone: '#a67c52', notes: ['Caramelo','Almendra','Manzana'] },
+    ];
+    const lotsAnim = products.map((p, i) => Object.assign({}, p, { delay: (0.05 + i * 0.08).toFixed(2) + 's' }));
+    const cartItems = [
+      { name: 'Sierra Nevada Geisha', origin: 'Magdalena, Colombia', weight: '340 g', qty: '2', subtotal: '$124.000', tone: '#c9a878' },
+      { name: 'Huila Reserva', origin: 'Huila, Colombia', weight: '340 g', qty: '1', subtotal: '$48.000', tone: '#b98a5e' },
+    ];
+    const unit = 62000;
+    const fmt = n => '$' + n.toLocaleString('es-CO');
+    const tracking = [
+      { icon: '✓', title: 'Pedido confirmado', desc: '17 jul, 10:24 — pago aprobado con tarjeta ···· 4412', dotBg: 'linear-gradient(135deg,#5f9a6e,#3f7a50)', dotFg: '#fff', dotBorder: 'none', lineColor: '#3f7a50', lineDisplay: 'block', titleColor: '#241a12' },
+      { icon: '✓', title: 'Tostado y empacado', desc: '17 jul, 16:40 — Finca La Victoria preparó tu lote', dotBg: 'linear-gradient(135deg,#5f9a6e,#3f7a50)', dotFg: '#fff', dotBorder: 'none', lineColor: '#3f7a50', lineDisplay: 'block', titleColor: '#241a12' },
+      { icon: '●', title: 'En camino', desc: 'Salió del centro de distribución de Bogotá', dotBg: '#fff', dotFg: '#B4552E', dotBorder: '2px solid #B4552E', lineColor: '#EAE3D8', lineDisplay: 'block', titleColor: '#B4552E' },
+      { icon: '', title: 'Entregado', desc: 'Estimado: lunes 21 de julio', dotBg: '#F0E9DD', dotFg: '#9a9184', dotBorder: 'none', lineColor: 'transparent', lineDisplay: 'none', titleColor: '#a89a89' },
+    ];
+    const orders = [
+      { id: '#2864', date: '17 jul 2026', items: '3 bolsas · 2 lotes', total: '$190.000', status: 'En camino', badgeBg: '#F6E9E1', badgeFg: '#8F4021', action: 'Seguir envío', tone1: '#c9a878', tone2: '#b98a5e', delay: '0.05s' },
+      { id: '#2731', date: '28 jun 2026', items: '2 bolsas · 1 lote', total: '$124.000', status: 'Entregado', badgeBg: '#E8F2EA', badgeFg: '#3f7a50', action: 'Volver a pedir', tone1: '#a9743f', tone2: '#c9a878', delay: '0.12s' },
+      { id: '#2590', date: '30 may 2026', items: '4 bolsas · 3 lotes', total: '$212.000', status: 'Entregado', badgeBg: '#E8F2EA', badgeFg: '#3f7a50', action: 'Volver a pedir', tone1: '#8f5a34', tone2: '#a67c52', delay: '0.19s' },
+    ];
+    return {
+      products, lotsAnim, cartItems, tracking, orders,
+      qty: this.state.qty,
+      unitPriceLabel: fmt(unit),
+      totalLabel: fmt(unit * this.state.qty),
+      incQty: () => this.setState(s => ({ qty: Math.min(s.qty + 1, 99) })),
+      decQty: () => this.setState(s => ({ qty: Math.max(s.qty - 1, 1) })),
+    };
+  }
+}
+</script>
+</body>
+</html>
