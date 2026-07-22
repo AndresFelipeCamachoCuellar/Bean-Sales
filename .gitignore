@@ -55,3 +55,7 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Build/debug logs sueltos
+Web/build_*.txt
+Web/*build_error*.txt
