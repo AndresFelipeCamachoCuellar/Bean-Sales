@@ -2,92 +2,127 @@
 
 @{
     ViewData["Title"] = "Checkout";
+    var co = new System.Globalization.CultureInfo("es-CO");
+    // Importes servidos por el controlador (fuente única del costo de envío).
+    var envio = (decimal)ViewBag.Shipping;
+    var granTotal = (decimal)ViewBag.GrandTotal;
 }
 
-<div class="container py-5">
-    <div class="row">
-        <div class="col-md-8">
-            <h4 class="mb-3">Dirección de Envío</h4>
-            <form class="needs-validation" novalidate>
-                <div class="row g-3">
-                    <div class="col-sm-6">
-                        <label for="firstName" class="form-label">Nombre</label>
-                        <input type="text" class="form-control" id="firstName" placeholder="" value="@User.Identity.Name" required>
-                    </div>
-
-                    <div class="col-sm-6">
-                        <label for="lastName" class="form-label">Apellido</label>
-                        <input type="text" class="form-control" id="lastName" placeholder="" value="" required>
-                    </div>
-
-                    <div class="col-12">
-                        <label for="address" class="form-label">Dirección</label>
-                        <input type="text" class="form-control" id="address" placeholder="Calle 123 #45-67" required>
-                    </div>
-
-                    <div class="col-md-5">
-                        <label for="country" class="form-label">País</label>
-                        <select class="form-select" id="country" required>
-                            <option value="">Seleccionar...</option>
-                            <option>Colombia</option>
-                            <option>Canada</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-4">
-                        <label for="state" class="form-label">Departamento/Estado</label>
-                        <select class="form-select" id="state" required>
-                            <option value="">Seleccionar...</option>
-                            <option>Bogotá D.C.</option>
-                            <option>Antioquia</option>
-                        </select>
-                    </div>
-                </div>
-
-                <hr class="my-4">
-
-                <h4 class="mb-3">Pago</h4>
-                <div class="my-3">
-                    <div class="form-check">
-                        <input id="credit" name="paymentMethod" type="radio" class="form-check-input" checked required>
-                        <label class="form-check-label" for="credit">Tarjeta de Crédito</label>
-                    </div>
-                    <div class="form-check">
-                        <input id="debit" name="paymentMethod" type="radio" class="form-check-input" required>
-                        <label class="form-check-label" for="debit">PSE / Debit Card</label>
-                    </div>
-                </div>
-
-                <hr class="my-4">
-
-                <button class="w-100 btn btn-primary btn-lg rounded-pill" type="submit">Pagar @ViewBag.Total.ToString("C")</button>
-            </form>
+<section class="bean-checkout">
+    <div class="bean-container">
+        <!-- Stepper de pasos -->
+        <div class="bean-steps">
+            <div class="bean-step active"><span class="num">1</span> Envío</div>
+            <div class="bean-step-line"></div>
+            <div class="bean-step active"><span class="num">2</span> Pago</div>
+            <div class="bean-step-line"></div>
+            <div class="bean-step"><span class="num">3</span> Confirmación</div>
         </div>
-        
-        <div class="col-md-4">
-             <div class="card shadow-sm">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">Tu Orden</h5>
-                </div>
-                <div class="card-body">
-                    <ul class="list-group list-group-flush mb-3">
-                        @foreach(var item in Model)
-                        {
-                            <li class="list-group-item d-flex justify-content-between lh-sm px-0">
-                                <div>
-                                    <h6 class="my-0">@item.Product?.Name</h6>
-                                    <small class="text-muted">Cant: @item.Quantity</small>
-                                </div>
-                                <span class="text-muted">@((item.Quantity * (item.Product?.Price ?? 0)).ToString("C"))</span>
-                            </li>
-                        }
-                        <li class="list-group-item d-flex justify-content-between px-0">
-                            <strong>Total (COP)</strong>
-                            <strong>@ViewBag.Total.ToString("C")</strong>
-                        </li>
-                    </ul>
-                </div>
+
+        <div class="bean-checkout-grid">
+            <!-- ===== Formulario ===== -->
+            <div class="bean-form-col">
+                @if (TempData["CheckoutError"] != null)
+                {
+                    <div class="bean-alert-error" role="alert">
+                        <i class="fas fa-exclamation-circle"></i> @TempData["CheckoutError"]
+                    </div>
+                }
+                <form class="needs-validation" asp-controller="Cart" asp-action="Checkout" method="post" novalidate>
+                    <div class="bean-form-section">
+                        <h2>Dirección de envío</h2>
+                        <div class="bean-form-grid">
+                            <div class="bean-field">
+                                <label for="firstName" class="bean-label">Nombre</label>
+                                <input type="text" class="bean-input" id="firstName" name="firstName" value="@User.Identity?.Name" required>
+                            </div>
+                            <div class="bean-field">
+                                <label for="lastName" class="bean-label">Apellido</label>
+                                <input type="text" class="bean-input" id="lastName" name="lastName" value="" required>
+                            </div>
+                            <div class="bean-field col-span-2">
+                                <label for="address" class="bean-label">Dirección</label>
+                                <input type="text" class="bean-input" id="address" name="address" placeholder="Calle 123 #45-67" required>
+                            </div>
+                            <div class="bean-field">
+                                <label for="country" class="bean-label">País</label>
+                                <select class="bean-select" id="country" name="country" required>
+                                    <option>Colombia</option>
+                                    <option>Canadá</option>
+                                </select>
+                            </div>
+                            <div class="bean-field">
+                                <label for="state" class="bean-label">Departamento</label>
+                                <select class="bean-select" id="state" name="state" required>
+                                    <option>Bogotá D.C.</option>
+                                    <option>Antioquia</option>
+                                </select>
+                            </div>
+                            <div class="bean-field">
+                                <label for="zip" class="bean-label">Código postal</label>
+                                <input type="text" class="bean-input" id="zip" name="zip" placeholder="110111">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bean-form-section" style="margin-top:26px;">
+                        <h2>Método de pago</h2>
+                        <div class="bean-pay-methods">
+                            <label class="bean-pay-card selected" onclick="beanSelectPay(this)">
+                                <input id="credit" name="paymentMethod" type="radio" value="credit" checked required>
+                                <span class="label">Tarjeta de crédito / débito</span>
+                                <span class="brands">VISA · MC</span>
+                            </label>
+                            <label class="bean-pay-card" onclick="beanSelectPay(this)">
+                                <input id="paypal" name="paymentMethod" type="radio" value="paypal" required>
+                                <span class="label">PayPal</span>
+                            </label>
+                            <label class="bean-pay-card" onclick="beanSelectPay(this)">
+                                <input id="pse" name="paymentMethod" type="radio" value="pse" required>
+                                <span class="label">PSE · Débito bancario</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button class="btn-bean btn-bean-block" type="submit" style="margin-top:26px;">
+                        Pagar $@(granTotal.ToString("#,##0", co)) COP
+                    </button>
+                </form>
             </div>
+
+            <!-- ===== Columna Tu orden ===== -->
+            <aside class="bean-order">
+                <h3>Tu orden</h3>
+                @foreach (var item in Model)
+                {
+                    <div class="bean-order-item">
+                        <div class="bean-order-thumb bean-img o1" style="@(string.IsNullOrEmpty(item.Product?.ImageUrl) ? "" : $"background-image:url('{item.Product.ImageUrl}');background-size:cover;background-position:center;")"></div>
+                        <div class="info">
+                            <div class="n">@item.Product?.Name</div>
+                            <div class="q">Cant: @item.Quantity</div>
+                        </div>
+                        <div class="amt">$@((item.Quantity * (item.Product?.Price ?? 0)).ToString("#,##0", co))</div>
+                    </div>
+                }
+                <div class="bean-summary-sep"></div>
+                <div class="bean-summary-row"><span>Subtotal</span><span class="val">$@(((decimal)ViewBag.Total).ToString("#,##0", co))</span></div>
+                <div class="bean-summary-row"><span>Envío</span><span class="val">$@envio.ToString("#,##0", co)</span></div>
+                <div class="bean-summary-sep"></div>
+                <div class="bean-summary-total">
+                    <span class="lbl">Total</span>
+                    <span class="amt">$@(granTotal.ToString("#,##0", co))</span>
+                </div>
+                <div class="bean-secure-note">🔒 Transacción cifrada · Devolución garantizada</div>
+            </aside>
         </div>
     </div>
-</div>
+</section>
+
+@section Scripts {
+    <script>
+        function beanSelectPay(card) {
+            document.querySelectorAll('.bean-pay-card').forEach(function (c) { c.classList.remove('selected'); });
+            card.classList.add('selected');
+        }
+    </script>
+}

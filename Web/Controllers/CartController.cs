@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Web.Data;
 using Web.Models;
+using Web.Models.Enums;
 using System.Text.Json;
 
 namespace Web.Controllers;
@@ -11,6 +12,9 @@ public class CartController : Controller
 {
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
+
+    // Costo de envío fijo (COP). Fuente única para vistas y creación de la orden.
+    private const decimal ShippingCost = 18000m;
 
     public CartController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
     {
@@ -21,10 +25,13 @@ public class CartController : Controller
     public async Task<IActionResult> Index()
     {
         var cartItems = await GetCartItemsAsync();
-        
+
         // Calculate Total
-        ViewBag.Total = cartItems.Sum(i => i.Quantity * (i.Product?.Price ?? 0));
-        
+        var subtotal = cartItems.Sum(i => i.Quantity * (i.Product?.Price ?? 0));
+        ViewBag.Total = subtotal;                     // subtotal (compat. con vistas existentes)
+        ViewBag.Shipping = ShippingCost;              // envío fijo
+        ViewBag.GrandTotal = subtotal + ShippingCost; // total a cobrar
+
         return View(cartItems);
     }
 
@@ -137,8 +144,149 @@ public class CartController : Controller
         }
 
         // 3. Show Checkout View (Summary, Address, Payment placeholder)
-        ViewBag.Total = cartItems.Sum(i => i.Quantity * (i.Product?.Price ?? 0));
+        var subtotal = cartItems.Sum(i => i.Quantity * (i.Product?.Price ?? 0));
+        ViewBag.Total = subtotal;
+        ViewBag.Shipping = ShippingCost;
+        ViewBag.GrandTotal = subtotal + ShippingCost;
         return View(cartItems);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Checkout(string firstName, string lastName, string address,
+        string country, string state, string zip, string paymentMethod)
+    {
+        // 1. Validate Auth (mismo criterio que el GET)
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return RedirectToAction("Register", "Account", new { returnUrl = Url.Action("Checkout", "Cart") });
+        }
+
+        var user = await _userManager.GetUserAsync(User);
+
+        // 2. Obtener carrito
+        var cartItems = await GetCartItemsAsync();
+        if (!cartItems.Any())
+        {
+            return RedirectToAction(nameof(Index));
+        }
+
+        // 3. Validar stock por ítem
+        var sinStock = cartItems
+            .FirstOrDefault(i => i.Product == null || i.Product.Stock < i.Quantity);
+        if (sinStock != null)
+        {
+            var nombre = sinStock.Product?.Name ?? "un producto";
+            TempData["CheckoutError"] = $"No hay stock suficiente para \"{nombre}\". Ajusta la cantidad e inténtalo de nuevo.";
+            var subtotalErr = cartItems.Sum(i => i.Quantity * (i.Product?.Price ?? 0));
+            ViewBag.Total = subtotalErr;
+            ViewBag.Shipping = ShippingCost;
+            ViewBag.GrandTotal = subtotalErr + ShippingCost;
+            return View(cartItems);
+        }
+
+        // 4-7. Crear orden + descontar stock + vaciar carrito de forma atómica
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            var order = new Order
+            {
+                OrderID = Guid.NewGuid(),
+                UserID = user.Id,
+                OrderDate = DateTime.Now,
+                OrderStatus = OrderStatus.Confirmed,
+                FirstName = firstName,
+                LastName = lastName,
+                Address = address,
+                State = state,
+                ZipCode = zip,
+                ShippingCountry = country,
+                PaymentMethod = paymentMethod,
+                CurrencyCode = "COP"
+            };
+
+            decimal subtotal = 0m;
+            foreach (var item in cartItems)
+            {
+                var unitPrice = item.Product?.Price ?? 0m;
+                var lineTotal = unitPrice * item.Quantity;
+                subtotal += lineTotal;
+
+                order.Items.Add(new OrderItem
+                {
+                    OrderItemID = Guid.NewGuid(),
+                    OrderID = order.OrderID,
+                    ProductID = item.ProductID,
+                    ProductName = item.Product?.Name ?? string.Empty,
+                    UnitPrice = unitPrice,
+                    Quantity = item.Quantity,
+                    SubTotal = lineTotal
+                });
+
+                // 5. Descontar stock (entidad trackeada por el contexto)
+                var product = await _context.Products.FindAsync(item.ProductID);
+                if (product != null)
+                {
+                    product.Stock -= item.Quantity;
+                }
+            }
+
+            order.Subtotal = subtotal;
+            order.ShippingCost = ShippingCost; // TODO: cálculo de envío real
+            order.TotalAmount = order.Subtotal + order.ShippingCost;
+
+            _context.Orders.Add(order);
+
+            // 6. Vaciar carrito del usuario
+            var userCart = await _context.ShoppingCartItems
+                .Where(c => c.UserID == user.Id)
+                .ToListAsync();
+            _context.ShoppingCartItems.RemoveRange(userCart);
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            // 8. Confirmación
+            return RedirectToAction(nameof(Confirmation), new { id = order.OrderID });
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            TempData["CheckoutError"] = "No se pudo procesar tu pedido. Inténtalo de nuevo.";
+            var subtotalCatch = cartItems.Sum(i => i.Quantity * (i.Product?.Price ?? 0));
+            ViewBag.Total = subtotalCatch;
+            ViewBag.Shipping = ShippingCost;
+            ViewBag.GrandTotal = subtotalCatch + ShippingCost;
+            return View(cartItems);
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Confirmation(Guid id)
+    {
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return RedirectToAction("Login", "Account");
+        }
+
+        var user = await _userManager.GetUserAsync(User);
+
+        var order = await _context.Orders
+            .Include(o => o.Items)
+            .ThenInclude(i => i.Product)
+            .FirstOrDefaultAsync(o => o.OrderID == id);
+
+        if (order == null)
+        {
+            return NotFound();
+        }
+
+        // La orden debe pertenecer al usuario actual
+        if (order.UserID != user.Id)
+        {
+            return Forbid();
+        }
+
+        return View(order);
     }
 
     [HttpPost]

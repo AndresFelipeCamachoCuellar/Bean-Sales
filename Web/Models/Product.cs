@@ -35,8 +35,36 @@ public class Product
     public ProductStatus ProductStatus { get; set; } = ProductStatus.Draft;
 
     public string? ShippingDetails { get; set; } // Tracking number, courier, etc.
-    
+
     public string? RejectionReason { get; set; }
+
+    // --- Atributos de café de especialidad (todos nullable: migración aditiva y segura) ---
+    [StringLength(100)]
+    public string? Origin { get; set; } // Región/origen, ej. "Huila"
+
+    [StringLength(100)]
+    public string? Farm { get; set; } // Finca, ej. "Finca La Victoria"
+
+    [StringLength(50)]
+    public string? Altitude { get; set; } // ej. "1.750 msnm"
+
+    public CoffeeProcess? Process { get; set; } // Lavado / Honey / Natural
+
+    [StringLength(100)]
+    public string? Variety { get; set; } // ej. "Geisha"
+
+    [StringLength(50)]
+    public string? Lot { get; set; } // ej. "SNG-2026-04"
+
+    public DateTime? RoastDate { get; set; } // Fecha de tueste
+
+    [StringLength(300)]
+    public string? TastingNotes { get; set; } // Separadas por coma, ej. "Jazmín,Durazno,Bergamota"
+
+    [Column(TypeName = "decimal(3,2)")]
+    public decimal? Rating { get; set; } // ej. 4.9
+
+    public int? ReviewCount { get; set; } // Nº de reseñas
 
     // Audit
     public bool Status { get; set; } = true; // Soft delete

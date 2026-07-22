@@ -1,0 +1,128 @@
+@model Web.Models.Order
+@using Web.Models.Enums
+
+@{
+    ViewData["Title"] = "Pedido confirmado";
+    Layout = "_LayoutStore";
+    var co = new System.Globalization.CultureInfo("es-CO");
+    var orderShort = Model.OrderID.ToString().Substring(0, 8).ToUpper();
+
+    // Paso actual según el estado (Confirmado=1 · Tostado y empacado=2 · En camino=3 · Entregado=4)
+    var step = Model.OrderStatus switch
+    {
+        OrderStatus.Confirmed => 1,
+        OrderStatus.Processing => 2,
+        OrderStatus.Shipped => 3,
+        OrderStatus.Delivered => 4,
+        _ => 0
+    };
+
+    var hitos = new[]
+    {
+        new { Num = 1, Titulo = "Confirmado", Detalle = "Recibimos tu pedido y el pago." },
+        new { Num = 2, Titulo = "Tostado y empacado", Detalle = "Tu café se prepara en origen." },
+        new { Num = 3, Titulo = "En camino", Detalle = "El pedido salió hacia tu dirección." },
+        new { Num = 4, Titulo = "Entregado", Detalle = "Disfruta tu café." }
+    };
+
+    string EstadoHito(int num)
+    {
+        if (step >= 4) return "done";
+        if (num < step) return "done";
+        if (num == step) return "active";
+        return "future";
+    }
+}
+
+<section class="bean-checkout">
+    <div class="bean-container">
+        <!-- Cabecera de agradecimiento -->
+        <div class="bean-confirm-head bean-fadeup">
+            <div class="bean-confirm-check"><i class="fas fa-check"></i></div>
+            <h1 class="bean-h1 bean-confirm-title">¡Gracias, @Model.FirstName! Tu café va en camino.</h1>
+            <p class="bean-confirm-sub">
+                Pedido <strong>#@orderShort</strong> · @Model.OrderDate.ToString("d 'de' MMMM, yyyy", co)
+                <br />Te enviamos un comprobante por correo.
+            </p>
+        </div>
+
+        <div class="bean-checkout-grid" style="margin-top:34px;">
+            <!-- ===== Línea de tiempo de seguimiento ===== -->
+            <div class="bean-form-col">
+                <div class="bean-form-section">
+                    <h2>Seguimiento del envío</h2>
+                    <div class="bean-timeline">
+                        @foreach (var h in hitos)
+                        {
+                            var estado = EstadoHito(h.Num);
+                            <div class="bean-tl-item @estado">
+                                <div class="bean-tl-marker">
+                                    @if (estado == "done")
+                                    {
+                                        <i class="fas fa-check"></i>
+                                    }
+                                    else
+                                    {
+                                        <span class="dot"></span>
+                                    }
+                                </div>
+                                <div class="bean-tl-body">
+                                    <div class="bean-tl-title">@h.Titulo</div>
+                                    <div class="bean-tl-detail">@h.Detalle</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="bean-tl-callout">
+                        <i class="fas fa-truck"></i>
+                        <div>
+                            <strong>Entrega estimada:</strong>
+                            @Model.OrderDate.AddDays(5).ToString("d 'de' MMMM", co)
+                            <div class="muted">Recibirás el número de guía cuando el pedido salga a reparto.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== Resumen del pedido ===== -->
+            <aside class="bean-order">
+                <h3>Resumen del pedido</h3>
+                @foreach (var item in Model.Items)
+                {
+                    <div class="bean-order-item">
+                        <div class="bean-order-thumb bean-img o1" style="@(string.IsNullOrEmpty(item.Product?.ImageUrl) ? "" : $"background-image:url('{item.Product.ImageUrl}');background-size:cover;background-position:center;")"></div>
+                        <div class="info">
+                            <div class="n">@item.ProductName</div>
+                            <div class="q">Cant: @item.Quantity</div>
+                        </div>
+                        <div class="amt">$@item.SubTotal.ToString("#,##0", co)</div>
+                    </div>
+                }
+                <div class="bean-summary-sep"></div>
+                <div class="bean-summary-row"><span>Subtotal</span><span class="val">$@Model.Subtotal.ToString("#,##0", co)</span></div>
+                <div class="bean-summary-row"><span>Envío</span><span class="val">$@Model.ShippingCost.ToString("#,##0", co)</span></div>
+                <div class="bean-summary-sep"></div>
+                <div class="bean-summary-total">
+                    <span class="lbl">Total</span>
+                    <span class="amt">$@Model.TotalAmount.ToString("#,##0", co) <small>@Model.CurrencyCode</small></span>
+                </div>
+
+                <div class="bean-summary-sep"></div>
+                <div class="bean-confirm-ship">
+                    <div class="lbl">Enviar a</div>
+                    <div class="val">
+                        @Model.FirstName @Model.LastName<br />
+                        @Model.Address<br />
+                        @(!string.IsNullOrEmpty(Model.State) ? Model.State + ", " : "")@Model.ShippingCountry
+                        @(!string.IsNullOrEmpty(Model.ZipCode) ? " · " + Model.ZipCode : "")
+                    </div>
+                </div>
+
+                <a class="btn-bean btn-bean-block" asp-controller="Home" asp-action="Index" style="margin-top:20px;">
+                    Seguir comprando
+                </a>
+            </aside>
+        </div>
+    </div>
+</section>

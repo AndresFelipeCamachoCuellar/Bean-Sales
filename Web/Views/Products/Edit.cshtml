@@ -54,6 +54,60 @@
                     <span asp-validation-for="Description" class="text-danger"></span>
                 </div>
 
+                <hr />
+                <h6 class="font-weight-bold text-primary mb-3">Trazabilidad y perfil de taza <small class="text-muted font-weight-normal">(opcional)</small></h6>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="Origin" class="form-label"></label>
+                        <input asp-for="Origin" class="form-control" placeholder="Ej: Huila" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="Farm" class="form-label"></label>
+                        <input asp-for="Farm" class="form-control" placeholder="Ej: Finca La Victoria" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="Altitude" class="form-label"></label>
+                        <input asp-for="Altitude" class="form-control" placeholder="Ej: 1.750 msnm" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="Process" class="form-label"></label>
+                        <select asp-for="Process" class="form-select" asp-items="Html.GetEnumSelectList<Web.Models.Enums.CoffeeProcess>()">
+                            <option value="">— Sin especificar —</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="Variety" class="form-label"></label>
+                        <input asp-for="Variety" class="form-control" placeholder="Ej: Geisha" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="Lot" class="form-label"></label>
+                        <input asp-for="Lot" class="form-control" placeholder="Ej: SNG-2026-04" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="RoastDate" class="form-label"></label>
+                        <input asp-for="RoastDate" class="form-control" type="date" asp-format="{0:yyyy-MM-dd}" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="Rating" class="form-label"></label>
+                        <input asp-for="Rating" class="form-control" type="number" step="0.1" min="0" max="5" />
+                        <span asp-validation-for="Rating" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="ReviewCount" class="form-label"></label>
+                        <input asp-for="ReviewCount" class="form-control" type="number" min="0" />
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="TastingNotes" class="form-label"></label>
+                    <input asp-for="TastingNotes" class="form-control" placeholder="Ej: Jazmín, Durazno, Bergamota" />
+                    <small class="text-muted">Separadas por coma.</small>
+                </div>
+                <hr />
+
                 <div class="mb-3">
                    <label asp-for="SelectedCountryIds" class="form-label font-weight-bold"></label>
                    <p class="small text-muted mb-2">Selecciona los países donde deseas vender este producto.</p>

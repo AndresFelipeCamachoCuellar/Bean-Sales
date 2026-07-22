@@ -62,9 +62,11 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var context = services.GetRequiredService<ApplicationDbContext>();
-    // Ensure database is created/migrated
-    // await context.Database.MigrateAsync(); // Optional: Automatic migrations
-    
+    // Ensure database is created/migrated.
+    // MonsterASP no ejecuta `dotnet ef` en el host, por lo que aplicamos las
+    // migraciones pendientes al iniciar la app (crea/actualiza el esquema solo).
+    await context.Database.MigrateAsync();
+
     await ContextSeed.SeedCountriesAsync(context);
     await ContextSeed.SeedDocumentTypesAsync(context);
     

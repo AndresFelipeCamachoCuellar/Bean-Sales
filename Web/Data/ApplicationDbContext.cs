@@ -35,6 +35,10 @@ public class ApplicationDbContext : IdentityDbContext<
     public DbSet<ProductCountry> ProductCountries { get; set; }
     public DbSet<ShoppingCartItem> ShoppingCartItems { get; set; }
 
+    // Sales Cycle
+    public DbSet<Order> Orders { get; set; }
+    public DbSet<OrderItem> OrderItems { get; set; }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -77,5 +81,27 @@ public class ApplicationDbContext : IdentityDbContext<
             .HasOne(pc => pc.Country)
             .WithMany(c => c.ProductCountries) // Need to add this to Country.cs
             .HasForeignKey(pc => pc.CountryID);
+
+        // Sales Cycle Configurations
+        // Order -> User (no borrar pedidos si se borra el usuario: histórico de ventas)
+        builder.Entity<Order>()
+            .HasOne(o => o.User)
+            .WithMany()
+            .HasForeignKey(o => o.UserID)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // OrderItem -> Order (borrar líneas si se borra el pedido)
+        builder.Entity<OrderItem>()
+            .HasOne(oi => oi.Order)
+            .WithMany(o => o.Items)
+            .HasForeignKey(oi => oi.OrderID)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // OrderItem -> Product (conservar histórico aunque se borre el producto)
+        builder.Entity<OrderItem>()
+            .HasOne(oi => oi.Product)
+            .WithMany()
+            .HasForeignKey(oi => oi.ProductID)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -1,69 +1,133 @@
-﻿@model IEnumerable<Web.Models.Product>
+@model IEnumerable<Web.Models.Product>
 
+@using Web.Models.Enums
 @{
     ViewData["Title"] = "Catálogo de Café";
+    // Cultura fija para formato de precio COP ("$62.000"). Formato de presentación, no cambia el binding.
+    var co = new System.Globalization.CultureInfo("es-CO");
+    // Etiqueta de proceso en español para las chips/badges.
+    Func<CoffeeProcess, string> procLabel = p => p switch
+    {
+        CoffeeProcess.Washed => "Lavado",
+        CoffeeProcess.Honey => "Honey",
+        CoffeeProcess.Natural => "Natural",
+        _ => p.ToString()
+    };
+    var i = 0; // Solo para el escalonado de animación y el tono decorativo de la imagen.
 }
 
-<div class="text-center mb-5">
-    <h1 class="display-4 fw-bold">Nuestro Catálogo</h1>
-    <p class="lead text-muted">Los mejores granos, directamente de nuestros productores a tu taza.</p>
+<!-- ===== HERO ===== -->
+<section class="bean-hero">
+    <span class="bean-float f1"></span>
+    <span class="bean-float f2"></span>
+    <span class="bean-float f3"></span>
+    <div class="bean-hero-badge">☕ Tueste de esta semana ya disponible</div>
+    <h1 class="bean-fadeup">Café con origen,<br /><span class="shimmer">frescura en movimiento.</span></h1>
+    <p class="sub bean-fadeup" style="animation-delay:.08s">Micro-lotes trazables de fincas colombianas, tostados cada semana y enviados a Colombia y Canadá.</p>
+    <div class="bean-hero-ctas bean-fadeup" style="animation-delay:.16s">
+        <a href="#lotes" class="btn-bean">Explorar lotes →</a>
+        <a asp-controller="Home" asp-action="Index" class="btn-bean-ghost-dark">Mayoreo</a>
+    </div>
+    <div class="bean-stats bean-fadeup" style="animation-delay:.24s">
+        <div class="bean-stat"><span class="num">14</span><span class="lbl">fincas aliadas</span></div>
+        <div class="bean-stat"><span class="num">4.9★</span><span class="lbl">promedio reseñas</span></div>
+        <div class="bean-stat"><span class="num">48 h</span><span class="lbl">del tueste al envío</span></div>
+    </div>
+</section>
+
+<!-- ===== MARQUEE de confianza ===== -->
+<div class="bean-marquee">
+    <div class="bean-marquee-track">
+        <span>Trazabilidad finca a taza ✦</span><span>Comercio justo ✦</span><span>Tueste semanal ✦</span><span>Envío Colombia · Canadá ✦</span><span>Reseñas verificadas ✦</span>
+        <span>Trazabilidad finca a taza ✦</span><span>Comercio justo ✦</span><span>Tueste semanal ✦</span><span>Envío Colombia · Canadá ✦</span><span>Reseñas verificadas ✦</span>
+    </div>
 </div>
 
-<div class="container">
-    @if (!Model.Any())
-    {
-        <div class="alert alert-info text-center">
-            <i class="fas fa-search me-2"></i> No hay productos disponibles en tu región seleccionada por el momento.
+<!-- ===== CATÁLOGO ===== -->
+<section class="bean-catalog" id="lotes">
+    <div class="bean-container">
+        <div class="bean-catalog-head">
+            <div>
+                <h2>Lotes disponibles</h2>
+                <div class="meta">@Model.Count() orígenes · precios en COP</div>
+            </div>
+            <!-- Chips de filtro por proceso (placeholder visual: aún sin filtrado en servidor) -->
+            <div class="bean-filters">
+                <button type="button" class="bean-chip active">Todos</button>
+                <button type="button" class="bean-chip">Lavado</button>
+                <button type="button" class="bean-chip">Honey</button>
+                <button type="button" class="bean-chip">Natural</button>
+            </div>
         </div>
-    }
-    else
-    {
-        <div class="row row-cols-1 row-cols-md-3 g-4">
-            @foreach (var product in Model)
-            {
-                <div class="col">
-                    <div class="card h-100 shadow-sm hover-shadow transition-all">
-                        <!-- Placeholder Image -->
-                        <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? "https://via.placeholder.com/300x200?text=Bean+Sales" : product.ImageUrl)" class="card-img-top" alt="@product.Name" style="height: 200px; object-fit: cover;">
-                        
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="card-title fw-bold">@product.Name</h5>
-                            <p class="card-text text-muted small">
-                                <i class="fas fa-store me-1"></i> @product.Provider?.Name
-                            </p>
-                            <!-- Description Removed for Listing -->
-                            
-                            <div class="d-flex justify-content-between align-items-center mt-auto pt-3">
-                                <span class="h5 mb-0 text-success">@product.Price.ToString("C")</span>
-                                <small class="text-muted">Stock: @product.Stock</small>
+
+        @if (!Model.Any())
+        {
+            <div class="bean-empty">
+                <div class="ico"><i class="fas fa-search"></i></div>
+                <h3>No hay lotes para tu región</h3>
+                <p>No hay productos disponibles en tu región seleccionada por el momento.</p>
+            </div>
+        }
+        else
+        {
+            <div class="bean-grid">
+                @foreach (var product in Model)
+                {
+                    var tone = "o" + ((i % 6) + 1);
+                    i++;
+                    var delay = (i * 0.08).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+                    // Datos reales del producto (null-safe).
+                    var notes = string.IsNullOrWhiteSpace(product.TastingNotes)
+                        ? Array.Empty<string>()
+                        : product.TastingNotes.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    <div class="bean-card bean-fadeup" style="animation-delay:@(delay)s">
+                        <div class="bean-card-img bean-img @tone" style="@(string.IsNullOrEmpty(product.ImageUrl) ? "" : $"background-image:url('{product.ImageUrl}');background-size:cover;background-position:center;")">
+                            <div class="top-badges">
+                                @if (product.Process.HasValue)
+                                {
+                                    <span class="bean-badge bean-badge-process">@procLabel(product.Process.Value)</span>
+                                }
+                                @if (product.Rating.HasValue)
+                                {
+                                    <span class="bean-badge bean-badge-rating"><span class="star">★</span> @product.Rating.Value.ToString("0.0", co)</span>
+                                }
                             </div>
                         </div>
-                        <div class="card-footer bg-white border-top-0 pb-3 pt-0">
-                            <div class="d-grid gap-2">
-                                <a asp-action="Details" asp-route-id="@product.ProductID" class="btn btn-outline-primary rounded-pill">
-                                    <i class="fas fa-eye me-2"></i> Ver Detalle
-                                </a>
-                                <form asp-controller="Cart" asp-action="AddToCart" method="post" class="d-inline w-100">
+                        <div class="bean-card-body">
+                            <div class="bean-card-origin">@(string.IsNullOrWhiteSpace(product.Origin) ? "Colombia" : product.Origin)</div>
+                            <h3 class="bean-card-name">@product.Name</h3>
+                            <div class="bean-card-provider">@product.Provider?.Name</div>
+                            @if (notes.Length > 0)
+                            {
+                                <div class="bean-card-notes">
+                                    @foreach (var n in notes)
+                                    {
+                                        <span class="bean-note">@n</span>
+                                    }
+                                </div>
+                            }
+                            <div class="bean-card-foot">
+                                <div class="bean-card-price">$@product.Price.ToString("#,##0", co) <small>/ 340 g</small></div>
+                                <form asp-controller="Cart" asp-action="AddToCart" method="post" class="d-inline">
                                     <input type="hidden" name="productId" value="@product.ProductID" />
-                                    <button type="submit" class="btn btn-primary rounded-pill w-100">
-                                        <i class="fas fa-cart-plus me-2"></i> Agregar
-                                    </button>
+                                    <button type="submit" class="bean-card-add">Agregar</button>
                                 </form>
                             </div>
+                            <a asp-action="Details" asp-route-id="@product.ProductID" class="bean-card-origin" style="margin-top:10px;text-transform:none;letter-spacing:0;font-weight:600;">Ver detalle →</a>
                         </div>
                     </div>
-                </div>
-            }
-        </div>
-    }
-</div>
+                }
+            </div>
+        }
 
-<style>
-    .hover-shadow:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
-    }
-    .transition-all {
-        transition: all 0.3s ease;
-    }
-</style>
+        <!-- ===== BANNER B2B ===== -->
+        <div class="bean-b2b">
+            <div>
+                <div class="eyebrow">Para cafeterías y negocios</div>
+                <h3>Precios de mayoreo y cupo mensual asegurado.</h3>
+                <p>Registra tu empresa, accede a precios por volumen y recibe tu pedido con tueste programado.</p>
+            </div>
+            <a asp-controller="Account" asp-action="RegisterProvider" class="btn-bean">Registrar mi empresa →</a>
+        </div>
+    </div>
+</section>

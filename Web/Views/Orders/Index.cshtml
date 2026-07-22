@@ -1,0 +1,151 @@
+@model List<Web.Models.Order>
+@using Web.Models.Enums
+
+@{
+    ViewData["Title"] = "Mis pedidos";
+    Layout = "_LayoutStore";
+    var co = new System.Globalization.CultureInfo("es-CO");
+    var nombre = ViewBag.FirstName as string ?? "";
+
+    // Mapeo de estado -> etiqueta, clase de badge y categoría de filtro.
+    // Categorías de filtro: "en-camino" | "entregado" | "cancelado".
+    (string Label, string BadgeClass, string Filter) EstadoUi(OrderStatus s) => s switch
+    {
+        OrderStatus.Delivered => ("Entregado", "bean-badge-delivered", "entregado"),
+        OrderStatus.Cancelled => ("Cancelado", "bean-badge-cancelled", "cancelado"),
+        _ => ("En camino", "bean-badge-shipping", "en-camino")
+    };
+}
+
+<section class="bean-account">
+    <div class="bean-container bean-account-grid">
+
+        <!-- ===== Sidebar de cuenta ===== -->
+        <aside class="bean-account-side">
+            <div class="bean-account-hi">Hola, <strong>@nombre</strong></div>
+            <nav class="bean-account-nav">
+                <a class="bean-account-link active" asp-controller="Orders" asp-action="Index">Mis pedidos</a>
+                <a class="bean-account-link is-soon" href="#" title="Próximamente">Direcciones</a>
+                <a class="bean-account-link is-soon" href="#" title="Próximamente">Métodos de pago</a>
+                <a class="bean-account-link is-soon" href="#" title="Próximamente">Mis reseñas</a>
+                <form asp-controller="Account" asp-action="Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" method="post">
+                    <button type="submit" class="bean-account-link bean-account-logout">Cerrar sesión</button>
+                </form>
+            </nav>
+        </aside>
+
+        <!-- ===== Contenido ===== -->
+        <div class="bean-account-main">
+            <div class="bean-account-head">
+                <h1 class="bean-h1">Mis pedidos</h1>
+                @if (Model.Any())
+                {
+                    <div class="bean-order-filters" role="tablist">
+                        <button type="button" class="bean-filter-pill active" data-filter="all">Todos</button>
+                        <button type="button" class="bean-filter-pill" data-filter="en-camino">En camino</button>
+                        <button type="button" class="bean-filter-pill" data-filter="entregado">Entregados</button>
+                    </div>
+                }
+            </div>
+
+            @if (!Model.Any())
+            {
+                <div class="bean-empty">
+                    <div class="bean-empty-circle"><i class="fas fa-mug-hot"></i></div>
+                    <h2 class="bean-empty-title">Aún no tienes pedidos</h2>
+                    <p class="bean-empty-text">Cuando hagas tu primera compra, aquí verás su estado y podrás volver a pedir en un clic.</p>
+                    <a class="btn-bean" asp-controller="Home" asp-action="Index">Explorar catálogo</a>
+                </div>
+            }
+            else
+            {
+                <div class="bean-order-list">
+                    @foreach (var order in Model)
+                    {
+                        var ui = EstadoUi(order.OrderStatus);
+                        var idCorto = order.OrderID.ToString().Substring(0, 8).ToUpper();
+                        var bolsas = order.Items.Sum(i => i.Quantity);
+                        var lotes = order.Items.Count;
+                        // Primeras 2 miniaturas solapadas.
+                        var thumbs = order.Items.Take(2).ToList();
+
+                        <div class="bean-order-row" data-filter="@ui.Filter">
+                            <!-- Miniaturas solapadas + info (enlazan al detalle/seguimiento) -->
+                            <a class="bean-order-idcol" asp-controller="Cart" asp-action="Confirmation" asp-route-id="@order.OrderID">
+                                <div class="bean-order-thumbs">
+                                    @if (thumbs.Any())
+                                    {
+                                        var oi = 1;
+                                        foreach (var it in thumbs)
+                                        {
+                                            var img = it.Product?.ImageUrl;
+                                            var style = string.IsNullOrEmpty(img)
+                                                ? ""
+                                                : $"background-image:url('{img}');background-size:cover;background-position:center;";
+                                            <span class="bean-order-thumb bean-img o@(oi)" style="@style"></span>
+                                            oi++;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="bean-order-thumb bean-img o1"></span>
+                                    }
+                                </div>
+                                <div class="bean-order-info">
+                                    <div class="bean-order-id">Pedido #@idCorto</div>
+                                    <div class="bean-order-meta">
+                                        @order.OrderDate.ToString("d MMM yyyy", co) · @bolsas @(bolsas == 1 ? "bolsa" : "bolsas") · @lotes @(lotes == 1 ? "lote" : "lotes")
+                                    </div>
+                                </div>
+                            </a>
+
+                            <!-- Total -->
+                            <div class="bean-order-total">
+                                <div class="bean-order-total-lbl">Total</div>
+                                <div class="bean-order-total-amt">$@order.TotalAmount.ToString("#,##0", co) <small>@order.CurrencyCode</small></div>
+                            </div>
+
+                            <!-- Badge de estado -->
+                            <div class="bean-order-badge">
+                                <span class="bean-badge @ui.BadgeClass">@ui.Label</span>
+                            </div>
+
+                            <!-- Acción según estado -->
+                            <div class="bean-order-action">
+                                @if (ui.Filter == "entregado")
+                                {
+                                    <a class="btn-bean-outline btn-bean-sm" asp-controller="Home" asp-action="Index">Volver a pedir</a>
+                                }
+                                else
+                                {
+                                    <a class="btn-bean-outline btn-bean-sm" asp-controller="Cart" asp-action="Confirmation" asp-route-id="@order.OrderID">Seguir envío</a>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        // Filtro visual por estado (client-side, sin recargar).
+        (function () {
+            var pills = document.querySelectorAll('.bean-filter-pill');
+            var rows = document.querySelectorAll('.bean-order-row');
+            pills.forEach(function (pill) {
+                pill.addEventListener('click', function () {
+                    pills.forEach(function (p) { p.classList.remove('active'); });
+                    pill.classList.add('active');
+                    var f = pill.getAttribute('data-filter');
+                    rows.forEach(function (row) {
+                        var show = (f === 'all') || (row.getAttribute('data-filter') === f);
+                        row.style.display = show ? '' : 'none';
+                    });
+                });
+            });
+        })();
+    </script>
+}

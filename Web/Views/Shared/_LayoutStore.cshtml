@@ -1,0 +1,120 @@
+@using Microsoft.AspNetCore.Identity
+@using Web.Models
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@{
+    // Contador de la bolsa (placeholder: se muestra sólo si el controlador lo expone en ViewBag.CartCount).
+    var cartCount = ViewBag.CartCount as int?;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] · Bean</title>
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <!-- Google Fonts: Bitter (titulares) + DM Sans (cuerpo) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+    <!-- Design system del rediseño aprobado -->
+    <link rel="stylesheet" href="~/css/bean-theme.css" asp-append-version="true" />
+</head>
+<body class="bean-store">
+    <header>
+        <nav class="bean-nav">
+            <div class="bean-container bean-nav-inner">
+                <a class="bean-brand" asp-controller="Home" asp-action="Index">
+                    <span class="bean-drop"></span> Bean
+                </a>
+                <div class="bean-nav-links">
+                    <a class="bean-nav-link active" asp-controller="Home" asp-action="Index">Catálogo</a>
+                    <a class="bean-nav-link" asp-controller="Home" asp-action="Index">Orígenes</a>
+                    <a class="bean-nav-link" asp-controller="Home" asp-action="Index">Mayoreo</a>
+                    <a class="bean-nav-link" asp-controller="Home" asp-action="Privacy">Nosotros</a>
+                </div>
+
+                <div class="bean-nav-spacer"></div>
+
+                <div class="bean-nav-actions">
+                    <!-- Selector de país (ViewComponent existente: postea a Home/SetCountry) -->
+                    <div class="bean-country">
+                        <span class="bean-dot-pulse"></span>
+                        @await Component.InvokeAsync("CountrySelector")
+                    </div>
+
+                    <!-- Toggle idioma (placeholder de UI bilingüe ES/EN) -->
+                    <button type="button" class="bean-lang-toggle" title="Idioma">
+                        <span class="on">ES</span>·<span>EN</span>
+                    </button>
+
+                    @if (SignInManager.IsSignedIn(User))
+                    {
+                        <span class="bean-nav-simple-right">
+                            <a class="bean-nav-link" asp-controller="Orders" asp-action="Index">Mis pedidos</a>
+                            <a class="bean-nav-link" asp-controller="Home" asp-action="Index">@User.Identity?.Name</a>
+                            <form asp-controller="Account" asp-action="Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" method="post" class="d-inline">
+                                <button type="submit" class="bean-lang-toggle" style="padding:0;">Salir</button>
+                            </form>
+                        </span>
+                    }
+                    else
+                    {
+                        <a class="bean-nav-simple-right" asp-controller="Account" asp-action="Login">Entrar</a>
+                    }
+
+                    <a class="bean-bag" asp-controller="Cart" asp-action="Index" title="Ver carrito">
+                        <i class="fas fa-shopping-bag"></i> Bolsa
+                        @if (cartCount.HasValue && cartCount.Value > 0)
+                        {
+                            <span class="badge-count">@cartCount.Value</span>
+                        }
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main role="main" class="bean-main">
+        @RenderBody()
+    </main>
+
+    <footer class="bean-footer">
+        <div class="bean-container">
+            <div class="bean-footer-grid">
+                <div class="brand-col">
+                    <a class="bean-brand" asp-controller="Home" asp-action="Index"><span class="bean-drop"></span> Bean</a>
+                    <p>Comercio internacional de café de origen, del productor a tu taza.</p>
+                </div>
+                <div>
+                    <h4>Tienda</h4>
+                    <a asp-controller="Home" asp-action="Index">Catálogo</a>
+                    <a asp-controller="Home" asp-action="Index">Orígenes</a>
+                    <a asp-controller="Home" asp-action="Index">Mayoreo</a>
+                </div>
+                <div>
+                    <h4>Empresa</h4>
+                    <a asp-controller="Home" asp-action="Privacy">Nosotros</a>
+                    <a asp-controller="Home" asp-action="Index">Productores</a>
+                    <a asp-controller="Home" asp-action="Index">Contacto</a>
+                </div>
+                <div>
+                    <h4>Ayuda</h4>
+                    <a asp-controller="Home" asp-action="Index">Envíos</a>
+                    <a asp-controller="Home" asp-action="Index">Devoluciones</a>
+                    <a asp-controller="Home" asp-action="Privacy">Privacidad</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

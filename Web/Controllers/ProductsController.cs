@@ -68,6 +68,16 @@ public class ProductsController : Controller
                 Price = model.Price,
                 Stock = model.Stock,
                 ImageUrl = model.ImageUrl, // TODO: Implement Image Upload
+                Origin = model.Origin,
+                Farm = model.Farm,
+                Altitude = model.Altitude,
+                Process = model.Process,
+                Variety = model.Variety,
+                Lot = model.Lot,
+                RoastDate = model.RoastDate,
+                TastingNotes = model.TastingNotes,
+                Rating = model.Rating,
+                ReviewCount = model.ReviewCount,
                 ProductStatus = ProductStatus.Draft,
                 Status = true,
                 CreatedBy = User.Identity?.Name ?? "SYSTEM",
@@ -122,6 +132,16 @@ public class ProductsController : Controller
             Price = product.Price,
             Stock = product.Stock,
             ImageUrl = product.ImageUrl,
+            Origin = product.Origin,
+            Farm = product.Farm,
+            Altitude = product.Altitude,
+            Process = product.Process,
+            Variety = product.Variety,
+            Lot = product.Lot,
+            RoastDate = product.RoastDate,
+            TastingNotes = product.TastingNotes,
+            Rating = product.Rating,
+            ReviewCount = product.ReviewCount,
             Status = product.ProductStatus,
             RejectionReason = product.RejectionReason,
             SelectedCountryIds = product.ProductCountries.Where(pc => pc.IsTargeted).Select(pc => pc.CountryID).ToList()
@@ -159,7 +179,17 @@ public class ProductsController : Controller
             product.Price = model.Price;
             product.Stock = model.Stock;
             product.ImageUrl = model.ImageUrl;
-            
+            product.Origin = model.Origin;
+            product.Farm = model.Farm;
+            product.Altitude = model.Altitude;
+            product.Process = model.Process;
+            product.Variety = model.Variety;
+            product.Lot = model.Lot;
+            product.RoastDate = model.RoastDate;
+            product.TastingNotes = model.TastingNotes;
+            product.Rating = model.Rating;
+            product.ReviewCount = model.ReviewCount;
+
             // If it was Rejected, reset to Draft on edit? Usually yes, forcing user to resubmit.
             if (product.ProductStatus == ProductStatus.Rejected)
             {

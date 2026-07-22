@@ -2,105 +2,78 @@
 
 @{
     ViewData["Title"] = "Carrito de Compras";
+    var co = new System.Globalization.CultureInfo("es-CO");
+    var bolsas = Model.Sum(x => x.Quantity);
+    var lotes = Model.Count;
+    // Importes servidos por el controlador (fuente única del costo de envío).
+    var envio = (decimal)ViewBag.Shipping;
+    var granTotal = (decimal)ViewBag.GrandTotal;
 }
 
-<div class="container py-5">
-    <h1 class="mb-4">Tu Carrito de Compras</h1>
+<section class="bean-cart">
+    <div class="bean-container">
+        @if (!Model.Any())
+        {
+            <div class="bean-empty">
+                <div class="ico"><i class="fas fa-shopping-basket"></i></div>
+                <h3>Tu carrito está vacío</h3>
+                <p>Aún no has agregado lotes. Explora nuestro catálogo de micro-lotes trazables.</p>
+                <a asp-controller="Home" asp-action="Index" class="btn-bean">Explorar catálogo</a>
+            </div>
+        }
+        else
+        {
+            <h1 class="bean-cart-title">Tu carrito <small>· @bolsas bolsas · @lotes lotes</small></h1>
 
-    @if (!Model.Any())
-    {
-        <div class="alert alert-info text-center">
-            <h4><i class="fas fa-shopping-basket me-2"></i> Tu carrito está vacío</h4>
-            <a asp-controller="Home" asp-action="Index" class="btn btn-primary mt-3">Ir al Catálogo</a>
-        </div>
-    }
-    else
-    {
-        <div class="row">
-            <div class="col-lg-8">
-                <div class="card shadow-sm mb-4">
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table mb-0">
-                                <thead class="bg-light">
-                                    <tr>
-                                        <th class="border-0">Producto</th>
-                                        <th class="border-0">Precio</th>
-                                        <th class="border-0">Cantidad</th>
-                                        <th class="border-0">Total</th>
-                                        <th class="border-0"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var item in Model)
-                                    {
-                                        <tr>
-                                            <td class="align-middle">
-                                                <div class="d-flex align-items-center">
-                                                     @if (!string.IsNullOrEmpty(item.Product?.ImageUrl))
-                                                    {
-                                                        <img src="@item.Product.ImageUrl" alt="" class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
-                                                    }
-                                                    <div>
-                                                        <h6 class="mb-0"><a asp-controller="Home" asp-action="Details" asp-route-id="@item.ProductID" class="text-dark">@item.Product?.Name</a></h6>
-                                                        <small class="text-muted">@item.Product?.Provider?.Name</small>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="align-middle">@item.Product?.Price.ToString("C")</td>
-                                            <td class="align-middle">
-                                                <form asp-action="UpdateQuantity" asp-route-id="@item.ShoppingCartItemID" method="post" class="d-flex align-items-center">
-                                                    <div class="input-group input-group-sm" style="width: 120px;">
-                                                        <button class="btn btn-outline-secondary" type="button" onclick="this.parentNode.querySelector('input[type=number]').stepDown(); this.form.submit();">-</button>
-                                                        <input type="number" name="quantity" class="form-control text-center" value="@item.Quantity" min="1" onchange="this.form.submit()">
-                                                        <button class="btn btn-outline-secondary" type="button" onclick="this.parentNode.querySelector('input[type=number]').stepUp(); this.form.submit();">+</button>
-                                                    </div>
-                                                </form>
-                                            </td>
-                                            <td class="align-middle font-weight-bold">
-                                                @((item.Quantity * (item.Product?.Price ?? 0)).ToString("C"))
-                                            </td>
-                                            <td class="align-middle text-end">
-                                                <form asp-action="Remove" asp-route-id="@item.ShoppingCartItemID" method="post">
-                                                    <button type="submit" class="btn btn-link text-danger p-0">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
+            <div class="bean-cart-grid">
+                <!-- ===== Lista de ítems ===== -->
+                <div class="bean-cart-list">
+                    @foreach (var item in Model)
+                    {
+                        <div class="bean-cart-item">
+                            <div class="bean-cart-thumb bean-img o1" style="@(string.IsNullOrEmpty(item.Product?.ImageUrl) ? "" : $"background-image:url('{item.Product.ImageUrl}');background-size:cover;background-position:center;")"></div>
+                            <div class="bean-cart-item-info">
+                                <h3 class="bean-cart-item-name">
+                                    <a asp-controller="Home" asp-action="Details" asp-route-id="@item.ProductID">@item.Product?.Name</a>
+                                </h3>
+                                <div class="bean-cart-item-meta">@item.Product?.Provider?.Name · 340 g</div>
+                            </div>
+
+                            <form asp-action="UpdateQuantity" asp-route-id="@item.ShoppingCartItemID" method="post">
+                                <div class="bean-stepper">
+                                    <button class="minus" type="button" onclick="this.parentNode.querySelector('input[type=number]').stepDown(); this.form.submit();">−</button>
+                                    <input type="number" name="quantity" value="@item.Quantity" min="1" onchange="this.form.submit()">
+                                    <button class="plus" type="button" onclick="this.parentNode.querySelector('input[type=number]').stepUp(); this.form.submit();">+</button>
+                                </div>
+                            </form>
+
+                            <div class="bean-cart-item-sub">$@((item.Quantity * (item.Product?.Price ?? 0)).ToString("#,##0", co))</div>
+
+                            <form asp-action="Remove" asp-route-id="@item.ShoppingCartItemID" method="post">
+                                <button type="submit" class="bean-cart-remove" title="Eliminar"><i class="fas fa-trash-alt"></i></button>
+                            </form>
                         </div>
+                    }
+                    <div class="bean-cart-continue">
+                        <a asp-controller="Home" asp-action="Index">← Seguir comprando</a>
                     </div>
                 </div>
-            </div>
-            
-            <div class="col-lg-4">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">Resumen del Pedido</h5>
+
+                <!-- ===== Resumen ===== -->
+                <aside class="bean-summary">
+                    <h3>Resumen del pedido</h3>
+                    <div class="bean-summary-row"><span>Subtotal</span><span class="val">$@(((decimal)ViewBag.Total).ToString("#,##0", co))</span></div>
+                    <div class="bean-summary-row"><span>Envío a Colombia</span><span class="val">$@envio.ToString("#,##0", co)</span></div>
+                    <div class="bean-summary-row"><span>Impuestos</span><span class="val">Incluidos</span></div>
+                    <div class="bean-summary-sep"></div>
+                    <div class="bean-summary-total">
+                        <span class="lbl">Total</span>
+                        <span class="amt">$@(granTotal.ToString("#,##0", co)) <small>COP</small></span>
                     </div>
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Subtotal</span>
-                            <span>@ViewBag.Total.ToString("C")</span>
-                        </div>
-                        <hr>
-                        <div class="d-flex justify-content-between mb-4">
-                            <strong class="h5">Total</strong>
-                            <strong class="h5 text-success">@ViewBag.Total.ToString("C")</strong>
-                        </div>
-                        
-                        <a asp-action="Checkout" class="btn btn-success w-100 btn-lg rounded-pill">
-                            Proceder al Pago <i class="fas fa-arrow-right ms-2"></i>
-                        </a>
-                        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary w-100 mt-2 rounded-pill">
-                            Seguir Comprando
-                        </a>
-                    </div>
-                </div>
+                    <a asp-action="Checkout" class="btn-bean btn-bean-block">Proceder al pago →</a>
+                    <div class="bean-secure-note">🔒 Pago seguro · Visa · Mastercard · PayPal · PSE</div>
+                </aside>
             </div>
-        </div>
-    }
-</div>
+        }
+    </div>
+</section>

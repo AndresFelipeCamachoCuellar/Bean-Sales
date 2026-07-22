@@ -46,7 +46,53 @@ public class ProductApprovalController : Controller
         return View(products);
     }
 
-    // ... Approve/Reject ...
+    [HasPermission(Modules.ProductApprovals, Permissions.Update)]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Approve(Guid id)
+    {
+        var product = await _context.Products
+            .FirstOrDefaultAsync(p => p.ProductID == id);
+
+        if (product == null) return NotFound();
+
+        // Solo se puede aprobar un producto pendiente de aprobación.
+        if (product.ProductStatus != ProductStatus.PendingApproval)
+            return RedirectToAction(nameof(Index));
+
+        product.ProductStatus = ProductStatus.ApprovedToShip;
+        product.RejectionReason = null;
+        product.UpdatedBy = User.Identity?.Name ?? "SYSTEM";
+        product.UpdatedOn = DateTime.Now;
+
+        await _context.SaveChangesAsync();
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HasPermission(Modules.ProductApprovals, Permissions.Update)]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Reject(Guid id, string reason)
+    {
+        var product = await _context.Products
+            .FirstOrDefaultAsync(p => p.ProductID == id);
+
+        if (product == null) return NotFound();
+
+        // Solo se puede rechazar un producto pendiente de aprobación.
+        if (product.ProductStatus != ProductStatus.PendingApproval)
+            return RedirectToAction(nameof(Index));
+
+        product.ProductStatus = ProductStatus.Rejected;
+        product.RejectionReason = reason;
+        product.UpdatedBy = User.Identity?.Name ?? "SYSTEM";
+        product.UpdatedOn = DateTime.Now;
+
+        await _context.SaveChangesAsync();
+
+        return RedirectToAction(nameof(Index));
+    }
 
     [HasPermission(Modules.ProductApprovals, Permissions.Update)]
     [HttpGet]
