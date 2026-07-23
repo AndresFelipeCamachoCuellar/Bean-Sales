@@ -4,60 +4,52 @@
     ViewData["Title"] = "Gestión de Roles";
 }
 
-<div class="container-fluid">
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Gestión de Roles</h1>
-        <a asp-action="Create" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
-            <i class="fas fa-plus fa-sm text-white-50"></i> Crear Nuevo Rol
-        </a>
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Gestión de roles</h1>
+        <p class="bean-panel-sub">Define los roles del sistema y los permisos granulares de cada uno.</p>
     </div>
+    <a asp-action="Create" class="bean-prov-newlot"><i class="fas fa-plus"></i> Crear nuevo rol</a>
+</div>
 
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Roles del Sistema</h6>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered" width="100%" cellspacing="0">
-                    <thead>
-                        <tr>
-                            <th>Nombre</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model)
-                        {
-                            <tr>
-                                <td>@item.Name</td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        @if (item.Name != Web.Constants.Roles.SuperAdmin && item.Name != Web.Constants.Roles.ProviderAdmin)
-                                        {
-                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning btn-sm" title="Editar Nombre">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <a asp-action="ManagePermissions" asp-route-id="@item.Id" class="btn btn-info btn-sm" title="Gestionar Permisos">
-                                                <i class="fas fa-key"></i>
-                                            </a>
-                                            <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro? Esto podría afectar a los usuarios con este rol.');">
-                                                 @Html.AntiForgeryToken()
-                                                <button type="submit" class="btn btn-danger btn-sm" title="Eliminar">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </form>
-                                        }
-                                        else
-                                        {
-                                             <span class="badge bg-secondary">System Protected</span>
-                                        }
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+<div class="bean-panel-tablewrap">
+    <table class="bean-panel-table">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td class="bean-td-name">@item.Name</td>
+                    <td>
+                        <div class="bean-td-actions">
+                            @if (item.Name != Web.Constants.Roles.SuperAdmin && item.Name != Web.Constants.Roles.ProviderAdmin)
+                            {
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="bean-btn-pill outline icon" title="Editar Nombre">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a asp-action="ManagePermissions" asp-route-id="@item.Id" class="bean-btn-pill primary icon" title="Gestionar Permisos">
+                                    <i class="fas fa-key"></i>
+                                </a>
+                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro? Esto podría afectar a los usuarios con este rol.');">
+                                     @Html.AntiForgeryToken()
+                                    <button type="submit" class="bean-btn-pill danger icon" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                 <span class="bean-role-chip">System Protected</span>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
 </div>

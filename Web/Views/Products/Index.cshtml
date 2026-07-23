@@ -2,141 +2,197 @@
 @using Web.Models.Enums
 @inject Web.Services.IPermissionService PermissionService
 @inject Microsoft.AspNetCore.Identity.UserManager<Web.Models.ApplicationUser> UserManager
+@inject Web.Data.ApplicationDbContext Context
 
 @{
-    ViewData["Title"] = "Mis Productos";
+    ViewData["Title"] = "Mis productos";
     Layout = "_Layout";
     var user = await UserManager.GetUserAsync(User);
+
+    var items = Model.ToList();
+    var canCreate = user != null && await PermissionService.HasPermissionAsync(user, Web.Constants.Modules.Products, Web.Constants.Permissions.Create);
+
+    // --- Resumen del encabezado (datos reales del propio catálogo) ---
+    int nPublicados = items.Count(p => p.ProductStatus == ProductStatus.Active);
+    int nPendientes = items.Count(p => p.ProductStatus == ProductStatus.PendingApproval);
+    int nBorradores = items.Count(p => p.ProductStatus == ProductStatus.Draft);
+
+    // --- Stats (vista 12) ---
+    // Valoración media / reseñas: reales, desde los campos de Product.
+    var rated = items.Where(p => p.Rating.HasValue).ToList();
+    decimal? avgRating = rated.Count > 0 ? Math.Round(rated.Average(p => p.Rating!.Value), 1) : (decimal?)null;
+    int totalReviews = items.Where(p => p.ReviewCount.HasValue).Sum(p => p.ReviewCount!.Value);
+
+    // Ventas del mes / bolsas vendidas: reales, agregando las líneas de pedido
+    // de los productos de este proveedor (scoping por ProviderID, igual que el controlador).
+    decimal ventasMes = 0m;
+    int bolsasVendidas = 0;
+    if (user?.ProviderID != null)
+    {
+        var providerId = user.ProviderID.Value;
+        var monthStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+        var soldQuery = Context.OrderItems.Where(oi => oi.Product != null && oi.Product.ProviderID == providerId);
+        bolsasVendidas = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
+            .SumAsync(soldQuery, oi => (int?)oi.Quantity) ?? 0;
+        ventasMes = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
+            .SumAsync(soldQuery.Where(oi => oi.Order != null && oi.Order.OrderDate >= monthStart), oi => (decimal?)oi.SubTotal) ?? 0m;
+    }
+
+    var origin = 0;
 }
 
-<div class="container-fluid">
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Mis Productos</h1>
-        @if (await PermissionService.HasPermissionAsync(user, Web.Constants.Modules.Products, Web.Constants.Permissions.Create))
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Mis productos</h1>
+        <p class="bean-panel-sub">
+            @items.Count lote@(items.Count == 1 ? "" : "s") · @nPublicados publicado@(nPublicados == 1 ? "" : "s") · @nPendientes pendiente@(nPendientes == 1 ? "" : "s") · @nBorradores borrador@(nBorradores == 1 ? "" : "es")
+        </p>
+    </div>
+    @if (canCreate)
+    {
+        <a asp-action="Create" class="bean-prov-newlot"><i class="fas fa-plus"></i> Publicar nuevo lote</a>
+    }
+</div>
+
+<div class="bean-prov-stats">
+    <div class="bean-prov-stat">
+        <div class="lbl">Ventas del mes</div>
+        <div class="val">@ventasMes.ToString("C0")</div>
+        <div class="sub">Pedidos de tus lotes este mes</div>
+    </div>
+    <div class="bean-prov-stat">
+        <div class="lbl">Bolsas vendidas</div>
+        <div class="val">@bolsasVendidas</div>
+        <div class="sub">Total histórico</div>
+    </div>
+    <div class="bean-prov-stat">
+        <div class="lbl">Valoración media</div>
+        <div class="val">@(avgRating.HasValue ? $"{avgRating.Value:0.0} ★" : "—")</div>
+        <div class="sub">@totalReviews reseña@(totalReviews == 1 ? "" : "s")</div>
+    </div>
+</div>
+
+@if (items.Count == 0)
+{
+    <div class="bean-appr-empty">
+        <div class="ico"><i class="fas fa-box-open"></i></div>
+        <h3>Aún no tienes lotes</h3>
+        <p>Publica tu primer lote de café para que el equipo de Bean lo revise y salga al catálogo.</p>
+    </div>
+}
+else
+{
+    <div class="bean-prov-list">
+        @foreach (var item in items)
         {
-            <a asp-action="Create" class="btn btn-primary shadow-sm"><i class="fas fa-plus fa-sm text-white-50 me-1"></i> Nuevo Producto</a>
+            origin = (origin % 6) + 1;
+            var stockClass = item.Stock <= 5 ? "stock-low" : "stock-ok";
+            <div class="bean-prov-lot">
+                <span class="bean-img bean-prov-lot-thumb o@(origin)"></span>
+
+                <div class="bean-prov-lot-info">
+                    <div class="nm">@item.Name</div>
+                    <div class="meta">
+                        @(string.IsNullOrWhiteSpace(item.Origin) ? "Origen sin especificar" : item.Origin)
+                        @if (!string.IsNullOrWhiteSpace(item.Lot))
+                        {
+                            <text> · Lote @item.Lot</text>
+                        }
+                        @if (item.ProductStatus == ProductStatus.Rejected && !string.IsNullOrEmpty(item.RejectionReason))
+                        {
+                            <br /><span style="color:var(--bean-error-2);">Motivo: @item.RejectionReason</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="bean-prov-lot-col">
+                    <div class="k">Precio COL</div>
+                    <div class="v">@item.Price.ToString("C0")</div>
+                </div>
+
+                <div class="bean-prov-lot-col">
+                    <div class="k">Stock</div>
+                    <div class="v @stockClass">@item.Stock</div>
+                </div>
+
+                <div class="bean-so-statuscell">
+                    @switch (item.ProductStatus)
+                    {
+                        case ProductStatus.Draft:
+                            <span class="bean-status draft"><span class="dot"></span>Borrador</span>
+                            break;
+                        case ProductStatus.PendingApproval:
+                            <span class="bean-status pending"><span class="dot"></span>Pendiente aprobación</span>
+                            break;
+                        case ProductStatus.ApprovedToShip:
+                            <span class="bean-status ship"><span class="dot"></span>Aprobado para envío</span>
+                            break;
+                        case ProductStatus.Shipped:
+                            <span class="bean-status transit"><span class="dot"></span>Enviado</span>
+                            break;
+                        case ProductStatus.Active:
+                            <span class="bean-status active"><span class="dot"></span>Publicado</span>
+                            break;
+                        case ProductStatus.Rejected:
+                            <span class="bean-status rejected"><span class="dot"></span>Rechazado</span>
+                            break;
+                    }
+                </div>
+
+                <div class="bean-so-ctacell" style="display:flex; gap:8px; align-items:center; justify-content:flex-end;">
+                    @if (item.ProductStatus == ProductStatus.Draft || item.ProductStatus == ProductStatus.Rejected)
+                    {
+                        <a asp-action="Edit" asp-route-id="@item.ProductID" class="bean-prov-lot-edit"><i class="fas fa-edit"></i> Editar</a>
+
+                        <form asp-action="SubmitForApproval" asp-route-id="@item.ProductID" method="post" class="bean-prov-submit" onsubmit="return confirm('¿Enviar a aprobación? No podrás editarlo hasta que se revise.');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="bean-btn-approve" title="Enviar a aprobación">
+                                <i class="fas fa-paper-plane"></i> Enviar
+                            </button>
+                        </form>
+                    }
+                    else if (item.ProductStatus == ProductStatus.ApprovedToShip)
+                    {
+                        <button type="button" class="bean-so-cta primary" data-bs-toggle="modal" data-bs-target="#shipModal-@item.ProductID" title="Registrar envío">
+                            <i class="fas fa-shipping-fast"></i> Registrar envío
+                        </button>
+
+                        <!-- Ship Modal -->
+                        <div class="modal fade" id="shipModal-@item.ProductID" tabindex="-1" role="dialog" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Registrar envío</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <form asp-action="Ship" asp-route-id="@item.ProductID" method="post">
+                                        <div class="modal-body">
+                                            <p>Ingresa los detalles del envío (guía, transportadora, etc.) para que el administrador pueda recibirlo.</p>
+                                            <div class="form-group">
+                                                <label>Datos de envío:</label>
+                                                <textarea name="shippingDetails" class="form-control" required rows="3" placeholder="Ej: Servientrega Guía #123456789"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" class="btn btn-primary">Confirmar envío</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <a asp-action="Edit" asp-route-id="@item.ProductID" class="bean-prov-lot-edit disabled" title="Solo lectura"><i class="fas fa-eye"></i> Ver</a>
+                    }
+                </div>
+            </div>
         }
     </div>
 
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Catálogo</h6>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered" width="100%" cellspacing="0">
-                    <thead>
-                        <tr>
-                            <th>Producto</th>
-                            <th>Precio</th>
-                            <th>Stock</th>
-                            <th>Países Objetivo</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model)
-                        {
-                            <tr>
-                                <td>
-                                    <strong>@item.Name</strong>
-                                    @if(item.ProductStatus == ProductStatus.Rejected)
-                                    {
-                                        <br/>
-                                        <small class="text-danger">Motivo: @item.RejectionReason</small>
-                                    }
-                                </td>
-                                <td>@item.Price.ToString("C")</td>
-                                <td>@item.Stock</td>
-                                <td>
-                                    @foreach(var pc in item.ProductCountries.Where(c => c.IsTargeted))
-                                    {
-                                        <span class="badge bg-light text-dark border">@pc.Country?.Name</span>
-                                    }
-                                </td>
-                                <td>
-                                    @switch(item.ProductStatus)
-                                    {
-                                        case ProductStatus.Draft:
-                                            <span class="badge bg-secondary">Borrador</span>
-                                            break;
-                                        case ProductStatus.PendingApproval:
-                                            <span class="badge bg-warning text-dark">Pendiente Aprobación</span>
-                                            break;
-                                        case ProductStatus.ApprovedToShip:
-                                            <span class="badge bg-info text-white">Aprobado para Envío</span>
-                                            break;
-                                        case ProductStatus.Shipped:
-                                            <span class="badge bg-primary">Enviado</span>
-                                            break;
-                                        case ProductStatus.Active:
-                                            <span class="badge bg-success">Activo (En Venta)</span>
-                                            break;
-                                        case ProductStatus.Rejected:
-                                            <span class="badge bg-danger">Rechazado</span>
-                                            break;
-                                    }
-                                </td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                         @if (item.ProductStatus == ProductStatus.Draft || item.ProductStatus == ProductStatus.Rejected)
-                                        {
-                                            <a asp-action="Edit" asp-route-id="@item.ProductID" class="btn btn-warning btn-sm" title="Editar">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            
-                                            <form asp-action="SubmitForApproval" asp-route-id="@item.ProductID" method="post" class="d-inline" onsubmit="return confirm('¿Enviar a aprobación? No podrás editarlo hasta que se revise.');">
-                                                @Html.AntiForgeryToken()
-                                                <button type="submit" class="btn btn-success btn-sm" title="Enviar a Aprobación">
-                                                    <i class="fas fa-paper-plane"></i>
-                                                </button>
-                                            </form>
-                                        }
-                                        else if (item.ProductStatus == ProductStatus.ApprovedToShip)
-                                        {
-                                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#shipModal-@item.ProductID" title="Registrar Envío">
-                                                <i class="fas fa-shipping-fast"></i>
-                                            </button>
-
-                                            <!-- Ship Modal -->
-                                            <div class="modal fade" id="shipModal-@item.ProductID" tabindex="-1" role="dialog" aria-hidden="true">
-                                                <div class="modal-dialog" role="document">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title">Registrar Envío</h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                        </div>
-                                                        <form asp-action="Ship" asp-route-id="@item.ProductID" method="post">
-                                                            <div class="modal-body">
-                                                                <p>Por favor ingresa los detalles del envío (Guía, Transportadora, etc.) para que el administrador pueda recibirlo.</p>
-                                                                <div class="form-group">
-                                                                    <label>Datos de Envío:</label>
-                                                                    <textarea name="shippingDetails" class="form-control" required rows="3" placeholder="Ej: Servientrega Guía #123456789"></textarea>
-                                                                </div>
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                                                <button type="submit" class="btn btn-primary">Confirmar Envío</button>
-                                                            </div>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        }
-                                        else
-                                        {
-                                            <a asp-action="Edit" asp-route-id="@item.ProductID" class="btn btn-secondary btn-sm disabled">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                        }
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
+    <div class="bean-panel-note" style="margin-top:20px;">
+        <i class="fas fa-lightbulb"></i>
+        <span><strong>Sugerencia:</strong> los lotes con ficha de tueste completa (origen, finca, proceso y notas de cata) se aprueban más rápido. Completa los datos antes de enviarlos a aprobación.</span>
     </div>
-</div>
+}

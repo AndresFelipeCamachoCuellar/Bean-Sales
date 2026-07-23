@@ -5,116 +5,89 @@
     Layout = "_Layout";
 }
 
-<div class="container-fluid">
-    <h1 class="h3 mb-4 text-gray-800">Editar Usuario</h1>
-
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Datos del Usuario</h6>
-        </div>
-        <div class="card-body">
-            <form asp-action="Edit" method="post">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                <input type="hidden" asp-for="Id" />
-                <input type="hidden" asp-for="Email" /> <!-- Email is often read-only or handled separately -->
-
-                
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <div class="form-floating text-muted">
-                            <input asp-for="Email" class="form-control" placeholder="Email" disabled />
-                            <label asp-for="Email"></label>
-                            <small>El email (usuario) no se puede cambiar aquí.</small>
-                        </div>
-                    </div>
-                     <!-- No Password field in Edit -->
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <div class="form-floating">
-                            <input asp-for="FirstName" class="form-control" placeholder="Nombres" />
-                            <label asp-for="FirstName"></label>
-                            <span asp-validation-for="FirstName" class="text-danger"></span>
-                        </div>
-                    </div>
-                     <div class="col-md-6 mb-3">
-                        <div class="form-floating">
-                            <input asp-for="LastName" class="form-control" placeholder="Apellidos" />
-                            <label asp-for="LastName"></label>
-                            <span asp-validation-for="LastName" class="text-danger"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <div class="form-floating">
-                            <select asp-for="DocumentTypeID" asp-items="Model.DocumentTypes" class="form-select">
-                                <option value="">-- Seleccione --</option>
-                            </select>
-                             <label asp-for="DocumentTypeID">Tipo de Documento</label>
-                            <span asp-validation-for="DocumentTypeID" class="text-danger"></span>
-                        </div>
-                    </div>
-                     <div class="col-md-6 mb-3">
-                        <div class="form-floating">
-                            <input asp-for="DocumentNumber" class="form-control" placeholder="No. Documento" />
-                            <label asp-for="DocumentNumber"></label>
-                            <span asp-validation-for="DocumentNumber" class="text-danger"></span>
-                        </div>
-                    </div>
-                </div>
-
-                 <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <div class="form-floating">
-                            <select asp-for="CountryID" asp-items="Model.Countries" class="form-select">
-                                <option value="">-- Seleccione --</option>
-                            </select>
-                             <label asp-for="CountryID">País</label>
-                            <span asp-validation-for="CountryID" class="text-danger"></span>
-                        </div>
-                    </div>
-                     <div class="col-md-6 mb-3">
-                         <div class="form-floating">
-                             <select asp-for="RoleID" asp-items="Model.Roles" class="form-select">
-                                <option value="">-- Seleccione --</option>
-                            </select>
-                            <label asp-for="RoleID">Rol Asignado</label>
-                            <span asp-validation-for="RoleID" class="text-danger"></span>
-                        </div>
-                    </div>
-                </div>
-                 <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <div class="form-floating">
-                             <select asp-for="Gender" class="form-select">
-                                <option value="">-- Seleccione --</option>
-                                <option value="Male">Masculino</option>
-                                <option value="Female">Femenino</option>
-                                <option value="Other">Otro</option>
-                            </select>
-                            <label asp-for="Gender"></label>
-                            <span asp-validation-for="Gender" class="text-danger"></span>
-                        </div>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <div class="form-check form-switch mt-3">
-                            <input class="form-check-input" type="checkbox" asp-for="Status">
-                            <label class="form-check-label" asp-for="Status">Usuario Activo</label>
-                        </div>
-                    </div>
-                </div>
-
-
-                <div class="form-group mt-4">
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Guardar Cambios</button>
-                    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
-                </div>
-            </form>
-        </div>
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Editar usuario</h1>
+        <p class="bean-panel-sub">Actualiza los datos, el rol y el estado de la cuenta.</p>
     </div>
+</div>
+
+<div class="bean-form-card">
+    <form asp-action="Edit" method="post">
+        <div asp-validation-summary="ModelOnly" class="bean-form-summary"></div>
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="Email" />
+
+        <h2 class="bean-form-section-title">Cuenta</h2>
+        <div class="bean-form-grid">
+            <div class="bean-field">
+                <label asp-for="Email" class="bean-label"></label>
+                <input asp-for="Email" class="bean-input" placeholder="Email" disabled />
+                <span class="bean-field-hint">El email (usuario) no se puede cambiar aquí.</span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="RoleID" class="bean-label">Rol asignado</label>
+                <select asp-for="RoleID" asp-items="Model.Roles" class="bean-select">
+                    <option value="">-- Seleccione --</option>
+                </select>
+                <span asp-validation-for="RoleID" class="bean-form-error"></span>
+            </div>
+        </div>
+
+        <h2 class="bean-form-section-title">Información personal</h2>
+        <div class="bean-form-grid">
+            <div class="bean-field">
+                <label asp-for="FirstName" class="bean-label"></label>
+                <input asp-for="FirstName" class="bean-input" placeholder="Nombres" />
+                <span asp-validation-for="FirstName" class="bean-form-error"></span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="LastName" class="bean-label"></label>
+                <input asp-for="LastName" class="bean-input" placeholder="Apellidos" />
+                <span asp-validation-for="LastName" class="bean-form-error"></span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="DocumentTypeID" class="bean-label">Tipo de Documento</label>
+                <select asp-for="DocumentTypeID" asp-items="Model.DocumentTypes" class="bean-select">
+                    <option value="">-- Seleccione --</option>
+                </select>
+                <span asp-validation-for="DocumentTypeID" class="bean-form-error"></span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="DocumentNumber" class="bean-label"></label>
+                <input asp-for="DocumentNumber" class="bean-input" placeholder="No. Documento" />
+                <span asp-validation-for="DocumentNumber" class="bean-form-error"></span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="CountryID" class="bean-label">País</label>
+                <select asp-for="CountryID" asp-items="Model.Countries" class="bean-select">
+                    <option value="">-- Seleccione --</option>
+                </select>
+                <span asp-validation-for="CountryID" class="bean-form-error"></span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="Gender" class="bean-label"></label>
+                <select asp-for="Gender" class="bean-select">
+                    <option value="">-- Seleccione --</option>
+                    <option value="Male">Masculino</option>
+                    <option value="Female">Femenino</option>
+                    <option value="Other">Otro</option>
+                </select>
+                <span asp-validation-for="Gender" class="bean-form-error"></span>
+            </div>
+        </div>
+
+        <h2 class="bean-form-section-title">Estado</h2>
+        <div class="bean-switch-row">
+            <input class="form-check-input" type="checkbox" asp-for="Status">
+            <label asp-for="Status">Usuario activo</label>
+        </div>
+
+        <div class="bean-form-actions">
+            <a asp-action="Index" class="bean-btn-pill outline">Cancelar</a>
+            <button type="submit" class="bean-btn-pill primary"><i class="fas fa-save"></i> Guardar cambios</button>
+        </div>
+    </form>
 </div>
 
 @section Scripts {

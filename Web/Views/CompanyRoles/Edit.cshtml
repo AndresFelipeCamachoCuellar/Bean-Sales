@@ -5,37 +5,35 @@
     Layout = "_Layout";
 }
 
-<div class="container-fluid">
-    <h1 class="h3 mb-4 text-gray-800">Editar Rol</h1>
-
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Información del Rol</h6>
-        </div>
-        <div class="card-body">
-            <form asp-action="Edit" method="post">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                <input type="hidden" asp-for="Id" />
-                
-                <div class="mb-3">
-                    <label asp-for="Name" class="form-label"></label>
-                    <input asp-for="Name" class="form-control" />
-                    <span asp-validation-for="Name" class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="Description" class="form-label"></label>
-                    <textarea asp-for="Description" class="form-control"></textarea>
-                    <span asp-validation-for="Description" class="text-danger"></span>
-                </div>
-
-                <div class="form-group">
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Actualizar</button>
-                    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
-                </div>
-            </form>
-        </div>
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Editar rol</h1>
+        <p class="bean-panel-sub">Actualiza el nombre y la descripción del rol.</p>
     </div>
+</div>
+
+<div class="bean-form-card narrow">
+    <form asp-action="Edit" method="post">
+        <div asp-validation-summary="ModelOnly" class="bean-form-summary"></div>
+        <input type="hidden" asp-for="Id" />
+
+        <div class="bean-field">
+            <label asp-for="Name" class="bean-label"></label>
+            <input asp-for="Name" class="bean-input" />
+            <span asp-validation-for="Name" class="bean-form-error"></span>
+        </div>
+
+        <div class="bean-field" style="margin-top:16px;">
+            <label asp-for="Description" class="bean-label"></label>
+            <textarea asp-for="Description" class="bean-input" rows="3"></textarea>
+            <span asp-validation-for="Description" class="bean-form-error"></span>
+        </div>
+
+        <div class="bean-form-actions">
+            <a asp-action="Index" class="bean-btn-pill outline">Cancelar</a>
+            <button type="submit" class="bean-btn-pill primary"><i class="fas fa-save"></i> Actualizar</button>
+        </div>
+    </form>
 </div>
 
 @section Scripts {

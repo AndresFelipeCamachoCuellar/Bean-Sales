@@ -1,82 +1,73 @@
 @model Web.Models.ViewModels.CompanyProfileViewModel
+@using Web.Services
+@using Web.Constants
+@using Microsoft.AspNetCore.Identity
+@inject IPermissionService PermissionService
+@inject UserManager<ApplicationUser> UserManager
 
 @{
     ViewData["Title"] = "Perfil de la Empresa";
     Layout = "_Layout";
+    var user = await UserManager.GetUserAsync(User);
+    var canEdit = await PermissionService.HasPermissionAsync(user, Modules.CompanyProfile, Permissions.Update);
 }
 
-<div class="container-fluid">
-    <h1 class="h3 mb-4 text-gray-800">Perfil de la Empresa</h1>
-
-    @if (TempData["SuccessMessage"] != null)
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Perfil de la empresa</h1>
+        <p class="bean-panel-sub">Consulta y administra la información general de tu empresa en la plataforma.</p>
+    </div>
+    @if (canEdit)
     {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
+        <a asp-action="Edit" class="bean-prov-newlot"><i class="fas fa-edit"></i> Editar información</a>
     }
+</div>
 
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">Información General</h6>
-            
-            @using Web.Services
-            @using Web.Constants
-            @inject IPermissionService PermissionService
-            @using Microsoft.AspNetCore.Identity
-            @inject UserManager<ApplicationUser> UserManager
-            
-            @{
-                var user = await UserManager.GetUserAsync(User);
-                if (await PermissionService.HasPermissionAsync(user, Modules.CompanyProfile, Permissions.Update))
-                {
-                    <a asp-action="Edit" class="btn btn-primary btn-sm">
-                        <i class="fas fa-edit"></i> Editar Información
-                    </a>
-                }
-            }
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="bean-form-card" style="margin-top:18px; border-color:var(--bean-terra); color:var(--bean-ink);">
+        <i class="fas fa-check-circle" style="color:var(--bean-terra);"></i> @TempData["SuccessMessage"]
+    </div>
+}
+
+<div class="bean-form-card">
+    <h2 class="bean-form-section-title">Información general</h2>
+    <div class="bean-form-grid">
+        <div class="bean-field">
+            <span class="bean-label">Nombre de la empresa</span>
+            <div class="bean-field-value">@Model.Name</div>
         </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="small mb-1 font-weight-bold">Nombre de la Empresa</label>
-                    <div class="form-control-plaintext border p-2 rounded bg-light">@Model.Name</div>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="small mb-1 font-weight-bold">NIT</label>
-                    <div class="form-control-plaintext border p-2 rounded bg-light">@Model.NIT</div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="small mb-1 font-weight-bold">Email Corporativo</label>
-                    <div class="form-control-plaintext border p-2 rounded bg-light">@Model.Email</div>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="small mb-1 font-weight-bold">Teléfono</label>
-                    <div class="form-control-plaintext border p-2 rounded bg-light">@Model.Phone</div>
-                </div>
-            </div>
-             <div class="row">
-                <div class="col-md-12 mb-3">
-                    <label class="small mb-1 font-weight-bold">Dirección</label>
-                    <div class="form-control-plaintext border p-2 rounded bg-light">@Model.Address</div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="small mb-1 font-weight-bold">Estado en Plataforma</label>
-                    <div>
-                        @if (Model.ApprovalStatus == "Approved")
-                        {
-                            <span class="badge bg-success p-2">Aprobado</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-warning text-dark p-2">@Model.ApprovalStatus</span>
-                        }
-                    </div>
-                </div>
+        <div class="bean-field">
+            <span class="bean-label">NIT</span>
+            <div class="bean-field-value">@Model.NIT</div>
+        </div>
+        <div class="bean-field">
+            <span class="bean-label">Email corporativo</span>
+            <div class="bean-field-value">@Model.Email</div>
+        </div>
+        <div class="bean-field">
+            <span class="bean-label">Teléfono</span>
+            <div class="bean-field-value">@Model.Phone</div>
+        </div>
+    </div>
+
+    <h2 class="bean-form-section-title">Ubicación y estado</h2>
+    <div class="bean-form-grid">
+        <div class="bean-field" style="grid-column: 1 / -1;">
+            <span class="bean-label">Dirección</span>
+            <div class="bean-field-value">@Model.Address</div>
+        </div>
+        <div class="bean-field">
+            <span class="bean-label">Estado en plataforma</span>
+            <div>
+                @if (Model.ApprovalStatus == "Approved")
+                {
+                    <span class="bean-status active"><span class="dot"></span>Aprobado</span>
+                }
+                else
+                {
+                    <span class="bean-status pending"><span class="dot"></span>@Model.ApprovalStatus</span>
+                }
             </div>
         </div>
     </div>

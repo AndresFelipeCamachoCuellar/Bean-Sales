@@ -4,111 +4,177 @@
 @{
     ViewData["Title"] = "Aprobación de Productos";
     Layout = "_Layout";
+
+    var items = Model.ToList();
+    int nPending = items.Count(p => p.ProductStatus == ProductStatus.PendingApproval);
+    int nApproved = items.Count(p => p.ProductStatus == ProductStatus.ApprovedToShip
+                                     || p.ProductStatus == ProductStatus.Shipped
+                                     || p.ProductStatus == ProductStatus.Active);
+    int nRejected = items.Count(p => p.ProductStatus == ProductStatus.Rejected);
+
+    // Grupo para el filtrado por pestañas (client-side).
+    string GroupOf(ProductStatus s) => s switch
+    {
+        ProductStatus.PendingApproval => "pending",
+        ProductStatus.Rejected => "rejected",
+        _ => "approved"
+    };
+
+    var origin = 0;
 }
 
-<div class="container-fluid">
-    <h1 class="h3 mb-4 text-gray-800">Aprobación y Recepción de Productos</h1>
-
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-             <h6 class="m-0 font-weight-bold text-primary">Productos Pendientes y En Tránsito</h6>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered" width="100%" cellspacing="0">
-                    <thead>
-                        <tr>
-                            <th>Proveedor</th>
-                            <th>Producto</th>
-                            <th>Países Objetivo</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model)
-                        {
-                            <tr>
-                                <td>@item.Provider?.Name <br/> <small>@item.Provider?.NIT</small></td>
-                                <td>
-                                    <strong>@item.Name</strong><br/>
-                                    Stock: @item.Stock | Precio: @item.Price.ToString("C")
-                                    @if (!string.IsNullOrEmpty(item.ShippingDetails))
-                                    {
-                                        <br/><small class="text-info"><i class="fas fa-shipping-fast"></i> @item.ShippingDetails</small>
-                                    }
-                                </td>
-                                <td>
-                                    @foreach(var pc in item.ProductCountries.Where(c => c.IsTargeted))
-                                    {
-                                        <span class="badge bg-light text-dark border">@pc.Country?.Name</span>
-                                    }
-                                </td>
-                                <td>
-                                    @switch(item.ProductStatus)
-                                    {
-                                        case ProductStatus.PendingApproval:
-                                            <span class="badge bg-warning text-dark">Pendiente Aprobación</span>
-                                            break;
-                                        case ProductStatus.ApprovedToShip:
-                                            <span class="badge bg-info text-white">Esperando Envío</span>
-                                            break;
-                                        case ProductStatus.Shipped:
-                                            <span class="badge bg-primary">Enviado / Por Recibir</span>
-                                            break;
-                                    }
-                                </td>
-                                <td>
-                                    @if(item.ProductStatus == ProductStatus.PendingApproval)
-                                    {
-                                        <form asp-action="Approve" asp-route-id="@item.ProductID" method="post" class="d-inline" onsubmit="return confirm('¿Aprobar producto? El proveedor será notificado para enviar.');">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-success btn-sm" title="Aprobar para Envío">
-                                                <i class="fas fa-check"></i>
-                                            </button>
-                                        </form>
-                                        
-                                        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#rejectModal-@item.ProductID" title="Rechazar">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-
-                                        <!-- Reject Modal -->
-                                        <div class="modal fade" id="rejectModal-@item.ProductID" tabindex="-1" role="dialog" aria-hidden="true">
-                                            <div class="modal-dialog" role="document">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">Rechazar Producto</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                    </div>
-                                                    <form asp-action="Reject" asp-route-id="@item.ProductID" method="post">
-                                                        <div class="modal-body">
-                                                            <div class="form-group">
-                                                                <label>Motivo del Rechazo:</label>
-                                                                <textarea name="reason" class="form-control" required rows="3"></textarea>
-                                                            </div>
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                                            <button type="submit" class="btn btn-danger">Rechazar</button>
-                                                        </div>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    }
-                                    else if (item.ProductStatus == ProductStatus.Shipped || item.ProductStatus == ProductStatus.Active)
-                                    {
-                                        <a asp-action="Receive" asp-route-id="@item.ProductID" class="btn btn-@(item.ProductStatus == ProductStatus.Active ? "primary" : "success") btn-sm" title="@(item.ProductStatus == ProductStatus.Active ? "Gestionar Disponibilidad" : "Recibir y Activar")">
-                                            <i class="fas fa-@(item.ProductStatus == ProductStatus.Active ? "globe" : "box-open") me-1"></i> 
-                                            @(item.ProductStatus == ProductStatus.Active ? "Disponibilidad" : "Recibir")
-                                        </a>
-                                    }
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Aprobación de productos</h1>
+        <p class="bean-panel-sub">Los proveedores publican; tú validas calidad y datos antes de que salgan al catálogo.</p>
+    </div>
+    <div class="bean-tabs" role="tablist">
+        <button type="button" class="bean-tab active" data-tab="pending" onclick="beanApprFilter('pending', this)">
+            Pendientes <span class="cnt">· @nPending</span>
+        </button>
+        <button type="button" class="bean-tab" data-tab="approved" onclick="beanApprFilter('approved', this)">
+            Aprobados <span class="cnt">· @nApproved</span>
+        </button>
+        <button type="button" class="bean-tab" data-tab="rejected" onclick="beanApprFilter('rejected', this)">
+            Rechazados <span class="cnt">· @nRejected</span>
+        </button>
     </div>
 </div>
+
+<div class="bean-appr-list" id="beanApprList">
+    @foreach (var item in items)
+    {
+        @{
+            origin = (origin % 6) + 1;
+            var group = GroupOf(item.ProductStatus);
+        }
+        <div class="bean-appr-card" data-group="@group">
+            <span class="bean-img bean-appr-thumb o@(origin)"></span>
+
+            <div class="bean-appr-info">
+                <p class="bean-appr-name">@item.Name</p>
+                <div class="bean-appr-provider">
+                    @item.Provider?.Name
+                    @if (!string.IsNullOrEmpty(item.Provider?.NIT))
+                    {
+                        <text>· NIT @item.Provider?.NIT</text>
+                    }
+                </div>
+                <div class="bean-appr-meta">
+                    Stock @item.Stock<span class="sep">·</span>@item.Price.ToString("C")
+                    @if (!string.IsNullOrEmpty(item.ShippingDetails))
+                    {
+                        <span class="sep">·</span><text><i class="fas fa-shipping-fast"></i> @item.ShippingDetails</text>
+                    }
+                </div>
+                <div class="bean-appr-countries">
+                    @foreach (var pc in item.ProductCountries.Where(c => c.IsTargeted))
+                    {
+                        <span class="bean-country-chip">@pc.Country?.Name</span>
+                    }
+                </div>
+            </div>
+
+            <div class="bean-appr-status">
+                @switch (item.ProductStatus)
+                {
+                    case ProductStatus.Draft:
+                        <span class="bean-status draft"><span class="dot"></span>Borrador</span>
+                        break;
+                    case ProductStatus.PendingApproval:
+                        <span class="bean-status pending"><span class="dot"></span>Pendiente aprobación</span>
+                        break;
+                    case ProductStatus.ApprovedToShip:
+                        <span class="bean-status ship"><span class="dot"></span>Esperando envío</span>
+                        break;
+                    case ProductStatus.Shipped:
+                        <span class="bean-status transit"><span class="dot"></span>Enviado / por recibir</span>
+                        break;
+                    case ProductStatus.Active:
+                        <span class="bean-status active"><span class="dot"></span>Activo · en venta</span>
+                        break;
+                    case ProductStatus.Rejected:
+                        <span class="bean-status rejected"><span class="dot"></span>Rechazado</span>
+                        break;
+                }
+            </div>
+
+            <div class="bean-appr-actions">
+                @if (item.ProductStatus == ProductStatus.PendingApproval)
+                {
+                    <form asp-action="Approve" asp-route-id="@item.ProductID" method="post" class="d-inline" onsubmit="return confirm('¿Aprobar producto? El proveedor será notificado para enviar.');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="bean-btn-approve" title="Aprobar para envío">
+                            <i class="fas fa-check"></i> Aprobar
+                        </button>
+                    </form>
+
+                    <button type="button" class="bean-btn-reject" data-bs-toggle="modal" data-bs-target="#rejectModal-@item.ProductID" title="Rechazar">
+                        <i class="fas fa-times"></i> Rechazar
+                    </button>
+
+                    <!-- Reject Modal -->
+                    <div class="modal fade" id="rejectModal-@item.ProductID" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Rechazar producto</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form asp-action="Reject" asp-route-id="@item.ProductID" method="post">
+                                    <div class="modal-body">
+                                        <label class="bean-label mb-2" style="display:block;">Motivo del rechazo</label>
+                                        <textarea name="reason" class="bean-input" required rows="3" placeholder="Explica al proveedor qué debe corregir…"></textarea>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="bean-btn-receive manage" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="bean-btn-reject">Rechazar producto</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else if (item.ProductStatus == ProductStatus.Shipped || item.ProductStatus == ProductStatus.Active)
+                {
+                    <a asp-action="Receive" asp-route-id="@item.ProductID" class="bean-btn-receive @(item.ProductStatus == ProductStatus.Active ? "manage" : "")" title="@(item.ProductStatus == ProductStatus.Active ? "Gestionar disponibilidad" : "Recibir y activar")">
+                        <i class="fas fa-@(item.ProductStatus == ProductStatus.Active ? "globe" : "box-open")"></i>
+                        @(item.ProductStatus == ProductStatus.Active ? "Disponibilidad" : "Recibir")
+                    </a>
+                }
+                else if (item.ProductStatus == ProductStatus.ApprovedToShip)
+                {
+                    <span class="bean-appr-meta" style="margin:0;">Esperando envío del proveedor</span>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<div class="bean-appr-empty" id="beanApprEmpty" style="display:none;">
+    <div class="ico"><i class="fas fa-check-double"></i></div>
+    <h3>No hay productos en esta pestaña</h3>
+    <p>Cuando haya lotes en este estado aparecerán aquí.</p>
+</div>
+
+@section Scripts {
+    <script>
+        function beanApprFilter(group, el) {
+            document.querySelectorAll('.bean-tab').forEach(function (t) { t.classList.remove('active'); });
+            if (el) { el.classList.add('active'); }
+
+            var rows = document.querySelectorAll('#beanApprList .bean-appr-card');
+            var visible = 0;
+            rows.forEach(function (r) {
+                var show = r.getAttribute('data-group') === group;
+                r.style.display = show ? '' : 'none';
+                if (show) { visible++; }
+            });
+            document.getElementById('beanApprEmpty').style.display = visible === 0 ? '' : 'none';
+        }
+        // Estado inicial: pestaña "Pendientes".
+        document.addEventListener('DOMContentLoaded', function () {
+            beanApprFilter('pending', document.querySelector('.bean-tab[data-tab="pending"]'));
+        });
+    </script>
+}

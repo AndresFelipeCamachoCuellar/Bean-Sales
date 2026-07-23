@@ -5,70 +5,55 @@
     Layout = "_Layout";
 }
 
-<div class="container-fluid">
-    <h1 class="h3 mb-4 text-gray-800">Editar Información</h1>
-
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Datos de la Empresa</h6>
-        </div>
-        <div class="card-body">
-            <form asp-action="Edit">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                <input type="hidden" asp-for="ProviderID" />
-                <input type="hidden" asp-for="Name" /> <!-- Name read-only for now -->
-                <input type="hidden" asp-for="NIT" /> <!-- NIT read-only -->
-                <input type="hidden" asp-for="Email" /> <!-- Email read-only -->
-
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                         <div class="form-floating text-muted">
-                            <input asp-for="Name" class="form-control" placeholder="Nombre" disabled />
-                            <label asp-for="Name"></label>
-                            <small class="text-muted ps-2">El nombre no se puede editar.</small>
-                        </div>
-                    </div>
-                     <div class="col-md-6 mb-3">
-                         <div class="form-floating text-muted">
-                            <input asp-for="NIT" class="form-control" placeholder="NIT" disabled />
-                            <label asp-for="NIT"></label>
-                            <small class="text-muted ps-2">El NIT no se puede editar.</small>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                         <div class="form-floating">
-                            <input asp-for="Phone" class="form-control" placeholder="Teléfono" />
-                            <label asp-for="Phone"></label>
-                            <span asp-validation-for="Phone" class="text-danger"></span>
-                        </div>
-                    </div>
-                     <div class="col-md-6 mb-3">
-                        <div class="form-floating text-muted">
-                            <input asp-for="Email" class="form-control" placeholder="Email" disabled />
-                            <label asp-for="Email"></label>
-                             <small class="text-muted ps-2">Contacte a soporte para cambiar el email.</small>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <div class="form-floating">
-                        <input asp-for="Address" class="form-control" placeholder="Dirección" />
-                        <label asp-for="Address"></label>
-                        <span asp-validation-for="Address" class="text-danger"></span>
-                    </div>
-                </div>
-
-                <div class="form-group mt-4">
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Guardar Cambios</button>
-                    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
-                </div>
-            </form>
-        </div>
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Editar información</h1>
+        <p class="bean-panel-sub">Actualiza los datos de contacto de tu empresa.</p>
     </div>
+</div>
+
+<div class="bean-form-card">
+    <form asp-action="Edit">
+        <div asp-validation-summary="ModelOnly" class="bean-form-summary"></div>
+        <input type="hidden" asp-for="ProviderID" />
+        <input type="hidden" asp-for="Name" />
+        <input type="hidden" asp-for="NIT" />
+        <input type="hidden" asp-for="Email" />
+
+        <h2 class="bean-form-section-title">Datos de la empresa</h2>
+        <div class="bean-form-grid">
+            <div class="bean-field">
+                <label asp-for="Name" class="bean-label"></label>
+                <input asp-for="Name" class="bean-input" placeholder="Nombre" disabled />
+                <span class="bean-field-hint">El nombre no se puede editar.</span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="NIT" class="bean-label"></label>
+                <input asp-for="NIT" class="bean-input" placeholder="NIT" disabled />
+                <span class="bean-field-hint">El NIT no se puede editar.</span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="Email" class="bean-label"></label>
+                <input asp-for="Email" class="bean-input" placeholder="Email" disabled />
+                <span class="bean-field-hint">Contacte a soporte para cambiar el email.</span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="Phone" class="bean-label"></label>
+                <input asp-for="Phone" class="bean-input" placeholder="Teléfono" />
+                <span asp-validation-for="Phone" class="bean-form-error"></span>
+            </div>
+            <div class="bean-field" style="grid-column: 1 / -1;">
+                <label asp-for="Address" class="bean-label"></label>
+                <input asp-for="Address" class="bean-input" placeholder="Dirección" />
+                <span asp-validation-for="Address" class="bean-form-error"></span>
+            </div>
+        </div>
+
+        <div class="bean-form-actions">
+            <a asp-action="Index" class="bean-btn-pill outline">Cancelar</a>
+            <button type="submit" class="bean-btn-pill primary"><i class="fas fa-save"></i> Guardar cambios</button>
+        </div>
+    </form>
 </div>
 
 @section Scripts {

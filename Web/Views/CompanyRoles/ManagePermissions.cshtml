@@ -5,44 +5,48 @@
     Layout = "_Layout";
 }
 
-<div class="container-fluid">
-    <h1 class="h3 mb-4 text-gray-800">Permisos para: @Model.RoleName</h1>
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Permisos del rol: @Model.RoleName</h1>
+        <p class="bean-panel-sub">Activa o desactiva los permisos granulares por módulo para este rol.</p>
+    </div>
+    <a asp-action="Index" class="bean-btn-pill outline"><i class="fas fa-arrow-left"></i> Volver</a>
+</div>
 
+<div class="bean-form-card">
     <form asp-action="ManagePermissions" method="post">
         <input type="hidden" asp-for="RoleId" />
 
-        <div class="row">
+        <div class="bean-perm-grid">
             @for (int i = 0; i < Model.Modules.Count; i++)
             {
-                <div class="col-xl-6 col-md-6 mb-4">
-                    <div class="card shadow h-100 py-2">
-                        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                            <h6 class="m-0 font-weight-bold text-primary">@Model.Modules[i].ModuleName</h6>
-                        </div>
-                        <div class="card-body">
-                            <input type="hidden" asp-for="@Model.Modules[i].ModuleName" />
-                            <input type="hidden" asp-for="@Model.Modules[i].ModuleCode" />
-                            
-                             @for (int j = 0; j < Model.Modules[i].Permissions.Count; j++)
-                            {
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" asp-for="@Model.Modules[i].Permissions[j].Selected" />
-                                    <label class="form-check-label" asp-for="@Model.Modules[i].Permissions[j].Selected">
-                                        @Model.Modules[i].Permissions[j].PermissionName - <small class="text-muted">@Model.Modules[i].Permissions[j].Description</small>
-                                    </label>
-                                    <input type="hidden" asp-for="@Model.Modules[i].Permissions[j].ParametricPermissionID" />
-                                    <input type="hidden" asp-for="@Model.Modules[i].Permissions[j].PermissionName" />
-                                </div>
-                            }
-                        </div>
+                <div class="bean-perm-module">
+                    <div class="bean-perm-module-head">@Model.Modules[i].ModuleName</div>
+
+                    <input type="hidden" asp-for="@Model.Modules[i].ModuleName" />
+                    <input type="hidden" asp-for="@Model.Modules[i].ModuleCode" />
+
+                    <div class="bean-perm-list">
+                        @for (int j = 0; j < Model.Modules[i].Permissions.Count; j++)
+                        {
+                            <div class="bean-perm-item">
+                                <input type="hidden" asp-for="@Model.Modules[i].Permissions[j].ParametricPermissionID" />
+                                <input type="hidden" asp-for="@Model.Modules[i].Permissions[j].PermissionName" />
+                                <input type="checkbox" asp-for="@Model.Modules[i].Permissions[j].Selected" id="@($"perm_{i}_{j}")" />
+                                <label for="@($"perm_{i}_{j}")">
+                                    @Model.Modules[i].Permissions[j].PermissionName
+                                    <small>@Model.Modules[i].Permissions[j].Description</small>
+                                </label>
+                            </div>
+                        }
                     </div>
                 </div>
             }
         </div>
 
-        <div class="form-group mt-3">
-             <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-save me-1"></i> Guardar Permisos</button>
-             <a asp-action="Index" class="btn btn-secondary btn-lg">Cancelar</a>
+        <div class="bean-form-actions">
+            <a asp-action="Index" class="bean-btn-pill outline">Cancelar</a>
+            <button type="submit" class="bean-btn-pill primary"><i class="fas fa-save"></i> Guardar permisos</button>
         </div>
     </form>
 </div>

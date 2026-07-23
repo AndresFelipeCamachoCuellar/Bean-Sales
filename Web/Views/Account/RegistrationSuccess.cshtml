@@ -1,27 +1,26 @@
 @{
-    ViewData["Title"] = "Registro Exitoso";
-    Layout = "_Layout";
+    ViewData["Title"] = "Registro recibido";
 }
 
-<div class="row justify-content-center mt-5">
-    <div class="col-md-8">
-        <div class="card border-success shadow">
-            <div class="card-body text-center p-5">
-                <div class="mb-4">
-                    <i class="fas fa-check-circle text-success" style="font-size: 5rem;"></i>
-                </div>
-                <h2 class="text-success mb-3">¡Registro Recibido!</h2>
-                <p class="lead">
-                    Tu empresa y tu cuenta de administrador han sido creadas exitosamente.
-                </p>
-                <hr />
-                <p class="mb-4">
-                    Tu cuenta se encuentra actualmente en estado <strong>PENDIENTE</strong> de verificación.<br />
-                    Un administrador de la plataforma revisará tus datos y aprobará tu acceso pronto.
-                    Te notificaremos por correo electrónico una vez que tu cuenta esté activa.
-                </p>
-                <a asp-action="Login" class="btn btn-primary btn-lg">Volver al Inicio</a>
-            </div>
+@section AuthAside {
+    <div class="bean-auth-panel-top">
+        <a class="bean-brand" asp-controller="Home" asp-action="Index"><span class="bean-drop"></span> Bean</a>
+        <span class="bean-auth-badge-emp">Empresas</span>
+    </div>
+    <div class="bean-auth-panel-body">
+        <h2>Bienvenido a Bean.</h2>
+        <p>Estamos revisando los datos de tu empresa. En cuanto quede aprobada, tendrás acceso a precios de mayoreo, cupo mensual y facturación.</p>
+        <div class="bean-auth-panel-checks">
+            <span>Verificación en 1 día hábil</span>
         </div>
     </div>
+}
+
+<div class="bean-auth-success">
+    <div class="circle">✓</div>
+    <h1>¡Registro recibido!</h1>
+    <p>Tu empresa y tu cuenta de administrador se crearon correctamente.</p>
+    <div class="bean-auth-pill-state">Estado: pendiente de verificación</div>
+    <p>Un administrador de la plataforma revisará tus datos y aprobará tu acceso pronto. Te notificaremos por correo cuando tu cuenta esté activa.</p>
+    <a asp-action="Login" class="bean-auth-cta" style="max-width:260px;margin:10px auto 0;">Volver a iniciar sesión</a>
 </div>
