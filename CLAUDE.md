@@ -102,5 +102,6 @@ Corrección clave: el portal de proveedores + flujo de aprobación de productos 
 - Actuar como PM: mantener Trello como fuente de verdad, documentar decisiones, hacer preguntas de PO antes de avanzar sobre supuestos.
 - Al cerrar trabajo relevante, actualizar este `CLAUDE.md` y el plan en `Docs/`.
 - Conectores disponibles: Trello, Google Drive. (GitHub/Slack/otros requieren autorización del usuario si se necesitan.)
+- **⚠️ Razor gotcha (RZ1010):** dentro de un bloque de código (`@foreach`/`@for`/`@if` `{ }`) ya se está en contexto C#; escribir `@{ ... }` ahí falla al compilar (RZ1010). Usar sentencias sueltas (`var x = ...;`) sin `@{`. Los subagentes de QA NO lo detectan (requiere `dotnet build` real). Corregido en ProductApproval/Index y Receive (jul 2026).
 - **Subagentes usan skills del plugin `engineering`:** QA/verificación con `engineering:code-review`; desarrollo/diagnóstico con `engineering:debug`, `engineering:architecture`, `engineering:testing-strategy` según aplique. (Instrucción de Andrés, jul 2026.)
 - Credenciales SuperAdmin de la app y detalles de instalación: ver `README.md`.

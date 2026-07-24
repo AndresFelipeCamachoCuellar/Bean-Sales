@@ -44,10 +44,8 @@
 <div class="bean-appr-list" id="beanApprList">
     @foreach (var item in items)
     {
-        @{
-            origin = (origin % 6) + 1;
-            var group = GroupOf(item.ProductStatus);
-        }
+        origin = (origin % 6) + 1;
+        var group = GroupOf(item.ProductStatus);
         <div class="bean-appr-card" data-group="@group">
             <span class="bean-img bean-appr-thumb o@(origin)"></span>
 
