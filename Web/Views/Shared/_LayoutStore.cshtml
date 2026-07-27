@@ -1,10 +1,70 @@
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
 @using Web.Models
+@using Web.Models.Enums
+@using Web.Services
+@using Web.Constants
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
+@inject IPermissionService PermissionService
+@inject Web.Data.ApplicationDbContext Context
 @{
     // Contador de la bolsa (placeholder: se muestra sólo si el controlador lo expone en ViewBag.CartCount).
     var cartCount = ViewBag.CartCount as int?;
+
+    // --- Puente storefront -> back-office -------------------------------
+    // Detección de rol por claims (sin tocar la BD).
+    var isSignedIn = SignInManager.IsSignedIn(User);
+    var isSuperAdmin = isSignedIn && User.IsInRole(Web.Constants.Roles.SuperAdmin);
+    var isProviderRole = isSignedIn && User.IsInRole(Web.Constants.Roles.ProviderAdmin);
+    var isStaff = isSuperAdmin || isProviderRole;
+
+    // Las consultas (UserManager / PermissionService / DbContext) se ejecutan
+    // SÓLO para staff: un cliente o un anónimo no dispara ninguna query aquí.
+    ApplicationUser? navUser = null;
+    var canReadUsers = false;
+    var canReadRoles = false;
+    var canReadApprovals = false;
+    var canReadProducts = false;
+    var canReadCompanyProfile = false;
+    var pendingApprovals = 0;
+
+    if (isStaff)
+    {
+        navUser = await UserManager.GetUserAsync(User);
+        if (navUser != null)
+        {
+            if (isSuperAdmin)
+            {
+                canReadUsers = await PermissionService.HasPermissionAsync(navUser, Modules.Users, Permissions.Read);
+                canReadRoles = await PermissionService.HasPermissionAsync(navUser, Modules.Roles, Permissions.Read);
+                canReadApprovals = await PermissionService.HasPermissionAsync(navUser, Modules.ProductApprovals, Permissions.Read);
+            }
+            else
+            {
+                canReadProducts = await PermissionService.HasPermissionAsync(navUser, Modules.Products, Permissions.Read);
+                canReadCompanyProfile = await PermissionService.HasPermissionAsync(navUser, Modules.CompanyProfile, Permissions.Read);
+            }
+        }
+
+        if (canReadApprovals)
+        {
+            pendingApprovals = await Context.Products
+                .CountAsync(p => p.ProductStatus == ProductStatus.PendingApproval && p.Status);
+        }
+    }
+
+    // La píldora sólo aparece si el destino es realmente accesible (evita 403).
+    var showPanelPill = isSuperAdmin || (isProviderRole && canReadProducts);
+
+    // Nombre visible: FirstName si lo tenemos cargado (staff), si no el UserName del claim.
+    var navDisplayName = !string.IsNullOrWhiteSpace(navUser?.FirstName)
+        ? navUser!.FirstName
+        : (User.Identity?.Name ?? "Mi cuenta");
+    var navInitial = navDisplayName.Trim().Length > 0 ? navDisplayName.Trim().Substring(0, 1) : "U";
+    var navRoleLabel = isSuperAdmin ? "Administrador" : (isProviderRole ? "Proveedor verificado" : "Cliente");
+    // Dashboard es [Authorize(Roles = SuperAdmin)]: el proveedor va a su propio panel.
+    var panelController = isSuperAdmin ? "Dashboard" : "Products";
 }
 <!DOCTYPE html>
 <html lang="es">
@@ -52,15 +112,104 @@
                         <span class="on">ES</span>·<span>EN</span>
                     </button>
 
-                    @if (SignInManager.IsSignedIn(User))
+                    @if (isSignedIn)
                     {
-                        <span class="bean-nav-simple-right">
-                            <a class="bean-nav-link" asp-controller="Orders" asp-action="Index">Mis pedidos</a>
-                            <a class="bean-nav-link" asp-controller="Home" asp-action="Index">@User.Identity?.Name</a>
-                            <form asp-controller="Account" asp-action="Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" method="post" class="d-inline">
-                                <button type="submit" class="bean-lang-toggle" style="padding:0;">Salir</button>
-                            </form>
-                        </span>
+                        // Píldora "Panel": sólo staff (SuperAdmin al Dashboard, proveedor a sus productos).
+                        if (showPanelPill)
+                        {
+                            <a class="bean-nav-panel" asp-controller="@panelController" asp-action="Index" title="Ir al panel">
+                                <i class="fas fa-th-large"></i>
+                                <span class="lbl">Panel</span>
+                                @if (isSuperAdmin && pendingApprovals > 0)
+                                {
+                                    <span class="bean-nav-panel-count">@pendingApprovals</span>
+                                }
+                            </a>
+                        }
+
+                        <div class="bean-usermenu dropdown">
+                            <button class="bean-usermenu-trigger" type="button" id="beanUserMenu"
+                                    data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">
+                                <span class="bean-usermenu-avatar">@navInitial</span>
+                                <span class="bean-usermenu-name">@navDisplayName</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end bean-usermenu-panel" aria-labelledby="beanUserMenu">
+                                <div class="bean-usermenu-head">
+                                    <div class="nm">@navDisplayName</div>
+                                    <div class="rl">@navRoleLabel</div>
+                                </div>
+                                <div class="bean-usermenu-sep"></div>
+
+                                @if (isSuperAdmin)
+                                {
+                                    <a class="bean-usermenu-item primary" asp-controller="Dashboard" asp-action="Index">
+                                        <i class="fas fa-th-large"></i> Ir al panel
+                                    </a>
+                                    if (canReadApprovals)
+                                    {
+                                        <a class="bean-usermenu-item" asp-controller="ProductApproval" asp-action="Index">
+                                            <i class="fas fa-check-double"></i> Aprobaciones
+                                            @if (pendingApprovals > 0)
+                                            {
+                                                <span class="bean-usermenu-count">@pendingApprovals</span>
+                                            }
+                                        </a>
+                                    }
+                                    <a class="bean-usermenu-item" asp-controller="Providers" asp-action="Index">
+                                        <i class="fas fa-building"></i> Empresas
+                                    </a>
+                                    if (canReadUsers)
+                                    {
+                                        <a class="bean-usermenu-item" asp-controller="Users" asp-action="Index">
+                                            <i class="fas fa-users"></i> Usuarios
+                                        </a>
+                                    }
+                                    if (canReadRoles)
+                                    {
+                                        <a class="bean-usermenu-item" asp-controller="Roles" asp-action="Index">
+                                            <i class="fas fa-user-shield"></i> Roles
+                                        </a>
+                                    }
+                                    <div class="bean-usermenu-sep"></div>
+                                }
+                                else if (isProviderRole)
+                                {
+                                    if (canReadProducts)
+                                    {
+                                        <a class="bean-usermenu-item primary" asp-controller="Products" asp-action="Index">
+                                            <i class="fas fa-th-large"></i> Ir a mi panel
+                                        </a>
+                                        <a class="bean-usermenu-item" asp-controller="Products" asp-action="Index">
+                                            <i class="fas fa-box-open"></i> Mis productos
+                                        </a>
+                                        <a class="bean-usermenu-item" asp-controller="SupplierOrders" asp-action="Index">
+                                            <i class="fas fa-inbox"></i> Pedidos entrantes
+                                        </a>
+                                    }
+                                    if (canReadCompanyProfile)
+                                    {
+                                        <a class="bean-usermenu-item" asp-controller="CompanyProfile" asp-action="Index">
+                                            <i class="fas fa-building"></i> Mi empresa
+                                        </a>
+                                    }
+                                    if (canReadProducts || canReadCompanyProfile)
+                                    {
+                                        <div class="bean-usermenu-sep"></div>
+                                    }
+                                }
+
+                                <a class="bean-usermenu-item" asp-controller="Orders" asp-action="Index">
+                                    <i class="fas fa-box"></i> Mis pedidos
+                                </a>
+                                <div class="bean-usermenu-sep"></div>
+                                <form asp-controller="Account" asp-action="Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" method="post" class="bean-usermenu-form">
+                                    <button type="submit" class="bean-usermenu-item bean-usermenu-logout">
+                                        <i class="fas fa-sign-out-alt"></i> Salir
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
                     }
                     else
                     {

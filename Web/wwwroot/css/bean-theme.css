@@ -196,6 +196,113 @@
 }
 .bean-nav-simple-right { display: inline-flex; align-items: center; gap: 8px; color: var(--bean-on-dark-3); font-size: 13px; font-weight: 600; }
 
+/* --- Puente al back-office: píldora "Panel" ------------------------- */
+.bean-nav-panel {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: var(--r-pill);
+    padding: 9px 16px;
+    color: #efe0cd;
+    font-family: var(--font-body); font-weight: 600; font-size: 13px;
+    text-decoration: none; white-space: nowrap; line-height: 1;
+    transition: background .25s ease, border-color .25s ease, color .25s ease, transform .25s ease;
+}
+.bean-nav-panel i { font-size: 13px; }
+.bean-nav-panel:hover {
+    background: rgba(217,138,95,.18);
+    border-color: #d8a88f;
+    color: #fff;
+    transform: scale(1.03);
+}
+.bean-nav-panel:focus-visible { outline: 2px solid var(--bean-terra); outline-offset: 2px; }
+.bean-nav-panel-count {
+    background: #B4552E; color: #fff;
+    font-size: 11px; font-weight: 700; line-height: 1.45;
+    padding: 1px 7px; border-radius: var(--r-pill);
+}
+
+/* --- Menú desplegable de usuario ------------------------------------ */
+.bean-usermenu { position: relative; }
+.bean-usermenu-trigger {
+    display: inline-flex; align-items: center; gap: 9px;
+    background: none; border: none; cursor: pointer;
+    padding: 4px 8px 4px 4px; border-radius: var(--r-pill);
+    transition: background .25s ease;
+}
+.bean-usermenu-trigger:hover { background: rgba(255,255,255,.06); }
+.bean-usermenu-trigger:focus-visible { outline: 2px solid var(--bean-terra); outline-offset: 2px; }
+.bean-usermenu-avatar {
+    width: 30px; height: 30px; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%; background: var(--bean-terra-grad);
+    color: #fff; font-family: var(--font-head); font-weight: 700; font-size: 13px;
+    text-transform: uppercase; line-height: 1;
+}
+.bean-usermenu-name {
+    font-family: var(--font-body); font-weight: 600; font-size: 13px; color: #c9b8a4;
+    max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.bean-usermenu-trigger .fa-chevron-down {
+    font-size: 10px; color: #a08b73;
+    transition: transform .25s ease;
+}
+.bean-usermenu-trigger[aria-expanded="true"] .fa-chevron-down { transform: rotate(180deg); }
+
+/* Panel del dropdown (sobreescribe el look claro de Bootstrap) */
+.bean-usermenu .bean-usermenu-panel {
+    min-width: 244px;
+    background: #241a12;
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 16px;
+    padding: 8px;
+    box-shadow: 0 24px 60px rgba(60,35,15,.34);
+    margin-top: 10px;
+}
+.bean-usermenu-head { padding: 8px 12px 10px; }
+.bean-usermenu-head .nm {
+    font-family: var(--font-body); font-weight: 700; font-size: 13.5px; color: #fff;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.bean-usermenu-head .rl {
+    margin-top: 3px;
+    font-family: var(--font-body); font-weight: 600; font-size: 11.5px;
+    text-transform: uppercase; letter-spacing: .12em; color: #a08b73;
+}
+.bean-usermenu-sep { height: 1px; background: rgba(255,255,255,.08); margin: 6px 4px; }
+.bean-usermenu-form { margin: 0; }
+.bean-usermenu-item {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 9px 12px; border-radius: 10px;
+    background: none; border: none; text-align: left; cursor: pointer;
+    font-family: var(--font-body); font-weight: 600; font-size: 13.5px;
+    color: #c9b8a4; text-decoration: none;
+    transition: background .2s ease, color .2s ease;
+}
+.bean-usermenu-item i {
+    width: 16px; text-align: center; font-size: 13px; color: #a08b73; flex-shrink: 0;
+    transition: color .2s ease;
+}
+.bean-usermenu-item:hover,
+.bean-usermenu-item:focus-visible { background: rgba(217,138,95,.16); color: #fff; }
+.bean-usermenu-item:hover i,
+.bean-usermenu-item:focus-visible i { color: #e8a582; }
+.bean-usermenu-item.primary { background: rgba(217,138,95,.22); color: #fff; }
+.bean-usermenu-item.primary i { color: #e8a582; }
+.bean-usermenu-item.primary:hover { background: rgba(217,138,95,.30); }
+.bean-usermenu-count {
+    margin-left: auto;
+    background: #B4552E; color: #fff;
+    font-size: 11px; font-weight: 700; line-height: 1.45;
+    padding: 1px 7px; border-radius: var(--r-pill);
+}
+.bean-usermenu-logout { color: #c98a8a; }
+.bean-usermenu-logout i { color: #c98a8a; }
+.bean-usermenu-logout:hover,
+.bean-usermenu-logout:focus-visible { background: rgba(164,73,73,.18); color: #fff; }
+.bean-usermenu-logout:hover i,
+.bean-usermenu-logout:focus-visible i { color: #fff; }
+
 /* ---------------------------------------------------------------------
    4. BOTONES / CHIPS píldora
    --------------------------------------------------------------------- */
@@ -755,6 +862,11 @@
     .bean-footer-grid { grid-template-columns: 1fr 1fr; }
     .bean-hero h1 { font-size: 48px; }
     .bean-nav-links { display: none; }
+    /* Píldora Panel: sólo icono (el badge se mantiene) */
+    .bean-nav-panel { padding: 9px 11px; }
+    .bean-nav-panel .lbl { display: none; }
+    /* Menú de usuario: sólo avatar + chevron */
+    .bean-usermenu-name { display: none; }
 }
 @media (max-width: 640px) {
     .bean-container { padding-left: 20px; padding-right: 20px; }
@@ -768,6 +880,7 @@
         row-gap: 14px;
     }
     .bean-order-idcol { grid-column: 1 / -1; }
+    .bean-usermenu .bean-usermenu-panel { min-width: min(280px, calc(100vw - 32px)); }
 }
 
 /* ---------------------------------------------------------------------
@@ -837,6 +950,12 @@
 .bean-admin-navlink i { width: 18px; text-align: center; font-size: 14px; flex-shrink: 0; }
 .bean-admin-navlink:hover { background: rgba(255,255,255,.06); color: #fff; }
 .bean-admin-navlink.active { background: rgba(217,138,95,.22); color: #fff; }
+/* Puente de vuelta al storefront: separado del resto del nav (clase nueva, aditiva) */
+.bean-admin-navstore {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,.08);
+}
 .bean-admin-navcount {
     margin-left: auto; background: var(--bean-terra); color: #fff;
     border-radius: var(--r-pill); font-size: 11px; font-weight: 700;
