@@ -16,7 +16,7 @@ public class ProductViewModel
     public string Description { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "El precio es obligatorio")]
-    [Display(Name = "Precio (USD)")]
+    [Display(Name = "Precio (COP)")]
     [Range(0.01, double.MaxValue, ErrorMessage = "El precio debe ser mayor a 0")]
     public decimal Price { get; set; }
 

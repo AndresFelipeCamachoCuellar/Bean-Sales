@@ -1356,6 +1356,19 @@
 .bean-perm-item label { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--bean-ink); cursor: pointer; }
 .bean-perm-item label small { display: block; font-weight: 500; font-size: 12px; color: var(--bean-muted); margin-top: 2px; }
 
+/* ---- Formulario de producto (Products/Create|Edit) ---- */
+.bean-form-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.bean-input-affix { position: relative; display: flex; align-items: center; }
+.bean-input-affix .affix {
+    position: absolute; left: 13px; font-size: 14px; font-weight: 700;
+    color: var(--bean-muted); pointer-events: none;
+}
+.bean-input-affix .bean-input { padding-left: 30px; }
+.bean-panel-note.danger { background: #F9E9E9; border: 1px solid var(--bean-error-border); color: var(--bean-error-2); }
+.bean-panel-note.danger i { color: var(--bean-error-2); }
+@media (max-width: 1100px) { .bean-form-grid.cols-3 { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .bean-form-grid.cols-3 { grid-template-columns: 1fr; } }
+
 /* ---- Responsive del panel ---- */
 @media (max-width: 900px) {
     .bean-admin-sidebar { transform: translateX(-100%); transition: transform .28s ease; }
