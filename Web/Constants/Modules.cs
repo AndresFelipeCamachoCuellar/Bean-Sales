@@ -10,4 +10,5 @@ public static class Modules
     public const string CompanyRoles = "CompanyRoles";
     public const string Products = "Products";
     public const string ProductApprovals = "ProductApprovals";
+    public const string Orders = "Orders";
 }

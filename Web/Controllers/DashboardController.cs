@@ -48,9 +48,9 @@ public class DashboardController : Controller
         var pendingApprovals = await _context.Products
             .CountAsync(p => p.ProductStatus == ProductStatus.PendingApproval && p.Status);
 
-        // 4º KPI real: productos activos publicados.
-        var activeProducts = await _context.Products
-            .CountAsync(p => p.ProductStatus == ProductStatus.Active && p.Status);
+        // 4º KPI real: pedidos por despachar (confirmados o en preparación).
+        var ordersToShip = await _context.Orders
+            .CountAsync(o => o.OrderStatus == OrderStatus.Confirmed || o.OrderStatus == OrderStatus.Processing);
 
         // Bolsas vendidas este mes (suma de cantidades de líneas de pedidos del mes).
         var bagsThisMonth = await _context.OrderItems
@@ -78,8 +78,8 @@ public class DashboardController : Controller
         });
         vm.Kpis.Add(new DashboardKpi
         {
-            Label = "Productos activos",
-            Value = activeProducts.ToString("N0", EsCo),
+            Label = "Por despachar",
+            Value = ordersToShip.ToString("N0", EsCo),
             HasTrend = false
         });
 

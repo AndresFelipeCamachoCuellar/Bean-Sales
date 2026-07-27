@@ -59,6 +59,20 @@
                     <i class="fas fa-chart-line"></i> <span>Dashboard</span>
                 </a>
             }
+            @* Bandeja de pedidos del back-office (permiso Orders/Read). *@
+            @if (await PermissionService.HasPermissionAsync(currentUser, Modules.Orders, Permissions.Read))
+            {
+                var pendingOrders = await Context.Orders
+                    .CountAsync(o => o.OrderStatus == OrderStatus.Confirmed || o.OrderStatus == OrderStatus.Processing);
+
+                <a class="bean-admin-navlink@(ActiveIf("OrderManagement"))" asp-area="" asp-controller="OrderManagement" asp-action="Index">
+                    <i class="fas fa-receipt"></i> <span>Pedidos</span>
+                    @if (pendingOrders > 0)
+                    {
+                        <span class="bean-admin-navcount">@pendingOrders</span>
+                    }
+                </a>
+            }
             @if (await PermissionService.HasPermissionAsync(currentUser, Modules.Users, Permissions.Read))
             {
                 <a class="bean-admin-navlink@(ActiveIf("Users"))" asp-area="" asp-controller="Users" asp-action="Index">

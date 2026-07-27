@@ -1060,6 +1060,9 @@
     transition: background .18s ease, color .18s ease, border-color .18s ease;
 }
 .bean-tab:hover { border-color: var(--bean-terra-soft); }
+/* Variante <a> (pestañas server-side de la bandeja de pedidos) */
+a.bean-tab, a.bean-tab:hover { text-decoration: none; color: var(--bean-body); }
+a.bean-tab.active, a.bean-tab.active:hover { color: #fff; }
 .bean-tab .cnt { font-weight: 700; opacity: .65; }
 .bean-tab.active { background: var(--bean-dark); color: #fff; border-color: var(--bean-dark); }
 .bean-tab.active .cnt { opacity: .85; }

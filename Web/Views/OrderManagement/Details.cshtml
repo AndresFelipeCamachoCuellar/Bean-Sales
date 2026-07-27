@@ -1,0 +1,298 @@
+@model Web.Models.ViewModels.OrderDetailViewModel
+@using Web.Constants
+@using Web.Models.Enums
+@using Web.Models.ViewModels
+@using Web.Services
+@using Microsoft.AspNetCore.Identity
+@inject IPermissionService PermissionService
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+    ViewData["Title"] = "Pedido";
+    Layout = "_Layout";
+
+    var co = System.Globalization.CultureInfo.GetCultureInfo("es-CO");
+    var order = Model.Order;
+    var ui = OrderStatusUi.For(order.OrderStatus);
+
+    var currentUser = await UserManager.GetUserAsync(User);
+    var canUpdate = currentUser != null
+        && await PermissionService.HasPermissionAsync(currentUser, Modules.Orders, Permissions.Update);
+    var canCancel = Model.CanCancel && currentUser != null
+        && await PermissionService.HasPermissionAsync(currentUser, Modules.Orders, Permissions.Delete);
+
+    var isCancelled = order.OrderStatus == OrderStatus.Cancelled;
+
+    // Paso actual de la línea de tiempo (mismo criterio que Cart/Confirmation).
+    var step = order.OrderStatus switch
+    {
+        OrderStatus.Confirmed => 1,
+        OrderStatus.Processing => 2,
+        OrderStatus.Shipped => 3,
+        OrderStatus.Delivered => 4,
+        _ => 0
+    };
+
+    var hitos = new[]
+    {
+        new { Num = 1, Titulo = "Confirmado", Detalle = "Se recibió el pedido y el pago." },
+        new { Num = 2, Titulo = "Tostado y empacado", Detalle = "El café se prepara en origen." },
+        new { Num = 3, Titulo = "En camino", Detalle = "El pedido salió hacia la dirección del cliente." },
+        new { Num = 4, Titulo = "Entregado", Detalle = "El cliente recibió su café." }
+    };
+
+    string EstadoHito(int num)
+    {
+        if (step >= 4) return "done";
+        if (num < step) return "done";
+        if (num == step) return "active";
+        return "future";
+    }
+
+    var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+    var clienteEmail = order.User?.Email ?? "—";
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Pedido #@Model.ShortId</h1>
+        <p class="bean-panel-sub">
+            @order.OrderDate.ToString("d 'de' MMMM, yyyy '·' HH:mm", co)
+            · @order.FirstName @order.LastName
+            · Pago: @order.PaymentMethod
+        </p>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <span class="@ui.CssClass"><span class="dot"></span>@ui.Label</span>
+        <a class="bean-btn-pill outline" asp-action="Index">&larr; Volver a pedidos</a>
+    </div>
+</div>
+
+@if (TempData["OrderOk"] != null)
+{
+    <div class="bean-panel-note" style="margin-top:16px;">
+        <i class="fas fa-check-circle"></i>
+        <div>@TempData["OrderOk"]</div>
+    </div>
+}
+@if (TempData["OrderError"] != null)
+{
+    <div class="bean-panel-note danger" style="margin-top:16px;">
+        <i class="fas fa-exclamation-triangle"></i>
+        <div>@TempData["OrderError"]</div>
+    </div>
+}
+
+<div class="bean-dash-cols" style="margin-top:22px;">
+    @* ---------------- Columna izquierda: líneas del pedido ---------------- *@
+    <div class="bean-dash-card">
+        <div class="bean-dash-cardhead">
+            <h2 class="bean-dash-cardtitle">Líneas del pedido</h2>
+            <span style="font-size:13px; color:var(--bean-muted);">@order.Items.Count líneas</span>
+        </div>
+
+        <table class="bean-panel-table">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Proveedor</th>
+                    <th>Cant.</th>
+                    <th>Precio unit.</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (order.Items.Count == 0)
+                {
+                    <tr>
+                        <td colspan="5" style="color:var(--bean-muted);">Este pedido no tiene líneas registradas.</td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var i in order.Items)
+                    {
+                        var proveedor = i.Product?.Provider?.Name ?? "—";
+
+                        <tr>
+                            @* Snapshots: el nombre y el precio son los del momento de la compra. *@
+                            <td class="bean-td-name">@i.ProductName</td>
+                            <td>@proveedor</td>
+                            <td>@i.Quantity</td>
+                            <td>@i.UnitPrice.ToString("C0", co)</td>
+                            <td style="font-weight:700; color:var(--bean-ink);">@i.SubTotal.ToString("C0", co)</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="4" style="text-align:right; color:var(--bean-muted);">Subtotal</td>
+                    <td>@order.Subtotal.ToString("C0", co)</td>
+                </tr>
+                <tr>
+                    <td colspan="4" style="text-align:right; color:var(--bean-muted);">Envío</td>
+                    <td>@order.ShippingCost.ToString("C0", co)</td>
+                </tr>
+                <tr>
+                    <td colspan="4" style="text-align:right; font-weight:700; color:var(--bean-ink);">Total</td>
+                    <td style="font-weight:800; color:var(--bean-ink);">
+                        @order.TotalAmount.ToString("C0", co) <small>@order.CurrencyCode</small>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    @* ---------------- Columna derecha: cliente / seguimiento / acciones ---------------- *@
+    <div style="display:flex; flex-direction:column; gap:20px;">
+
+        <div class="bean-dash-card">
+            <div class="bean-dash-cardhead">
+                <h2 class="bean-dash-cardtitle">Cliente y envío</h2>
+            </div>
+            <div style="font-size:13.5px; color:var(--bean-body); line-height:1.7;">
+                <div style="font-weight:700; color:var(--bean-ink);">@order.FirstName @order.LastName</div>
+                <div>@clienteEmail</div>
+                <div style="margin-top:10px;">@order.Address</div>
+                <div>
+                    @order.State
+                    @if (!string.IsNullOrWhiteSpace(order.ZipCode))
+                    {
+                        <text>· @order.ZipCode</text>
+                    }
+                </div>
+                <div>@order.ShippingCountry</div>
+                <div style="margin-top:10px;">Método de pago: <strong>@order.PaymentMethod</strong></div>
+            </div>
+            <div class="bean-panel-note" style="margin-top:14px;">
+                <i class="fas fa-info-circle"></i>
+                <div>Pago sin pasarela real (placeholder). Verifica el cobro por fuera del sistema antes de despachar.</div>
+            </div>
+        </div>
+
+        <div class="bean-dash-card">
+            <div class="bean-dash-cardhead">
+                <h2 class="bean-dash-cardtitle">Seguimiento</h2>
+            </div>
+
+            @if (isCancelled)
+            {
+                <div class="bean-panel-note danger">
+                    <i class="fas fa-ban"></i>
+                    <div>Pedido cancelado. El cliente ya no verá avance en su línea de tiempo.</div>
+                </div>
+            }
+            else
+            {
+                <div class="bean-timeline">
+                    @foreach (var h in hitos)
+                    {
+                        var estadoHito = EstadoHito(h.Num);
+
+                        <div class="bean-tl-item @estadoHito">
+                            <div class="bean-tl-marker">
+                                @if (estadoHito == "done")
+                                {
+                                    <i class="fas fa-check"></i>
+                                }
+                                else
+                                {
+                                    <span class="dot"></span>
+                                }
+                            </div>
+                            <div class="bean-tl-body">
+                                <div class="bean-tl-title">@h.Titulo</div>
+                                <div class="bean-tl-detail">@h.Detalle</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="bean-dash-card">
+            <div class="bean-dash-cardhead">
+                <h2 class="bean-dash-cardtitle">Acciones</h2>
+            </div>
+
+            @if (Model.IsTerminal && !canCancel)
+            {
+                <div class="bean-panel-note">
+                    <i class="fas fa-lock"></i>
+                    <div>Este pedido está cerrado.</div>
+                </div>
+            }
+
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                @if (canUpdate)
+                {
+                    foreach (var next in Model.NextStates)
+                    {
+                        var label = OrderWorkflow.ActionLabel(next);
+
+                        <form asp-action="UpdateStatus" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@order.OrderID" />
+                            <input type="hidden" name="nuevoEstado" value="@next" />
+                            <input type="hidden" name="estadoActual" value="@order.OrderStatus" />
+                            <input type="hidden" name="returnUrl" value="@returnUrl" />
+                            <button type="submit" class="bean-btn-pill primary" style="width:100%; justify-content:center;">
+                                @label
+                            </button>
+                        </form>
+                    }
+                }
+
+                @if (canCancel)
+                {
+                    <button type="button" class="bean-btn-pill danger" style="width:100%; justify-content:center;"
+                            data-bs-toggle="modal" data-bs-target="#cancelOrderModal">
+                        <i class="fas fa-ban"></i> Cancelar pedido
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (canCancel)
+{
+    <div class="modal fade" id="cancelOrderModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Cancelar pedido #@Model.ShortId</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <form asp-action="Cancel" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@order.OrderID" />
+                    <input type="hidden" name="estadoActual" value="@order.OrderStatus" />
+                    <div class="modal-body">
+                        @if (Model.WillRestock)
+                        {
+                            <p style="margin:0;">
+                                Vas a cancelar el pedido <strong>#@Model.ShortId</strong> y se devolverán
+                                <strong>@Model.UnitsToRestock unidades</strong> al inventario.
+                                Esta acción no se puede deshacer.
+                            </p>
+                        }
+                        else
+                        {
+                            <p style="margin:0;">
+                                Vas a cancelar el pedido <strong>#@Model.ShortId</strong>, que ya salió de bodega:
+                                el inventario no se reintegra automáticamente — ajústalo a mano cuando recibas la devolución.
+                                Esta acción no se puede deshacer.
+                            </p>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="bean-btn-pill outline" data-bs-dismiss="modal">Volver</button>
+                        <button type="submit" class="bean-btn-pill danger">Sí, cancelar pedido</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}

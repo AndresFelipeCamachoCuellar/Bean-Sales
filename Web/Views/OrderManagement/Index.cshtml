@@ -1,0 +1,171 @@
+@model Web.Models.ViewModels.OrderManagementViewModel
+@using Web.Constants
+@using Web.Models.Enums
+@using Web.Models.ViewModels
+@using Web.Services
+@using Microsoft.AspNetCore.Identity
+@inject IPermissionService PermissionService
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+    ViewData["Title"] = "Pedidos";
+    Layout = "_Layout";
+
+    var co = System.Globalization.CultureInfo.GetCultureInfo("es-CO");
+
+    var currentUser = await UserManager.GetUserAsync(User);
+    var canUpdate = currentUser != null
+        && await PermissionService.HasPermissionAsync(currentUser, Modules.Orders, Permissions.Update);
+
+    var estado = Model.Estado;
+    var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+
+    string TabClass(OrderStatus? s) => estado == s ? "bean-tab active" : "bean-tab";
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Pedidos</h1>
+        <p class="bean-panel-sub">Administra las compras de la tienda: confirma, prepara, despacha y cierra cada pedido.</p>
+    </div>
+
+    <form method="get" asp-action="Index" style="display:flex; gap:8px; align-items:center;">
+        @if (estado.HasValue)
+        {
+            <input type="hidden" name="estado" value="@estado.Value" />
+        }
+        <input type="text" name="q" value="@Model.Query" class="bean-input" style="min-width:250px;"
+               placeholder="Buscar por cliente o correo…" />
+        <button type="submit" class="bean-btn-pill outline"><i class="fas fa-search"></i> Buscar</button>
+        @if (!string.IsNullOrWhiteSpace(Model.Query))
+        {
+            <a class="bean-btn-pill outline" asp-action="Index" asp-route-estado="@estado">Limpiar</a>
+        }
+    </form>
+</div>
+
+<div class="bean-tabs" style="margin-top:16px;">
+    <a class="@(TabClass(null))" asp-action="Index" asp-route-q="@Model.Query">
+        Todos <span class="cnt">· @Model.CountAll</span>
+    </a>
+    <a class="@(TabClass(OrderStatus.Confirmed))" asp-action="Index" asp-route-estado="Confirmed" asp-route-q="@Model.Query">
+        Nuevos <span class="cnt">· @Model.CountNew</span>
+    </a>
+    <a class="@(TabClass(OrderStatus.Processing))" asp-action="Index" asp-route-estado="Processing" asp-route-q="@Model.Query">
+        En preparación <span class="cnt">· @Model.CountProcessing</span>
+    </a>
+    <a class="@(TabClass(OrderStatus.Shipped))" asp-action="Index" asp-route-estado="Shipped" asp-route-q="@Model.Query">
+        Enviados <span class="cnt">· @Model.CountShipped</span>
+    </a>
+    <a class="@(TabClass(OrderStatus.Delivered))" asp-action="Index" asp-route-estado="Delivered" asp-route-q="@Model.Query">
+        Entregados <span class="cnt">· @Model.CountDelivered</span>
+    </a>
+    <a class="@(TabClass(OrderStatus.Cancelled))" asp-action="Index" asp-route-estado="Cancelled" asp-route-q="@Model.Query">
+        Cancelados <span class="cnt">· @Model.CountCancelled</span>
+    </a>
+</div>
+
+@if (TempData["OrderOk"] != null)
+{
+    <div class="bean-panel-note" style="margin-top:16px;">
+        <i class="fas fa-check-circle"></i>
+        <div>@TempData["OrderOk"]</div>
+    </div>
+}
+@if (TempData["OrderError"] != null)
+{
+    <div class="bean-panel-note danger" style="margin-top:16px;">
+        <i class="fas fa-exclamation-triangle"></i>
+        <div>@TempData["OrderError"]</div>
+    </div>
+}
+
+@if (Model.Orders.Count == 0)
+{
+    <div class="bean-appr-empty" style="margin-top:22px;">
+        <div class="ico"><i class="fas fa-receipt"></i></div>
+        <h3>No hay pedidos en esta vista</h3>
+        <p>Cuando entren compras con este estado aparecerán aquí.</p>
+    </div>
+}
+else
+{
+    <div class="bean-panel-tablewrap">
+        <table class="bean-panel-table">
+            <thead>
+                <tr>
+                    <th>Pedido</th>
+                    <th>Cliente</th>
+                    <th>Fecha</th>
+                    <th>Ítems</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var o in Model.Orders)
+                {
+                    var ui = OrderStatusUi.For(o.Status);
+                    var next = OrderWorkflow.NextStates(o.Status);
+
+                    <tr>
+                        <td class="bean-td-name">
+                            <a asp-action="Details" asp-route-id="@o.OrderID" style="color:inherit; text-decoration:none;">
+                                #@o.ShortId
+                            </a>
+                        </td>
+                        <td>
+                            <div style="font-weight:700; color:var(--bean-ink);">@o.FullName</div>
+                            <div style="font-size:12.5px; color:var(--bean-muted);">@o.Email</div>
+                        </td>
+                        <td>@o.OrderDate.ToString("d MMM yyyy '·' HH:mm", co)</td>
+                        <td>@o.Bags bolsas · @o.Lines lotes</td>
+                        <td style="font-weight:700; color:var(--bean-ink);">@o.TotalAmount.ToString("C0", co)</td>
+                        <td><span class="@ui.CssClass"><span class="dot"></span>@ui.Label</span></td>
+                        <td class="bean-td-actions">
+                            <a asp-action="Details" asp-route-id="@o.OrderID" class="bean-btn-pill outline icon" title="Ver detalle">
+                                <i class="fas fa-eye"></i>
+                            </a>
+
+                            @if (canUpdate && next.Count > 0)
+                            {
+                                var nextState = next[0];
+                                var nextLabel = OrderStatusUi.For(nextState).Label;
+                                var shortLabel = OrderWorkflow.ShortActionLabel(nextState);
+
+                                <form asp-action="UpdateStatus" method="post" style="display:inline;"
+                                      onsubmit="return confirm('¿Marcar el pedido #@o.ShortId como @nextLabel?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@o.OrderID" />
+                                    <input type="hidden" name="nuevoEstado" value="@nextState" />
+                                    <input type="hidden" name="estadoActual" value="@o.Status" />
+                                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                    <button type="submit" class="bean-btn-pill primary">@shortLabel</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-top:16px;">
+        <span style="font-size:13px; color:var(--bean-muted);">
+            Página @Model.Page de @Model.TotalPages · @Model.TotalCount pedidos
+        </span>
+        <div style="display:flex; gap:8px;">
+            @if (Model.HasPrev)
+            {
+                <a class="bean-btn-pill outline" asp-action="Index" asp-route-q="@Model.Query"
+                   asp-route-estado="@Model.Estado" asp-route-page="@(Model.Page - 1)">&larr; Anterior</a>
+            }
+            @if (Model.HasNext)
+            {
+                <a class="bean-btn-pill outline" asp-action="Index" asp-route-q="@Model.Query"
+                   asp-route-estado="@Model.Estado" asp-route-page="@(Model.Page + 1)">Siguiente &rarr;</a>
+            }
+        </div>
+    </div>
+}

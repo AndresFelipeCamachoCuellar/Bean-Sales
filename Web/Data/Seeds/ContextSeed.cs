@@ -160,7 +160,7 @@ public static class ContextSeed
     public static async Task SeedPermissionsAsync(ApplicationDbContext context, RoleManager<ApplicationRole> roleManager)
     {
         // 1. Seed Modules
-        var modules = new[] { Modules.Users, Modules.Roles, Modules.CompanyProfile, Modules.CompanyUsers, Modules.CompanyRoles, Modules.Products, Modules.ProductApprovals };
+        var modules = new[] { Modules.Users, Modules.Roles, Modules.CompanyProfile, Modules.CompanyUsers, Modules.CompanyRoles, Modules.Products, Modules.ProductApprovals, Modules.Orders };
         foreach (var moduleCode in modules)
         {
             if (!await context.ParametricModules.AnyAsync(m => m.Code == moduleCode))
@@ -174,6 +174,7 @@ public static class ContextSeed
                     Modules.CompanyRoles => "Roles (Empresa)",
                     Modules.Products => "Productos (Gestión)",
                     Modules.ProductApprovals => "Aprobación de Productos",
+                    Modules.Orders => "Pedidos",
                     _ => moduleCode
                 };
 
