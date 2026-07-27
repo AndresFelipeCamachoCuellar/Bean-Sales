@@ -65,6 +65,20 @@
     var navRoleLabel = isSuperAdmin ? "Administrador" : (isProviderRole ? "Proveedor verificado" : "Cliente");
     // Dashboard es [Authorize(Roles = SuperAdmin)]: el proveedor va a su propio panel.
     var panelController = isSuperAdmin ? "Dashboard" : "Products";
+
+    // --- Estado activo de la nav principal ------------------------------
+    // Se resuelve por controlador/acción actual (no hay ruteo por área aquí).
+    var navController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+    var navAction = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
+    var isHome = string.Equals(navController, "Home", StringComparison.OrdinalIgnoreCase);
+    // El detalle de producto se considera parte del catálogo.
+    var navCatalogActive = isHome && (string.Equals(navAction, "Index", StringComparison.OrdinalIgnoreCase)
+                                      || string.Equals(navAction, "Details", StringComparison.OrdinalIgnoreCase));
+    var navOrigenesActive = isHome && string.Equals(navAction, "Origenes", StringComparison.OrdinalIgnoreCase);
+    var navNosotrosActive = isHome && string.Equals(navAction, "Nosotros", StringComparison.OrdinalIgnoreCase);
+    // RegisterProvider usa _LayoutAuth; se deja por consistencia si algún día cambia.
+    var navMayoreoActive = string.Equals(navController, "Account", StringComparison.OrdinalIgnoreCase)
+                           && string.Equals(navAction, "RegisterProvider", StringComparison.OrdinalIgnoreCase);
 }
 <!DOCTYPE html>
 <html lang="es">
@@ -92,10 +106,10 @@
                     <span class="bean-drop"></span> Bean
                 </a>
                 <div class="bean-nav-links">
-                    <a class="bean-nav-link active" asp-controller="Home" asp-action="Index">Catálogo</a>
-                    <a class="bean-nav-link" asp-controller="Home" asp-action="Index">Orígenes</a>
-                    <a class="bean-nav-link" asp-controller="Home" asp-action="Index">Mayoreo</a>
-                    <a class="bean-nav-link" asp-controller="Home" asp-action="Privacy">Nosotros</a>
+                    <a class="bean-nav-link @(navCatalogActive ? "active" : null)" asp-controller="Home" asp-action="Index" asp-fragment="lotes">Catálogo</a>
+                    <a class="bean-nav-link @(navOrigenesActive ? "active" : null)" asp-controller="Home" asp-action="Origenes">Orígenes</a>
+                    <a class="bean-nav-link @(navMayoreoActive ? "active" : null)" asp-controller="Account" asp-action="RegisterProvider">Mayoreo</a>
+                    <a class="bean-nav-link @(navNosotrosActive ? "active" : null)" asp-controller="Home" asp-action="Nosotros">Nosotros</a>
                 </div>
 
                 <div class="bean-nav-spacer"></div>
@@ -241,13 +255,13 @@
                 </div>
                 <div>
                     <h4>Tienda</h4>
-                    <a asp-controller="Home" asp-action="Index">Catálogo</a>
-                    <a asp-controller="Home" asp-action="Index">Orígenes</a>
-                    <a asp-controller="Home" asp-action="Index">Mayoreo</a>
+                    <a asp-controller="Home" asp-action="Index" asp-fragment="lotes">Catálogo</a>
+                    <a asp-controller="Home" asp-action="Origenes">Orígenes</a>
+                    <a asp-controller="Account" asp-action="RegisterProvider">Mayoreo</a>
                 </div>
                 <div>
                     <h4>Empresa</h4>
-                    <a asp-controller="Home" asp-action="Privacy">Nosotros</a>
+                    <a asp-controller="Home" asp-action="Nosotros">Nosotros</a>
                     <a asp-controller="Home" asp-action="Index">Productores</a>
                     <a asp-controller="Home" asp-action="Index">Contacto</a>
                 </div>

@@ -1,0 +1,112 @@
+@{
+    ViewData["Title"] = "Nosotros";
+}
+
+<!-- ===== HERO DE MARCA ===== -->
+<section class="bean-pagehead">
+    <span class="bean-float f1"></span>
+    <span class="bean-float f2"></span>
+    <div class="bean-container">
+        <div class="bean-pagehead-eyebrow">Quiénes somos</div>
+        <h1 class="bean-fadeup">El supermercado global<br /><span class="shimmer">del café colombiano.</span></h1>
+        <p class="bean-fadeup" style="animation-delay:.08s">
+            Bean reúne en un solo lugar los micro-lotes de fincas y marcas colombianas de especialidad,
+            para que comprarlos sea tan simple como pedir uno solo.
+        </p>
+    </div>
+</section>
+
+<!-- ===== MARQUEE de confianza ===== -->
+<div class="bean-marquee">
+    <div class="bean-marquee-track">
+        <span>Trazabilidad finca a taza ✦</span><span>Comercio justo ✦</span><span>Tueste semanal ✦</span><span>Envío Colombia · Canadá ✦</span><span>Compra unificada ✦</span>
+        <span>Trazabilidad finca a taza ✦</span><span>Comercio justo ✦</span><span>Tueste semanal ✦</span><span>Envío Colombia · Canadá ✦</span><span>Compra unificada ✦</span>
+    </div>
+</div>
+
+<!-- ===== PROPUESTA DE VALOR ===== -->
+<section class="bean-catalog">
+    <div class="bean-container">
+        <div class="bean-section-head">
+            <h2>Un café de especialidad no debería ser difícil de conseguir</h2>
+            <p>
+                Colombia produce algunos de los mejores cafés del mundo, pero cada finca vende por su cuenta:
+                pedidos separados, envíos separados, trámites separados. Bean centraliza esa oferta en una sola bodega
+                y una sola compra, sin quitarle el nombre a nadie.
+            </p>
+        </div>
+
+        <div class="bean-value-grid">
+            <div class="bean-value-card bean-fadeup">
+                <div class="ico"><i class="fas fa-mug-hot"></i></div>
+                <h3>Café colombiano de especialidad</h3>
+                <p>Trabajamos con fincas y marcas locales que cuidan el proceso desde la recolección hasta el tueste.</p>
+            </div>
+            <div class="bean-value-card bean-fadeup" style="animation-delay:.08s">
+                <div class="ico"><i class="fas fa-seedling"></i></div>
+                <h3>Trazabilidad finca a taza</h3>
+                <p>Cada lote llega con su origen, finca, altura, variedad y proceso. Sabes exactamente qué estás tomando.</p>
+            </div>
+            <div class="bean-value-card bean-fadeup" style="animation-delay:.16s">
+                <div class="ico"><i class="fas fa-fire"></i></div>
+                <h3>Tueste semanal</h3>
+                <p>Nada se queda en el estante. Tostamos por tandas cortas para que el café salga fresco hacia tu casa.</p>
+            </div>
+            <div class="bean-value-card bean-fadeup" style="animation-delay:.24s">
+                <div class="ico"><i class="fas fa-globe-americas"></i></div>
+                <h3>Envíos a Colombia y Canadá</h3>
+                <p>Empezamos en Colombia y abrimos camino a Canadá: nosotros asumimos la logística y los trámites.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== CÓMO FUNCIONA ===== -->
+<section class="bean-how">
+    <div class="bean-container">
+        <div class="bean-section-head">
+            <h2>Cómo funciona</h2>
+            <p>Cuatro pasos entre la finca y tu taza. Del lado del productor y del tuyo.</p>
+        </div>
+
+        <div class="bean-steps">
+            <div class="bean-step bean-fadeup">
+                <div class="n">01</div>
+                <h3>Proveedores verificados</h3>
+                <p>Revisamos documentos, capacidad y muestra física antes de publicar. Solo entra café que probaríamos nosotros.</p>
+            </div>
+            <div class="bean-step bean-fadeup" style="animation-delay:.08s">
+                <div class="n">02</div>
+                <h3>Bodega central</h3>
+                <p>Los lotes viajan a una sola bodega en Colombia, donde se revisan, se pesan y se preparan para despacho.</p>
+            </div>
+            <div class="bean-step bean-fadeup" style="animation-delay:.16s">
+                <div class="n">03</div>
+                <h3>Compra unificada</h3>
+                <p>Armas un pedido con cafés de distintas fincas y marcas. Un carrito, un pago, un envío.</p>
+            </div>
+            <div class="bean-step bean-fadeup" style="animation-delay:.24s">
+                <div class="n">04</div>
+                <h3>Envío y seguimiento</h3>
+                <p>Despachamos desde la bodega y puedes seguir tu pedido paso a paso hasta la entrega.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== CTA DOBLE ===== -->
+<section class="bean-catalog">
+    <div class="bean-container">
+        <div class="bean-b2b">
+            <div>
+                <div class="eyebrow">Empieza hoy</div>
+                <h3>Toma buen café, o llévalo a más gente.</h3>
+                <p>Compra los lotes de esta semana, o registra tu finca o marca y llega a nuevos mercados sin licencia de exportación propia.</p>
+            </div>
+            <div class="bean-b2b-ctas">
+                <a asp-controller="Home" asp-action="Index" asp-fragment="lotes" class="btn-bean">Explorar lotes →</a>
+                <a asp-controller="Account" asp-action="RegisterProvider" class="btn-bean-ghost-dark">Registrar mi empresa</a>
+            </div>
+        </div>
+    </div>
+</section>

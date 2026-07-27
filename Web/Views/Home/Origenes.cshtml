@@ -1,0 +1,164 @@
+@model Web.Models.ViewModels.OrigenesViewModel
+
+@using Web.Models.Enums
+@{
+    ViewData["Title"] = "Orígenes";
+    // Cultura fija para formato de precio COP ("$62.000"). Solo presentación.
+    var co = new System.Globalization.CultureInfo("es-CO");
+    // Etiqueta de proceso en español para los badges.
+    Func<CoffeeProcess, string> procLabel = p => p switch
+    {
+        CoffeeProcess.Washed => "Lavado",
+        CoffeeProcess.Honey => "Honey",
+        CoffeeProcess.Natural => "Natural",
+        _ => p.ToString()
+    };
+    var toneIndex = 0;   // Tono decorativo de la imagen placeholder.
+    var blockIndex = 0;  // Escalonado de la animación de entrada.
+}
+
+<!-- ===== CABECERA DE SECCIÓN ===== -->
+<section class="bean-pagehead">
+    <span class="bean-float f1"></span>
+    <span class="bean-float f2"></span>
+    <div class="bean-container">
+        <div class="bean-pagehead-eyebrow">Trazabilidad finca a taza</div>
+        <h1 class="bean-fadeup">Orígenes</h1>
+        <p class="bean-fadeup" style="animation-delay:.08s">
+            Cada lote que llega a tu taza tiene nombre propio: una región, una finca y una altura.
+            Estas son las procedencias con café publicado hoy para tu país.
+        </p>
+        @if (Model.TotalLots > 0)
+        {
+            <div class="bean-pagehead-stats bean-fadeup" style="animation-delay:.16s">
+                <div class="bean-stat"><span class="num">@Model.TotalRegions</span><span class="lbl">@(Model.TotalRegions == 1 ? "región" : "regiones")</span></div>
+                <div class="bean-stat"><span class="num">@Model.TotalLots</span><span class="lbl">@(Model.TotalLots == 1 ? "lote publicado" : "lotes publicados")</span></div>
+                @if (Model.TotalFarms > 0)
+                {
+                    <div class="bean-stat"><span class="num">@Model.TotalFarms</span><span class="lbl">@(Model.TotalFarms == 1 ? "finca aliada" : "fincas aliadas")</span></div>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+<!-- ===== REGIONES ===== -->
+<section class="bean-catalog">
+    <div class="bean-container">
+        @if (!Model.Regions.Any())
+        {
+            <div class="bean-empty">
+                <div class="ico"><i class="fas fa-mountain"></i></div>
+                <h3>Aún no hay lotes publicados</h3>
+                <p>Todavía no hay orígenes disponibles para tu región seleccionada. Vuelve pronto: publicamos tueste nuevo cada semana.</p>
+                <a asp-controller="Home" asp-action="Index" asp-fragment="lotes" class="btn-bean">Ir al catálogo →</a>
+            </div>
+        }
+        else
+        {
+            foreach (var region in Model.Regions)
+            {
+                blockIndex++;
+                var blockDelay = (blockIndex * 0.06).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+                var farmsLabel = region.Farms.Count == 0
+                    ? null
+                    : string.Join(" · ", region.Farms.Take(4)) + (region.Farms.Count > 4 ? $" y {region.Farms.Count - 4} más" : "");
+
+                <article class="bean-origin-block bean-fadeup" style="animation-delay:@(blockDelay)s">
+                    <header class="bean-origin-head">
+                        <div class="bean-origin-title">
+                            <div class="eyebrow">Origen</div>
+                            <h2>@region.Name</h2>
+                            @if (farmsLabel != null)
+                            {
+                                <p class="farms"><i class="fas fa-seedling"></i> @farmsLabel</p>
+                            }
+                        </div>
+                        <div class="bean-origin-meta">
+                            <span class="bean-origin-pill">
+                                <i class="fas fa-box"></i>
+                                @region.LotCount @(region.LotCount == 1 ? "lote" : "lotes")
+                            </span>
+                            @if (region.Farms.Count > 0)
+                            {
+                                <span class="bean-origin-pill">
+                                    <i class="fas fa-tractor"></i>
+                                    @region.Farms.Count @(region.Farms.Count == 1 ? "finca" : "fincas")
+                                </span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(region.AltitudeRange))
+                            {
+                                <span class="bean-origin-pill">
+                                    <i class="fas fa-mountain"></i>
+                                    @region.AltitudeRange
+                                </span>
+                            }
+                        </div>
+                    </header>
+
+                    <div class="bean-grid bean-origin-grid">
+                        @foreach (var product in region.Products)
+                        {
+                            var tone = "o" + ((toneIndex % 6) + 1);
+                            toneIndex++;
+                            var imgStyle = string.IsNullOrEmpty(product.ImageUrl)
+                                ? ""
+                                : $"background-image:url('{product.ImageUrl}');background-size:cover;background-position:center;";
+
+                            <a class="bean-card bean-origin-card" asp-controller="Home" asp-action="Details" asp-route-id="@product.ProductID">
+                                <div class="bean-card-img bean-img @tone" style="@imgStyle">
+                                    <div class="top-badges">
+                                        @if (product.Process.HasValue)
+                                        {
+                                            <span class="bean-badge bean-badge-process">@procLabel(product.Process.Value)</span>
+                                        }
+                                        @if (product.Rating.HasValue)
+                                        {
+                                            <span class="bean-badge bean-badge-rating"><span class="star">★</span> @product.Rating.Value.ToString("0.0", co)</span>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="bean-card-body">
+                                    <h3 class="bean-card-name">@product.Name</h3>
+                                    <div class="bean-card-provider">@product.Provider?.Name</div>
+                                    <ul class="bean-origin-facts">
+                                        @if (!string.IsNullOrWhiteSpace(product.Farm))
+                                        {
+                                            <li><span>Finca</span><strong>@product.Farm</strong></li>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(product.Altitude))
+                                        {
+                                            <li><span>Altura</span><strong>@product.Altitude</strong></li>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(product.Variety))
+                                        {
+                                            <li><span>Variedad</span><strong>@product.Variety</strong></li>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(product.Lot))
+                                        {
+                                            <li><span>Lote</span><strong>@product.Lot</strong></li>
+                                        }
+                                    </ul>
+                                    <div class="bean-card-foot">
+                                        <div class="bean-card-price">$@product.Price.ToString("#,##0", co) <small>/ 340 g</small></div>
+                                        <span class="bean-origin-link">Ver detalle →</span>
+                                    </div>
+                                </div>
+                            </a>
+                        }
+                    </div>
+                </article>
+            }
+        }
+
+        <!-- ===== CTA final ===== -->
+        <div class="bean-b2b">
+            <div>
+                <div class="eyebrow">¿Listo para probar?</div>
+                <h3>Elige tu origen y recibe café tostado esta semana.</h3>
+                <p>Todos los lotes se tuestan bajo pedido y se envían con su ficha de trazabilidad completa.</p>
+            </div>
+            <a asp-controller="Home" asp-action="Index" asp-fragment="lotes" class="btn-bean">Ver el catálogo →</a>
+        </div>
+    </div>
+</section>

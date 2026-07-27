@@ -1728,3 +1728,155 @@ select.bean-auth-input { appearance: none; -webkit-appearance: none;
     .bean-kpi-grid { grid-template-columns: 1fr; }
     .bean-bars { gap: 8px; }
 }
+
+/* =====================================================================
+   22. PÁGINAS DE CONTENIDO DEL STOREFRONT — Orígenes + Nosotros
+   Aditivo: no modifica nada de las secciones anteriores.
+   ===================================================================== */
+
+/* --- Cabecera oscura reutilizable (versión compacta del hero) --------- */
+.bean-pagehead {
+    background: var(--bean-dark); color: #fff;
+    position: relative; overflow: hidden;
+    padding: 56px 0 48px; text-align: center;
+}
+.bean-pagehead-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(217,138,95,.14); border: 1px solid rgba(217,138,95,.35);
+    color: var(--bean-terra-light); border-radius: var(--r-pill);
+    padding: 7px 16px; font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .12em; margin-bottom: 20px;
+}
+.bean-pagehead h1 {
+    font-family: var(--font-head); font-weight: 800; font-size: 52px;
+    line-height: 1.06; letter-spacing: -0.03em; margin: 0 auto 16px; max-width: 860px;
+}
+.bean-pagehead p {
+    font-size: 16.5px; color: var(--bean-on-dark-2); max-width: 560px;
+    margin: 0 auto; line-height: 1.55;
+}
+.bean-pagehead .shimmer {
+    background: linear-gradient(90deg, #e8a582, #d98a5f, #c9a878, #d98a5f, #e8a582);
+    background-size: 200% auto;
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+    animation: shimmer 4s linear infinite;
+}
+.bean-pagehead-stats { display: inline-flex; align-items: center; gap: 34px; margin-top: 28px; }
+/* Los granos flotantes se reposicionan para la cabecera compacta. */
+.bean-pagehead .bean-float.f1 { top: 46px; left: 9%; }
+.bean-pagehead .bean-float.f2 { top: 96px; right: 11%; }
+
+/* --- Encabezado de sección sobre crema ------------------------------- */
+.bean-section-head { max-width: 680px; margin: 0 0 26px; }
+.bean-section-head h2 {
+    font-family: var(--font-head); font-weight: 800; font-size: 28px;
+    color: var(--bean-ink); margin: 0 0 10px; line-height: 1.2;
+}
+.bean-section-head p { font-size: 14.5px; color: var(--bean-body); margin: 0; line-height: 1.6; }
+
+/* --- ORÍGENES: bloque por región ------------------------------------- */
+.bean-origin-block {
+    background: #fff; border: 1px solid var(--bean-border);
+    border-radius: 20px; padding: 26px 26px 28px; margin-bottom: 22px;
+}
+.bean-origin-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 18px; flex-wrap: wrap; margin-bottom: 20px;
+    padding-bottom: 18px; border-bottom: 1px solid var(--bean-sep);
+}
+.bean-origin-title .eyebrow {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .12em;
+    font-weight: 700; color: var(--bean-terra); margin-bottom: 4px;
+}
+.bean-origin-title h2 {
+    font-family: var(--font-head); font-weight: 800; font-size: 26px;
+    color: var(--bean-ink); margin: 0;
+}
+.bean-origin-title .farms {
+    font-size: 13px; color: var(--bean-muted-2); margin: 8px 0 0;
+}
+.bean-origin-title .farms i { color: var(--bean-success); margin-right: 6px; }
+.bean-origin-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+.bean-origin-pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--bean-cream-chip); border: 1px solid var(--bean-border);
+    border-radius: var(--r-pill); padding: 7px 14px;
+    font-size: 12.5px; font-weight: 600; color: var(--bean-muted);
+}
+.bean-origin-pill i { color: var(--bean-terra); font-size: 11px; }
+
+.bean-origin-grid { gap: 18px; }
+.bean-origin-card { cursor: pointer; }
+.bean-origin-card .bean-card-name { margin-top: 2px; }
+.bean-origin-facts { list-style: none; margin: 0 0 14px; padding: 0; }
+.bean-origin-facts li {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px; padding: 5px 0; border-bottom: 1px dashed var(--bean-sep);
+    font-size: 12.5px;
+}
+.bean-origin-facts li:last-child { border-bottom: 0; }
+.bean-origin-facts span { color: var(--bean-muted); }
+.bean-origin-facts strong { color: var(--bean-ink); font-weight: 600; text-align: right; }
+.bean-origin-link { font-size: 12.5px; font-weight: 700; color: var(--bean-terra); }
+
+/* --- NOSOTROS: tarjetas de propuesta de valor ------------------------ */
+.bean-value-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 6px;
+}
+.bean-value-card {
+    background: #fff; border: 1px solid var(--bean-border);
+    border-radius: var(--r-card-lg); padding: 22px 20px;
+    transition: transform .35s ease, box-shadow .35s ease;
+}
+.bean-value-card:hover { transform: translateY(-6px); box-shadow: var(--sh-card-hover); }
+.bean-value-card .ico {
+    width: 46px; height: 46px; border-radius: 50%;
+    background: var(--bean-cream-chip); color: var(--bean-terra);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 18px; margin-bottom: 14px;
+}
+.bean-value-card h3 {
+    font-family: var(--font-head); font-weight: 700; font-size: 17px;
+    color: var(--bean-ink); margin: 0 0 8px; line-height: 1.25;
+}
+.bean-value-card p { font-size: 13.5px; color: var(--bean-body); margin: 0; line-height: 1.55; }
+
+/* --- NOSOTROS: cómo funciona ----------------------------------------- */
+.bean-how { background: var(--bean-cream-chip); padding: 46px 0; margin-top: 8px; }
+.bean-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+.bean-step {
+    background: #fff; border: 1px solid var(--bean-border);
+    border-radius: var(--r-card-lg); padding: 22px 20px; position: relative;
+}
+.bean-step .n {
+    font-family: var(--font-head); font-weight: 800; font-size: 15px;
+    color: #fff; background: var(--bean-terra-grad);
+    width: 40px; height: 40px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-bottom: 14px;
+}
+.bean-step h3 {
+    font-family: var(--font-head); font-weight: 700; font-size: 17px;
+    color: var(--bean-ink); margin: 0 0 8px; line-height: 1.25;
+}
+.bean-step p { font-size: 13.5px; color: var(--bean-body); margin: 0; line-height: 1.55; }
+
+/* --- CTA doble sobre el banner oscuro -------------------------------- */
+.bean-b2b-ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+
+/* --- Responsive ------------------------------------------------------ */
+@media (max-width: 1024px) {
+    .bean-pagehead h1 { font-size: 40px; }
+    .bean-value-grid,
+    .bean-steps { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 700px) {
+    .bean-pagehead { padding: 42px 0 38px; }
+    .bean-pagehead h1 { font-size: 32px; }
+    .bean-pagehead .bean-float { display: none; }
+    .bean-pagehead-stats { gap: 22px; flex-wrap: wrap; justify-content: center; }
+    .bean-origin-block { padding: 20px 18px 22px; }
+    .bean-value-grid,
+    .bean-steps { grid-template-columns: 1fr; }
+}
