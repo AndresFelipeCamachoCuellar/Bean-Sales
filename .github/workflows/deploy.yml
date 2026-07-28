@@ -14,8 +14,7 @@ name: Build, publish and deploy to MonsterASP.NET
 on:
   push:
     branches:
-      - dev
-      - master
+      - qa
   workflow_dispatch:
 
 jobs:
