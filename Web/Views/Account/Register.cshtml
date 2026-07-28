@@ -1,0 +1,71 @@
+@model Web.Models.ViewModels.RegisterUserViewModel
+
+@{
+    ViewData["Title"] = "Crear cuenta";
+    ViewData["AuthWide"] = "wide";
+}
+
+<div class="bean-auth-toggle">
+    <a asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]">Entrar</a>
+    <a href="#" class="active">Crear cuenta</a>
+</div>
+
+<h1 class="bean-auth-title">Crea tu cuenta</h1>
+<p class="bean-auth-sub">Guarda favoritos, sigue tus envíos y compra con menos fricción.</p>
+
+<form asp-action="Register" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
+    <div asp-validation-summary="All" class="bean-auth-validation"></div>
+
+    <div class="bean-auth-grid2">
+        <div class="bean-auth-field">
+            <label asp-for="FirstName" class="bean-auth-label">Nombre</label>
+            <input asp-for="FirstName" class="bean-auth-input" placeholder="Tu nombre" />
+            <span asp-validation-for="FirstName" class="text-danger"></span>
+        </div>
+        <div class="bean-auth-field">
+            <label asp-for="LastName" class="bean-auth-label">Apellido</label>
+            <input asp-for="LastName" class="bean-auth-input" placeholder="Tu apellido" />
+            <span asp-validation-for="LastName" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="bean-auth-field">
+        <label asp-for="Email" class="bean-auth-label">Correo electrónico</label>
+        <input asp-for="Email" class="bean-auth-input" placeholder="nombre@correo.com" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
+
+    <div class="bean-auth-grid2">
+        <div class="bean-auth-field">
+            <label asp-for="DocumentTypeID" class="bean-auth-label">Tipo de documento</label>
+            <select asp-for="DocumentTypeID" asp-items="Model.DocumentTypes" class="bean-auth-input"></select>
+            <span asp-validation-for="DocumentTypeID" class="text-danger"></span>
+        </div>
+        <div class="bean-auth-field">
+            <label asp-for="DocumentNumber" class="bean-auth-label">Número de documento</label>
+            <input asp-for="DocumentNumber" class="bean-auth-input" placeholder="Número" />
+            <span asp-validation-for="DocumentNumber" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="bean-auth-grid2">
+        <div class="bean-auth-field">
+            <label asp-for="Password" class="bean-auth-label">Contraseña</label>
+            <input asp-for="Password" class="bean-auth-input" placeholder="Mínimo 6 caracteres" />
+            <span asp-validation-for="Password" class="text-danger"></span>
+        </div>
+        <div class="bean-auth-field">
+            <label asp-for="ConfirmPassword" class="bean-auth-label">Confirmar contraseña</label>
+            <input asp-for="ConfirmPassword" class="bean-auth-input" placeholder="Repite la contraseña" />
+            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+        </div>
+    </div>
+
+    <button type="submit" class="bean-auth-cta" style="margin-top:8px;">Registrarse y continuar</button>
+</form>
+
+<p class="bean-auth-foot">¿Ya tienes cuenta? <a class="bean-auth-link" asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]">Inicia sesión aquí</a></p>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

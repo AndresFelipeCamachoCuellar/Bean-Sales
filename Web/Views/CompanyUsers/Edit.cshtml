@@ -1,0 +1,95 @@
+@model Web.Models.ViewModels.EditUserViewModel
+
+@{
+    ViewData["Title"] = "Editar Usuario (Empresa)";
+    Layout = "_Layout";
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Editar usuario</h1>
+        <p class="bean-panel-sub">Actualiza los datos, el rol y el estado de la cuenta.</p>
+    </div>
+</div>
+
+<div class="bean-form-card">
+    <form asp-action="Edit" method="post">
+        <div asp-validation-summary="ModelOnly" class="bean-form-summary"></div>
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="Email" />
+
+        <h2 class="bean-form-section-title">Cuenta</h2>
+        <div class="bean-form-grid">
+            <div class="bean-field">
+                <label asp-for="Email" class="bean-label"></label>
+                <input asp-for="Email" class="bean-input" placeholder="Email" disabled />
+                <span class="bean-field-hint">El email (usuario) no se puede cambiar aquí.</span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="RoleID" class="bean-label">Rol asignado</label>
+                <select asp-for="RoleID" asp-items="Model.Roles" class="bean-select">
+                    <option value="">-- Seleccione --</option>
+                </select>
+                <span asp-validation-for="RoleID" class="bean-form-error"></span>
+            </div>
+        </div>
+
+        <h2 class="bean-form-section-title">Información personal</h2>
+        <div class="bean-form-grid">
+            <div class="bean-field">
+                <label asp-for="FirstName" class="bean-label"></label>
+                <input asp-for="FirstName" class="bean-input" placeholder="Nombres" />
+                <span asp-validation-for="FirstName" class="bean-form-error"></span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="LastName" class="bean-label"></label>
+                <input asp-for="LastName" class="bean-input" placeholder="Apellidos" />
+                <span asp-validation-for="LastName" class="bean-form-error"></span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="DocumentTypeID" class="bean-label">Tipo de Documento</label>
+                <select asp-for="DocumentTypeID" asp-items="Model.DocumentTypes" class="bean-select">
+                    <option value="">-- Seleccione --</option>
+                </select>
+                <span asp-validation-for="DocumentTypeID" class="bean-form-error"></span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="DocumentNumber" class="bean-label"></label>
+                <input asp-for="DocumentNumber" class="bean-input" placeholder="No. Documento" />
+                <span asp-validation-for="DocumentNumber" class="bean-form-error"></span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="CountryID" class="bean-label">País</label>
+                <select asp-for="CountryID" asp-items="Model.Countries" class="bean-select">
+                    <option value="">-- Seleccione --</option>
+                </select>
+                <span asp-validation-for="CountryID" class="bean-form-error"></span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="Gender" class="bean-label"></label>
+                <select asp-for="Gender" class="bean-select">
+                    <option value="">-- Seleccione --</option>
+                    <option value="Male">Masculino</option>
+                    <option value="Female">Femenino</option>
+                    <option value="Other">Otro</option>
+                </select>
+                <span asp-validation-for="Gender" class="bean-form-error"></span>
+            </div>
+        </div>
+
+        <h2 class="bean-form-section-title">Estado</h2>
+        <div class="bean-switch-row">
+            <input class="form-check-input" type="checkbox" asp-for="Status">
+            <label asp-for="Status">Usuario activo</label>
+        </div>
+
+        <div class="bean-form-actions">
+            <a asp-action="Index" class="bean-btn-pill outline">Cancelar</a>
+            <button type="submit" class="bean-btn-pill primary"><i class="fas fa-save"></i> Guardar cambios</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

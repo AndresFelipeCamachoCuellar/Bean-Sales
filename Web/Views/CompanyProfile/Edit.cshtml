@@ -1,0 +1,61 @@
+@model Web.Models.ViewModels.CompanyProfileViewModel
+
+@{
+    ViewData["Title"] = "Editar Empresa";
+    Layout = "_Layout";
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Editar información</h1>
+        <p class="bean-panel-sub">Actualiza los datos de contacto de tu empresa.</p>
+    </div>
+</div>
+
+<div class="bean-form-card">
+    <form asp-action="Edit">
+        <div asp-validation-summary="ModelOnly" class="bean-form-summary"></div>
+        <input type="hidden" asp-for="ProviderID" />
+        <input type="hidden" asp-for="Name" />
+        <input type="hidden" asp-for="NIT" />
+        <input type="hidden" asp-for="Email" />
+
+        <h2 class="bean-form-section-title">Datos de la empresa</h2>
+        <div class="bean-form-grid">
+            <div class="bean-field">
+                <label asp-for="Name" class="bean-label"></label>
+                <input asp-for="Name" class="bean-input" placeholder="Nombre" disabled />
+                <span class="bean-field-hint">El nombre no se puede editar.</span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="NIT" class="bean-label"></label>
+                <input asp-for="NIT" class="bean-input" placeholder="NIT" disabled />
+                <span class="bean-field-hint">El NIT no se puede editar.</span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="Email" class="bean-label"></label>
+                <input asp-for="Email" class="bean-input" placeholder="Email" disabled />
+                <span class="bean-field-hint">Contacte a soporte para cambiar el email.</span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="Phone" class="bean-label"></label>
+                <input asp-for="Phone" class="bean-input" placeholder="Teléfono" />
+                <span asp-validation-for="Phone" class="bean-form-error"></span>
+            </div>
+            <div class="bean-field" style="grid-column: 1 / -1;">
+                <label asp-for="Address" class="bean-label"></label>
+                <input asp-for="Address" class="bean-input" placeholder="Dirección" />
+                <span asp-validation-for="Address" class="bean-form-error"></span>
+            </div>
+        </div>
+
+        <div class="bean-form-actions">
+            <a asp-action="Index" class="bean-btn-pill outline">Cancelar</a>
+            <button type="submit" class="bean-btn-pill primary"><i class="fas fa-save"></i> Guardar cambios</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

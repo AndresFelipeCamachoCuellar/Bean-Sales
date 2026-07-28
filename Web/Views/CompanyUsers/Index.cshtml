@@ -1,0 +1,89 @@
+@model IEnumerable<Web.Models.ViewModels.UserViewModel>
+@using Web.Services
+@using Web.Constants
+@using Microsoft.AspNetCore.Identity
+@inject IPermissionService PermissionService
+@inject UserManager<Web.Models.ApplicationUser> UserManager
+
+@{
+    ViewData["Title"] = "Gestión de Usuarios (Empresa)";
+    Layout = "_Layout";
+    var user = await UserManager.GetUserAsync(User);
+    var canCreate = await PermissionService.HasPermissionAsync(user, Modules.CompanyUsers, Permissions.Create);
+    var canUpdate = await PermissionService.HasPermissionAsync(user, Modules.CompanyUsers, Permissions.Update);
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Usuarios de la empresa</h1>
+        <p class="bean-panel-sub">Administra las cuentas del equipo de tu empresa, sus roles y su acceso.</p>
+    </div>
+    @if (canCreate)
+    {
+        <a asp-action="Create" class="bean-prov-newlot"><i class="fas fa-plus"></i> Crear nuevo usuario</a>
+    }
+</div>
+
+<div class="bean-panel-tablewrap">
+    <table class="bean-panel-table">
+        <thead>
+            <tr>
+                <th>Documento</th>
+                <th>Nombre completo</th>
+                <th>Email</th>
+                <th>Roles</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.DocumentNumber</td>
+                    <td class="bean-td-name">@item.FullName</td>
+                    <td>@item.Email</td>
+                    <td>
+                        @foreach (var role in item.Roles)
+                        {
+                            <span class="bean-role-chip">@role</span>
+                        }
+                    </td>
+                    <td>
+                        @if (item.Status)
+                        {
+                            <span class="bean-status active"><span class="dot"></span>Activo</span>
+                        }
+                        else
+                        {
+                            <span class="bean-status rejected"><span class="dot"></span>Inactivo</span>
+                        }
+                    </td>
+                    <td>
+                        <div class="bean-td-actions">
+                            @if (canUpdate)
+                            {
+                                @if (item.Id != user.Id.ToString())
+                                {
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="bean-btn-pill outline icon" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form asp-action="ToggleStatus" asp-route-id="@item.Id" method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de cambiar el estado de este usuario?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="bean-btn-pill @(item.Status ? "danger" : "primary") icon" title="@(item.Status ? "Desactivar" : "Activar")">
+                                            <i class="fas @(item.Status ? "fa-user-slash" : "fa-user-check")"></i>
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="bean-role-chip">Tú</span>
+                                }
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

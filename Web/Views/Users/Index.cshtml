@@ -1,0 +1,90 @@
+@using Web.Constants
+@using Web.Services
+@using Web.Models.ViewModels
+@inject IPermissionService PermissionService
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<ApplicationUser> UserManager
+@model IEnumerable<UserViewModel>
+
+@{
+    ViewData["Title"] = "Administración de Usuarios";
+    var currentUser = await UserManager.GetUserAsync(User);
+    var canCreate = currentUser != null && await PermissionService.HasPermissionAsync(currentUser, Modules.Users, Permissions.Create);
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Administración de usuarios</h1>
+        <p class="bean-panel-sub">Gestiona las cuentas del equipo, sus roles y su estado de acceso.</p>
+    </div>
+    @if (canCreate)
+    {
+        <a asp-action="Create" class="bean-prov-newlot"><i class="fas fa-plus"></i> Crear nuevo usuario</a>
+    }
+</div>
+
+<div class="bean-panel-tablewrap">
+    <table class="bean-panel-table" id="usersTable">
+        <thead>
+            <tr>
+                <th>@Html.DisplayNameFor(model => model.FullName)</th>
+                <th>@Html.DisplayNameFor(model => model.Email)</th>
+                <th>@Html.DisplayNameFor(model => model.DocumentNumber)</th>
+                <th>@Html.DisplayNameFor(model => model.Roles)</th>
+                <th>@Html.DisplayNameFor(model => model.Status)</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                var isCurrentUser = item.Email == currentUser?.Email;
+
+                 @* Permission check *@
+                var canUpdate = currentUser != null && await PermissionService.HasPermissionAsync(currentUser, Modules.Users, Permissions.Update);
+
+                <tr>
+                    <td class="bean-td-name">@Html.DisplayFor(modelItem => item.FullName)</td>
+                    <td>@Html.DisplayFor(modelItem => item.Email)</td>
+                    <td>@Html.DisplayFor(modelItem => item.DocumentNumber)</td>
+                    <td>
+                        @foreach (var role in item.Roles)
+                        {
+                            <span class="bean-role-chip">@role</span>
+                        }
+                    </td>
+                    <td>
+                        @if (canUpdate && !isCurrentUser)
+                        {
+                            <form asp-action="ToggleStatus" asp-route-id="@item.Id" method="post" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" onchange="this.form.submit()" @(item.Status ? "checked" : "") style="cursor: pointer;">
+                                </div>
+                            </form>
+                        }
+                        else
+                        {
+                            @if(item.Status)
+                            {
+                                <span class="bean-status active"><span class="dot"></span>Activo</span>
+                            }
+                            else
+                            {
+                                <span class="bean-status rejected"><span class="dot"></span>Inactivo</span>
+                            }
+                        }
+                    </td>
+                    <td>
+                        @if (canUpdate && !isCurrentUser)
+                        {
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="bean-btn-pill outline icon" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

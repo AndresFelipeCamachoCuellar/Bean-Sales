@@ -1,0 +1,103 @@
+@model Web.Models.ViewModels.CreateUserViewModel
+
+@{
+    ViewData["Title"] = "Crear Usuario";
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Crear nuevo usuario</h1>
+        <p class="bean-panel-sub">Registra una cuenta del equipo con su rol y credenciales.</p>
+    </div>
+</div>
+
+<div class="bean-form-card">
+    <form asp-action="Create">
+        <div asp-validation-summary="ModelOnly" class="bean-form-summary"></div>
+
+        <h2 class="bean-form-section-title">Información personal</h2>
+        <div class="bean-form-grid">
+            <div class="bean-field">
+                <label asp-for="FirstName" class="bean-label"></label>
+                <input asp-for="FirstName" class="bean-input" placeholder="First Name" />
+                <span asp-validation-for="FirstName" class="bean-form-error"></span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="LastName" class="bean-label"></label>
+                <input asp-for="LastName" class="bean-input" placeholder="Last Name" />
+                <span asp-validation-for="LastName" class="bean-form-error"></span>
+            </div>
+
+            <div class="bean-field">
+                <label asp-for="DocumentTypeID" class="bean-label"></label>
+                <select asp-for="DocumentTypeID" asp-items="Model.DocumentTypes" class="bean-select">
+                    <option value="">-- Seleccione --</option>
+                </select>
+                <span asp-validation-for="DocumentTypeID" class="bean-form-error"></span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="DocumentNumber" class="bean-label"></label>
+                <input asp-for="DocumentNumber" class="bean-input" placeholder="Document Number" />
+                <span asp-validation-for="DocumentNumber" class="bean-form-error"></span>
+            </div>
+
+            <div class="bean-field">
+                <label asp-for="CountryID" class="bean-label"></label>
+                <select asp-for="CountryID" asp-items="Model.Countries" class="bean-select">
+                    <option value="">-- Seleccione --</option>
+                </select>
+                <span asp-validation-for="CountryID" class="bean-form-error"></span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="Gender" class="bean-label"></label>
+                <select asp-for="Gender" class="bean-select">
+                    <option value="">-- Seleccione --</option>
+                    <option value="Male">Masculino</option>
+                    <option value="Female">Femenino</option>
+                </select>
+                <span asp-validation-for="Gender" class="bean-form-error"></span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="DateOfBirth" class="bean-label"></label>
+                <input asp-for="DateOfBirth" class="bean-input" type="date" />
+                <span asp-validation-for="DateOfBirth" class="bean-form-error"></span>
+            </div>
+        </div>
+
+        <h2 class="bean-form-section-title">Cuenta y seguridad</h2>
+        <div class="bean-form-grid">
+            <div class="bean-field">
+                <label asp-for="Email" class="bean-label"></label>
+                <input asp-for="Email" class="bean-input" placeholder="Email" />
+                <span asp-validation-for="Email" class="bean-form-error"></span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="RoleID" class="bean-label"></label>
+                <select asp-for="RoleID" asp-items="Model.Roles" class="bean-select">
+                    <option value="">-- Seleccione --</option>
+                </select>
+                <span asp-validation-for="RoleID" class="bean-form-error"></span>
+            </div>
+
+            <div class="bean-field">
+                <label asp-for="Password" class="bean-label"></label>
+                <input asp-for="Password" class="bean-input" placeholder="Password" />
+                <span asp-validation-for="Password" class="bean-form-error"></span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="ConfirmPassword" class="bean-label"></label>
+                <input asp-for="ConfirmPassword" class="bean-input" placeholder="Confirm Password" />
+                <span asp-validation-for="ConfirmPassword" class="bean-form-error"></span>
+            </div>
+        </div>
+
+        <div class="bean-form-actions">
+            <a asp-action="Index" class="bean-btn-pill outline">Cancelar</a>
+            <button type="submit" class="bean-btn-pill primary">Crear usuario</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

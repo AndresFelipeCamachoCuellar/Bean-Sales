@@ -1,0 +1,151 @@
+@model IEnumerable<Web.Models.ViewModels.SupplierOrderViewModel>
+@using Web.Models.Enums
+
+@{
+    ViewData["Title"] = "Pedidos entrantes";
+    Layout = "_Layout";
+
+    var rows = Model.ToList();
+    int nPreparar = rows.Count(r => r.Group == "preparar");
+    int nListos = rows.Count(r => r.Group == "listos");
+    int nCompletados = rows.Count(r => r.Group == "completados");
+
+    // Antigüedad legible ("hace 2 h", "ayer", ...) a partir de la fecha del pedido.
+    string Ago(DateTime dt)
+    {
+        var span = DateTime.Now - dt;
+        if (span.TotalMinutes < 1) return "ahora";
+        if (span.TotalMinutes < 60) return $"hace {(int)span.TotalMinutes} min";
+        if (span.TotalHours < 24) return $"hace {(int)span.TotalHours} h";
+        if (span.TotalDays < 2) return "ayer";
+        if (span.TotalDays < 30) return $"hace {(int)span.TotalDays} días";
+        return dt.ToString("dd MMM yyyy");
+    }
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Pedidos entrantes</h1>
+        <p class="bean-panel-sub">
+            @nPreparar por preparar · @nListos listo@(nListos == 1 ? "" : "s") para recogida · @nCompletados completado@(nCompletados == 1 ? "" : "s")
+        </p>
+    </div>
+    <div class="bean-tabs" role="tablist">
+        <button type="button" class="bean-tab active" data-tab="preparar" onclick="beanSoFilter('preparar', this)">
+            Por preparar <span class="cnt">· @nPreparar</span>
+        </button>
+        <button type="button" class="bean-tab" data-tab="listos" onclick="beanSoFilter('listos', this)">
+            Listos <span class="cnt">· @nListos</span>
+        </button>
+        <button type="button" class="bean-tab" data-tab="completados" onclick="beanSoFilter('completados', this)">
+            Completados <span class="cnt">· @nCompletados</span>
+        </button>
+    </div>
+</div>
+
+<div class="bean-so-list" id="beanSoList">
+    @foreach (var r in rows)
+    {
+        var o = r.Order;
+        var isCompany = o.User?.ProviderID != null; // comprador B2B si su usuario pertenece a una empresa
+        var buyerName = $"{o.FirstName} {o.LastName}".Trim();
+        if (string.IsNullOrWhiteSpace(buyerName)) { buyerName = o.User?.UserName ?? "Cliente"; }
+        var shortId = "#" + o.OrderID.ToString("N").Substring(0, 8).ToUpper();
+        var dest = string.Join(", ", new[] { o.State, o.ShippingCountry }.Where(x => !string.IsNullOrWhiteSpace(x)));
+        var contents = string.Join(" · ", r.ProviderItems.Select(i => $"{i.Quantity}× {i.ProductName}"));
+
+        <div class="bean-so-card@(r.Group == "preparar" ? " first" : "")" data-group="@r.Group">
+            <div class="bean-so-avatar @(isCompany ? "company" : "client")">@(isCompany ? "🏪" : "👤")</div>
+
+            <div class="bean-so-buyer">
+                <div class="nm">@shortId · @buyerName</div>
+                <div class="meta">@(string.IsNullOrWhiteSpace(dest) ? "Sin destino" : dest) · @Ago(o.OrderDate)</div>
+            </div>
+
+            <div class="bean-so-col">
+                <div class="k">Contenido</div>
+                <div class="v">@(string.IsNullOrWhiteSpace(contents) ? "—" : contents)</div>
+            </div>
+
+            <div class="bean-so-col">
+                <div class="k">Tu pago</div>
+                <div class="bean-so-payout">@r.Payout.ToString("C0")</div>
+            </div>
+
+            <div class="bean-so-statuscell">
+                @switch (o.OrderStatus)
+                {
+                    case OrderStatus.Pending:
+                    case OrderStatus.Confirmed:
+                    case OrderStatus.Processing:
+                        <span class="bean-status pending"><span class="dot"></span>Por preparar</span>
+                        break;
+                    case OrderStatus.Shipped:
+                        <span class="bean-status active"><span class="dot"></span>Listo para recogida</span>
+                        break;
+                    case OrderStatus.Delivered:
+                        <span class="bean-status ship"><span class="dot"></span>Entregado</span>
+                        break;
+                    case OrderStatus.Cancelled:
+                        <span class="bean-status rejected"><span class="dot"></span>Cancelado</span>
+                        break;
+                }
+            </div>
+
+            <div class="bean-so-ctacell">
+                @* CTA visual por estado. PLACEHOLDER: aún no hay una transición de estado
+                   por-proveedor (el estado es del pedido completo). Estos botones no postean;
+                   quedan listos para cablear cuando exista el hand-off proveedor→bodega. *@
+                @if (r.Group == "preparar")
+                {
+                    <button type="button" class="bean-so-cta primary" title="Próximamente: marcar el pedido como listo para recogida">
+                        Marcar listo
+                    </button>
+                }
+                else if (r.Group == "listos")
+                {
+                    <button type="button" class="bean-so-cta outline" title="Próximamente: ver la guía de la transportadora">
+                        Ver guía
+                    </button>
+                }
+                else
+                {
+                    <span class="bean-so-done">Completado</span>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<div class="bean-appr-empty" id="beanSoEmpty" style="display:none;">
+    <div class="ico"><i class="fas fa-inbox"></i></div>
+    <h3>No hay pedidos en esta pestaña</h3>
+    <p>Cuando lleguen pedidos con tus lotes aparecerán aquí para que los prepares.</p>
+</div>
+
+<div class="bean-panel-note" style="margin-top:20px;">
+    <i class="fas fa-truck"></i>
+    <span>La transportadora recoge <strong>lunes y jueves a las 9:00</strong>. Los pedidos marcados “Listo” antes de las 8:00 salen ese mismo día.</span>
+</div>
+
+@section Scripts {
+    <script>
+        function beanSoFilter(group, el) {
+            document.querySelectorAll('.bean-tabs .bean-tab').forEach(function (t) { t.classList.remove('active'); });
+            if (el) { el.classList.add('active'); }
+
+            var rows = document.querySelectorAll('#beanSoList .bean-so-card');
+            var visible = 0;
+            rows.forEach(function (r) {
+                var show = r.getAttribute('data-group') === group;
+                r.style.display = show ? '' : 'none';
+                if (show) { visible++; }
+            });
+            document.getElementById('beanSoEmpty').style.display = visible === 0 ? '' : 'none';
+        }
+        // Estado inicial: pestaña "Por preparar".
+        document.addEventListener('DOMContentLoaded', function () {
+            beanSoFilter('preparar', document.querySelector('.bean-tabs .bean-tab[data-tab="preparar"]'));
+        });
+    </script>
+}

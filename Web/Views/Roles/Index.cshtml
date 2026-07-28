@@ -1,0 +1,55 @@
+@model IEnumerable<Web.Models.ViewModels.RoleViewModel>
+
+@{
+    ViewData["Title"] = "Gestión de Roles";
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Gestión de roles</h1>
+        <p class="bean-panel-sub">Define los roles del sistema y los permisos granulares de cada uno.</p>
+    </div>
+    <a asp-action="Create" class="bean-prov-newlot"><i class="fas fa-plus"></i> Crear nuevo rol</a>
+</div>
+
+<div class="bean-panel-tablewrap">
+    <table class="bean-panel-table">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td class="bean-td-name">@item.Name</td>
+                    <td>
+                        <div class="bean-td-actions">
+                            @if (item.Name != Web.Constants.Roles.SuperAdmin && item.Name != Web.Constants.Roles.ProviderAdmin)
+                            {
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="bean-btn-pill outline icon" title="Editar Nombre">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a asp-action="ManagePermissions" asp-route-id="@item.Id" class="bean-btn-pill primary icon" title="Gestionar Permisos">
+                                    <i class="fas fa-key"></i>
+                                </a>
+                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro? Esto podría afectar a los usuarios con este rol.');">
+                                     @Html.AntiForgeryToken()
+                                    <button type="submit" class="bean-btn-pill danger icon" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                 <span class="bean-role-chip">System Protected</span>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,40 @@
+@model Web.Models.ViewModels.RoleViewModel
+
+@{
+    ViewData["Title"] = "Crear Rol (Empresa)";
+    Layout = "_Layout";
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Crear nuevo rol</h1>
+        <p class="bean-panel-sub">Define un rol para asignarlo a los usuarios de tu empresa.</p>
+    </div>
+</div>
+
+<div class="bean-form-card narrow">
+    <form asp-action="Create" method="post">
+        <div asp-validation-summary="ModelOnly" class="bean-form-summary"></div>
+
+        <div class="bean-field">
+            <label asp-for="Name" class="bean-label"></label>
+            <input asp-for="Name" class="bean-input" />
+            <span asp-validation-for="Name" class="bean-form-error"></span>
+        </div>
+
+        <div class="bean-field" style="margin-top:16px;">
+            <label asp-for="Description" class="bean-label"></label>
+            <textarea asp-for="Description" class="bean-input" rows="3"></textarea>
+            <span asp-validation-for="Description" class="bean-form-error"></span>
+        </div>
+
+        <div class="bean-form-actions">
+            <a asp-action="Index" class="bean-btn-pill outline">Cancelar</a>
+            <button type="submit" class="bean-btn-pill primary"><i class="fas fa-save"></i> Guardar</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

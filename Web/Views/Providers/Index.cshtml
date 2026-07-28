@@ -1,0 +1,69 @@
+@model IEnumerable<Web.Models.Provider>
+
+@{
+    ViewData["Title"] = "Gestión de Proveedores";
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Empresas registradas</h1>
+        <p class="bean-panel-sub">Valida y gestiona las empresas proveedoras que abastecen el catálogo.</p>
+    </div>
+</div>
+
+<div class="bean-panel-tablewrap">
+    <table class="bean-panel-table">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>NIT</th>
+                <th>Email</th>
+                <th>Estado aprobación</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td class="bean-td-name">@item.Name</td>
+                    <td>@item.NIT</td>
+                    <td>@item.Email</td>
+                    <td>
+                        @if(item.ApprovalStatus == Web.Models.ApprovalStatus.Pending)
+                        {
+                            <span class="bean-status pending"><span class="dot"></span>Pendiente</span>
+                        }
+                        else if(item.ApprovalStatus == Web.Models.ApprovalStatus.Approved)
+                        {
+                            <span class="bean-status active"><span class="dot"></span>Aprobado</span>
+                        }
+                        else
+                        {
+                            <span class="bean-status rejected"><span class="dot"></span>Rechazado</span>
+                        }
+                    </td>
+                    <td>
+                        @if(item.ApprovalStatus == Web.Models.ApprovalStatus.Pending)
+                        {
+                            <div class="bean-td-actions">
+                                <form asp-action="Approve" asp-route-id="@item.ProviderID" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="bean-btn-approve" title="Aprobar">
+                                        <i class="fas fa-check"></i> Aprobar
+                                    </button>
+                                </form>
+                                <form asp-action="Reject" asp-route-id="@item.ProviderID" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="bean-btn-reject" title="Rechazar">
+                                        <i class="fas fa-times"></i> Rechazar
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

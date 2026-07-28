@@ -1,0 +1,144 @@
+@model Web.Models.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "_Layout";
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">@Model.Greeting</h1>
+        <p class="bean-panel-sub" style="text-transform:capitalize;">@Model.TodayLabel</p>
+    </div>
+</div>
+
+@* ---- 4 KPI cards ---- *@
+<div class="bean-kpi-grid">
+    @{ var kpiDelay = 0.0; }
+    @foreach (var kpi in Model.Kpis)
+    {
+        <div class="bean-kpi-card bean-fadeup" style="animation-delay:@(kpiDelay.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))s;">
+            <div class="bean-kpi-label">@kpi.Label</div>
+            <div class="bean-kpi-value">@kpi.Value</div>
+            @if (kpi.HasTrend)
+            {
+                <div class="bean-kpi-trend @(kpi.TrendUp ? "up" : "down")">
+                    <i class="fas fa-@(kpi.TrendUp ? "arrow-up" : "arrow-down")"></i>
+                    <span>@kpi.TrendLabel</span>
+                </div>
+            }
+            else
+            {
+                <div class="bean-kpi-trend neutral"><span>&nbsp;</span></div>
+            }
+        </div>
+        kpiDelay += 0.07;
+    }
+</div>
+
+@* ---- Gráfica + Por aprobar ---- *@
+<div class="bean-dash-cols">
+    <div class="bean-dash-card">
+        <div class="bean-dash-cardhead">
+            <h2 class="bean-dash-cardtitle">Ventas por semana</h2>
+            <div class="bean-cur-toggle" role="group" aria-label="Moneda">
+                <span class="bean-cur active">COP</span>
+                <span class="bean-cur">CAD</span>
+            </div>
+        </div>
+
+        <div class="bean-bars">
+            @foreach (var bar in Model.WeeklySales)
+            {
+                <div class="bean-bar-col">
+                    <div class="bean-bar @(bar.IsCurrent ? "current" : "")"
+                         style="height:@(bar.HeightPercent)%;"
+                         title="@bar.Label: @bar.ValueLabel"></div>
+                    <span class="bean-bar-label">@bar.Label</span>
+                </div>
+            }
+        </div>
+
+        <div class="bean-chart-totals">
+            <div><strong>@Model.MonthSalesLabel</strong> <span>COP este mes</span></div>
+            <div><strong>@Model.MonthBagsLabel</strong> <span>bolsas vendidas</span></div>
+            <div><strong>@Model.MonthOrdersLabel</strong> <span>pedidos del mes</span></div>
+        </div>
+    </div>
+
+    <div class="bean-dash-card">
+        <div class="bean-dash-cardhead">
+            <h2 class="bean-dash-cardtitle">Por aprobar</h2>
+            <a class="bean-dash-seeall" asp-controller="ProductApproval" asp-action="Index">Ver todo &rarr;</a>
+        </div>
+
+        @if (Model.PendingProducts.Count == 0)
+        {
+            <div class="bean-dash-empty">
+                <i class="fas fa-check-circle"></i>
+                <p>No hay productos pendientes de aprobación.</p>
+            </div>
+        }
+        else
+        {
+            <div class="bean-pending-list">
+                @foreach (var p in Model.PendingProducts)
+                {
+                    <div class="bean-pending-row">
+                        <span class="bean-pending-thumb"><i class="fas fa-seedling"></i></span>
+                        <div class="bean-pending-info">
+                            <div class="nm">@p.Name</div>
+                            <div class="mt">@p.ProviderName · @p.AgeLabel</div>
+                        </div>
+                        <span class="bean-status pending"><span class="dot"></span>Pendiente</span>
+                    </div>
+                }
+            </div>
+
+            @if (Model.OldestPendingAge != null)
+            {
+                <div class="bean-dash-callout">
+                    <strong>@Model.PendingApprovalsTotal producto@(Model.PendingApprovalsTotal == 1 ? "" : "s")</strong>
+                    espera@(Model.PendingApprovalsTotal == 1 ? "" : "n") revisión.
+                    El más antiguo lleva <strong>@Model.OldestPendingAge</strong> en cola.
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@* ---- Actividad reciente ---- *@
+<div class="bean-dash-card" style="margin-top:20px;">
+    <div class="bean-dash-cardhead">
+        <h2 class="bean-dash-cardtitle">Actividad reciente</h2>
+        <a class="bean-dash-seeall" asp-controller="OrderManagement" asp-action="Index">Ver pedidos &rarr;</a>
+    </div>
+
+    @if (Model.RecentActivity.Count == 0)
+    {
+        <div class="bean-dash-empty">
+            <i class="fas fa-stream"></i>
+            <p>Aún no hay actividad para mostrar.</p>
+        </div>
+    }
+    else
+    {
+        <div class="bean-activity">
+            @foreach (var a in Model.RecentActivity)
+            {
+                var ico = a.Type switch
+                {
+                    "approval" => "fa-check",
+                    "order" => "fa-box",
+                    "alert" => "fa-exclamation-triangle",
+                    "user" => "fa-user",
+                    _ => "fa-circle"
+                };
+                <div class="bean-act-row">
+                    <span class="bean-act-ico @a.Type"><i class="fas @ico"></i></span>
+                    <span class="bean-act-text">@a.Text</span>
+                    <span class="bean-act-time">@a.TimeLabel</span>
+                </div>
+            }
+        </div>
+    }
+</div>

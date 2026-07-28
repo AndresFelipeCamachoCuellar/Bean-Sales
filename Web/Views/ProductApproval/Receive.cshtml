@@ -1,0 +1,85 @@
+@model Web.Models.Product
+@using Web.Models.Enums
+
+@{
+    ViewData["Title"] = "Recibir Producto";
+    Layout = "_Layout";
+    var isActive = Model.ProductStatus == ProductStatus.Active;
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">@(isActive ? "Gestionar disponibilidad" : "Recibir producto")</h1>
+        <p class="bean-panel-sub">@(isActive ? "Actualiza en qué países está disponible este lote." : "Confirma la recepción del lote y publícalo en los países seleccionados.")</p>
+    </div>
+    <a asp-action="Index" class="bean-btn-receive manage"><i class="fas fa-arrow-left"></i> Volver</a>
+</div>
+
+<div class="bean-panel-card">
+    <div class="bean-panel-datagrid">
+        <div class="k">Producto</div><div class="v">@Model.Name</div>
+        <div class="k">Proveedor</div><div class="v">@Model.Provider?.Name</div>
+        <div class="k">Estado actual</div>
+        <div class="v">
+            @switch (Model.ProductStatus)
+            {
+                case ProductStatus.Shipped:
+                    <span class="bean-status transit"><span class="dot"></span>Enviado / por recibir</span>
+                    break;
+                case ProductStatus.Active:
+                    <span class="bean-status active"><span class="dot"></span>Activo · en venta</span>
+                    break;
+                default:
+                    <text>@Model.ProductStatus</text>
+                    break;
+            }
+        </div>
+        <div class="k">Stock declarado</div><div class="v">@Model.Stock unidades</div>
+        <div class="k">Precio base</div><div class="v">@Model.Price.ToString("C")</div>
+    </div>
+</div>
+
+<form asp-action="Receive" method="post" class="bean-panel-card">
+    <input type="hidden" name="id" value="@Model.ProductID" />
+
+    <h2 class="bean-panel-title" style="font-size:19px; margin:0 0 6px;">Disponibilidad por país</h2>
+    <p class="bean-panel-sub" style="margin:0 0 16px;">Selecciona los países donde este producto estará visible para la venta. Por defecto se marcan los solicitados por el proveedor.</p>
+
+    <div class="bean-panel-checkgrid">
+        @foreach (var pc in Model.ProductCountries)
+        {
+            @* Se marca por IsAvailable; en la primera recepción (Shipped) se sugieren los solicitados. *@
+            var isChecked = pc.IsAvailable;
+            if (Model.ProductStatus == ProductStatus.Shipped && pc.IsTargeted)
+            {
+                isChecked = true;
+            }
+            <div class="bean-panel-check">
+                <input class="form-check-input" type="checkbox" name="availableCountryIds" value="@pc.CountryID" id="c_@pc.CountryID" @(isChecked ? "checked" : "") />
+                <label for="c_@pc.CountryID">
+                    @pc.Country?.Name
+                    @if (pc.IsTargeted)
+                    {
+                        <span class="bean-country-chip" style="margin-left:6px;">Solicitado</span>
+                    }
+                    @if (pc.IsAvailable)
+                    {
+                        <span class="bean-status active" style="margin-left:6px; padding:3px 9px; font-size:11px;"><span class="dot"></span>Activo</span>
+                    }
+                </label>
+            </div>
+        }
+    </div>
+
+    <div class="bean-panel-note">
+        <i class="fas fa-exclamation-circle"></i>
+        <div>Al confirmar, el producto pasará a estado <strong>ACTIVO</strong> y será visible en el catálogo de los países seleccionados.</div>
+    </div>
+
+    <div style="display:flex; gap:12px; align-items:center; margin-top:22px;">
+        <button type="submit" class="bean-btn-approve" style="padding:12px 22px; font-size:14px;">
+            <i class="fas fa-check-circle"></i> Confirmar recepción
+        </button>
+        <a asp-action="Index" class="bean-btn-receive manage">Cancelar</a>
+    </div>
+</form>

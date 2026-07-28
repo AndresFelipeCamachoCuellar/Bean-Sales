@@ -1,0 +1,26 @@
+@model Web.Models.ViewModels.RoleViewModel
+@{
+    ViewData["Title"] = "Crear Rol";
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Crear nuevo rol</h1>
+        <p class="bean-panel-sub">Crea un rol; luego podrás asignarle permisos por módulo.</p>
+    </div>
+</div>
+
+<div class="bean-form-card narrow">
+    <form asp-action="Create">
+        <div asp-validation-summary="ModelOnly" class="bean-form-summary"></div>
+        <div class="bean-field">
+            <label asp-for="Name" class="bean-label">Nombre del Rol</label>
+            <input asp-for="Name" class="bean-input" />
+            <span asp-validation-for="Name" class="bean-form-error"></span>
+        </div>
+        <div class="bean-form-actions">
+            <a asp-action="Index" class="bean-btn-pill outline">Cancelar</a>
+            <button type="submit" class="bean-btn-pill primary">Crear</button>
+        </div>
+    </form>
+</div>

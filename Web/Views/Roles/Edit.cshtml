@@ -1,0 +1,27 @@
+@model Web.Models.ViewModels.RoleViewModel
+@{
+    ViewData["Title"] = "Editar Rol";
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Editar rol</h1>
+        <p class="bean-panel-sub">Actualiza el nombre del rol del sistema.</p>
+    </div>
+</div>
+
+<div class="bean-form-card narrow">
+    <form asp-action="Edit">
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="ModelOnly" class="bean-form-summary"></div>
+        <div class="bean-field">
+            <label asp-for="Name" class="bean-label">Nombre del Rol</label>
+            <input asp-for="Name" class="bean-input" />
+            <span asp-validation-for="Name" class="bean-form-error"></span>
+        </div>
+        <div class="bean-form-actions">
+            <a asp-action="Index" class="bean-btn-pill outline">Cancelar</a>
+            <button type="submit" class="bean-btn-pill primary">Guardar cambios</button>
+        </div>
+    </form>
+</div>

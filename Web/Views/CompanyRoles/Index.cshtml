@@ -1,0 +1,66 @@
+@model IEnumerable<Web.Models.ViewModels.RoleViewModel>
+@inject Web.Services.IPermissionService PermissionService
+@inject Microsoft.AspNetCore.Identity.UserManager<Web.Models.ApplicationUser> UserManager
+
+@{
+    ViewData["Title"] = "Roles (Empresa)";
+    Layout = "_Layout";
+    var user = await UserManager.GetUserAsync(User);
+    var canCreate = await PermissionService.HasPermissionAsync(user, Web.Constants.Modules.CompanyRoles, Web.Constants.Permissions.Create);
+    var canUpdate = await PermissionService.HasPermissionAsync(user, Web.Constants.Modules.CompanyRoles, Web.Constants.Permissions.Update);
+    var canDelete = await PermissionService.HasPermissionAsync(user, Web.Constants.Modules.CompanyRoles, Web.Constants.Permissions.Delete);
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Gestión de roles</h1>
+        <p class="bean-panel-sub">Define los roles de tu empresa y los permisos granulares de cada uno.</p>
+    </div>
+    @if (canCreate)
+    {
+        <a asp-action="Create" class="bean-prov-newlot"><i class="fas fa-plus"></i> Crear rol</a>
+    }
+</div>
+
+<div class="bean-panel-tablewrap">
+    <table class="bean-panel-table">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td class="bean-td-name">@item.Name</td>
+                    <td>@item.Description</td>
+                    <td>
+                        <div class="bean-td-actions">
+                            @if (canUpdate)
+                            {
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="bean-btn-pill outline icon" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a asp-action="ManagePermissions" asp-route-id="@item.Id" class="bean-btn-pill primary icon" title="Permisos">
+                                    <i class="fas fa-key"></i>
+                                </a>
+                            }
+                            @if (canDelete)
+                            {
+                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline;" onsubmit="return confirm('¿Está seguro de eliminar este rol?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="bean-btn-pill danger icon" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

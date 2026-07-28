@@ -1,0 +1,54 @@
+@using Web.Models.ViewModels
+@model LoginViewModel
+
+@{
+    ViewData["Title"] = "Entrar";
+}
+
+<div class="bean-auth-toggle">
+    <a href="#" class="active">Entrar</a>
+    <a asp-action="Register" asp-route-returnUrl="@ViewData["ReturnUrl"]">Crear cuenta</a>
+</div>
+
+<h1 class="bean-auth-title">Inicia sesión</h1>
+<p class="bean-auth-sub">Accede a tus lotes, pedidos y envíos.</p>
+
+<form id="account" asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
+    <div asp-validation-summary="ModelOnly" class="bean-auth-validation" role="alert"></div>
+
+    <div class="bean-auth-field">
+        <label asp-for="Email" class="bean-auth-label">Correo electrónico</label>
+        <input asp-for="Email" class="bean-auth-input" autocomplete="username" aria-required="true" placeholder="nombre@correo.com" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
+
+    <div class="bean-auth-field">
+        <label asp-for="Password" class="bean-auth-label">Contraseña</label>
+        <input asp-for="Password" class="bean-auth-input" autocomplete="current-password" aria-required="true" placeholder="Tu contraseña" />
+        <span asp-validation-for="Password" class="text-danger"></span>
+    </div>
+
+    <div class="bean-auth-field">
+        <label class="bean-auth-checkbox">
+            <input asp-for="RememberMe" />
+            <span>@Html.DisplayNameFor(m => m.RememberMe)</span>
+        </label>
+    </div>
+
+    <button id="login-submit" type="submit" class="bean-auth-cta">Entrar</button>
+</form>
+
+<div class="bean-auth-divider">¿Compras para tu negocio?</div>
+
+<a class="bean-auth-bizcard" asp-action="RegisterProvider">
+    <span class="ico">🏪</span>
+    <span class="txt">
+        <strong>Registra tu empresa</strong>
+        <span>Precios de mayoreo, cupo mensual y facturación.</span>
+    </span>
+    <span class="arrow">→</span>
+</a>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

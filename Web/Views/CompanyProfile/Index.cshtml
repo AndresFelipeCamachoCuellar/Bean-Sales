@@ -1,0 +1,74 @@
+@model Web.Models.ViewModels.CompanyProfileViewModel
+@using Web.Services
+@using Web.Constants
+@using Microsoft.AspNetCore.Identity
+@inject IPermissionService PermissionService
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+    ViewData["Title"] = "Perfil de la Empresa";
+    Layout = "_Layout";
+    var user = await UserManager.GetUserAsync(User);
+    var canEdit = await PermissionService.HasPermissionAsync(user, Modules.CompanyProfile, Permissions.Update);
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Perfil de la empresa</h1>
+        <p class="bean-panel-sub">Consulta y administra la información general de tu empresa en la plataforma.</p>
+    </div>
+    @if (canEdit)
+    {
+        <a asp-action="Edit" class="bean-prov-newlot"><i class="fas fa-edit"></i> Editar información</a>
+    }
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="bean-form-card" style="margin-top:18px; border-color:var(--bean-terra); color:var(--bean-ink);">
+        <i class="fas fa-check-circle" style="color:var(--bean-terra);"></i> @TempData["SuccessMessage"]
+    </div>
+}
+
+<div class="bean-form-card">
+    <h2 class="bean-form-section-title">Información general</h2>
+    <div class="bean-form-grid">
+        <div class="bean-field">
+            <span class="bean-label">Nombre de la empresa</span>
+            <div class="bean-field-value">@Model.Name</div>
+        </div>
+        <div class="bean-field">
+            <span class="bean-label">NIT</span>
+            <div class="bean-field-value">@Model.NIT</div>
+        </div>
+        <div class="bean-field">
+            <span class="bean-label">Email corporativo</span>
+            <div class="bean-field-value">@Model.Email</div>
+        </div>
+        <div class="bean-field">
+            <span class="bean-label">Teléfono</span>
+            <div class="bean-field-value">@Model.Phone</div>
+        </div>
+    </div>
+
+    <h2 class="bean-form-section-title">Ubicación y estado</h2>
+    <div class="bean-form-grid">
+        <div class="bean-field" style="grid-column: 1 / -1;">
+            <span class="bean-label">Dirección</span>
+            <div class="bean-field-value">@Model.Address</div>
+        </div>
+        <div class="bean-field">
+            <span class="bean-label">Estado en plataforma</span>
+            <div>
+                @if (Model.ApprovalStatus == "Approved")
+                {
+                    <span class="bean-status active"><span class="dot"></span>Aprobado</span>
+                }
+                else
+                {
+                    <span class="bean-status pending"><span class="dot"></span>@Model.ApprovalStatus</span>
+                }
+            </div>
+        </div>
+    </div>
+</div>

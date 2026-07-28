@@ -1,0 +1,49 @@
+@model Web.Models.ViewModels.ManagePermissionsViewModel
+@{
+    ViewData["Title"] = "Gestionar Permisos";
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Permisos del rol: @Model.RoleName</h1>
+        <p class="bean-panel-sub">Activa o desactiva los permisos granulares por módulo para este rol.</p>
+    </div>
+    <a asp-action="Index" class="bean-btn-pill outline"><i class="fas fa-arrow-left"></i> Volver</a>
+</div>
+
+<div class="bean-form-card">
+    <form asp-action="ManagePermissions">
+        <input type="hidden" asp-for="RoleId" />
+
+        <div class="bean-perm-grid">
+            @for (int i = 0; i < Model.Modules.Count; i++)
+            {
+                <div class="bean-perm-module">
+                    <div class="bean-perm-module-head">@Model.Modules[i].ModuleName</div>
+
+                    <input type="hidden" asp-for="Modules[i].ModuleCode" />
+                    <input type="hidden" asp-for="Modules[i].ModuleName" />
+
+                    <div class="bean-perm-list">
+                        @for (int j = 0; j < Model.Modules[i].Permissions.Count; j++)
+                        {
+                            <div class="bean-perm-item">
+                                <input type="hidden" asp-for="Modules[i].Permissions[j].ParametricPermissionID" />
+                                <input type="hidden" asp-for="Modules[i].Permissions[j].PermissionName" />
+                                <input type="checkbox" asp-for="Modules[i].Permissions[j].Selected" id="@($"perm_{i}_{j}")">
+                                <label for="@($"perm_{i}_{j}")">
+                                    @Model.Modules[i].Permissions[j].PermissionName
+                                    <small>@Model.Modules[i].Permissions[j].Description</small>
+                                </label>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="bean-form-actions">
+            <button type="submit" class="bean-btn-pill primary"><i class="fas fa-save"></i> Guardar permisos</button>
+        </div>
+    </form>
+</div>

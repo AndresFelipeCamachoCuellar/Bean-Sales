@@ -1,0 +1,26 @@
+@{
+    ViewData["Title"] = "Registro recibido";
+}
+
+@section AuthAside {
+    <div class="bean-auth-panel-top">
+        <a class="bean-brand" asp-controller="Home" asp-action="Index"><span class="bean-drop"></span> Bean</a>
+        <span class="bean-auth-badge-emp">Empresas</span>
+    </div>
+    <div class="bean-auth-panel-body">
+        <h2>Bienvenido a Bean.</h2>
+        <p>Estamos revisando los datos de tu empresa. En cuanto quede aprobada, tendrás acceso a precios de mayoreo, cupo mensual y facturación.</p>
+        <div class="bean-auth-panel-checks">
+            <span>Verificación en 1 día hábil</span>
+        </div>
+    </div>
+}
+
+<div class="bean-auth-success">
+    <div class="circle">✓</div>
+    <h1>¡Registro recibido!</h1>
+    <p>Tu empresa y tu cuenta de administrador se crearon correctamente.</p>
+    <div class="bean-auth-pill-state">Estado: pendiente de verificación</div>
+    <p>Un administrador de la plataforma revisará tus datos y aprobará tu acceso pronto. Te notificaremos por correo cuando tu cuenta esté activa.</p>
+    <a asp-action="Login" class="bean-auth-cta" style="max-width:260px;margin:10px auto 0;">Volver a iniciar sesión</a>
+</div>

@@ -1,0 +1,149 @@
+@model Web.Models.Product
+@using Web.Models.Enums
+
+@{
+    ViewData["Title"] = Model.Name;
+    var co = new System.Globalization.CultureInfo("es-CO");
+
+    Func<CoffeeProcess, string> procLabel = p => p switch
+    {
+        CoffeeProcess.Washed => "Lavado",
+        CoffeeProcess.Honey => "Honey",
+        CoffeeProcess.Natural => "Natural",
+        _ => p.ToString()
+    };
+
+    // Datos reales del producto (null-safe).
+    var origin = string.IsNullOrWhiteSpace(Model.Origin) ? "Colombia" : Model.Origin;
+    var eyebrow = string.IsNullOrWhiteSpace(Model.Altitude) ? origin : $"{origin} · {Model.Altitude}";
+    var notes = string.IsNullOrWhiteSpace(Model.TastingNotes)
+        ? Array.Empty<string>()
+        : Model.TastingNotes.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    // Fecha de tueste como texto relativo ("Hace N días"), con fallback a "—".
+    string roastText = "—";
+    if (Model.RoastDate.HasValue)
+    {
+        var days = (DateTime.Now.Date - Model.RoastDate.Value.Date).Days;
+        roastText = days <= 0 ? "Hoy" : days == 1 ? "Ayer" : days < 45 ? $"Hace {days} días" : Model.RoastDate.Value.ToString("dd MMM yyyy", co);
+    }
+}
+
+<section class="bean-detail">
+    <div class="bean-container">
+        <nav class="bean-breadcrumb" aria-label="breadcrumb">
+            <a asp-action="Index">Catálogo</a> / <span>@Model.Name</span>
+        </nav>
+
+        <div class="bean-detail-grid">
+            <!-- ===== Media ===== -->
+            <div class="bean-detail-media">
+                <div class="bean-detail-frame bean-img o1" style="@(string.IsNullOrEmpty(Model.ImageUrl) ? "" : $"background-image:url('{Model.ImageUrl}');background-size:cover;background-position:center;")">
+                    <span class="bean-badge bean-badge-stock badge-tl">● En stock · @Model.Stock bolsas</span>
+                    @if (!string.IsNullOrWhiteSpace(Model.Lot))
+                    {
+                        <span class="bean-badge bean-badge-lot badge-tr">Lote #@Model.Lot</span>
+                    }
+                    @if (string.IsNullOrEmpty(Model.ImageUrl))
+                    {
+                        <span class="foto-tag">[ foto del producto ]</span>
+                    }
+                </div>
+                <div class="bean-thumbs">
+                    <div class="bean-thumb active bean-img o1"></div>
+                    <div class="bean-thumb bean-img o2"></div>
+                    <div class="bean-thumb bean-img o3"></div>
+                </div>
+            </div>
+
+            <!-- ===== Info ===== -->
+            <div class="bean-detail-info">
+                <div class="bean-detail-eyebrow">@eyebrow</div>
+                <h1 class="bean-detail-title">@Model.Name</h1>
+                <div class="bean-detail-meta">
+                    <span class="stars">★★★★★</span>
+                    @if (Model.Rating.HasValue)
+                    {
+                        <span>@Model.Rating.Value.ToString("0.0", co)@(Model.ReviewCount.HasValue ? $" · {Model.ReviewCount.Value} reseñas" : "")</span>
+                    }
+                    <span class="finca">@(Model.Provider?.Name) · pago directo</span>
+                </div>
+
+                <p class="bean-detail-desc">@Model.Description</p>
+
+                @if (notes.Length > 0)
+                {
+                    <div class="bean-detail-notes">
+                        @foreach (var n in notes)
+                        {
+                            <span class="bean-note bean-note-lg">@n</span>
+                        }
+                    </div>
+                }
+
+                <!-- Tarjeta de trazabilidad (datos reales del producto, null-safe) -->
+                <div class="bean-trace">
+                    <div class="bean-trace-title">Trazabilidad</div>
+                    <div class="bean-trace-grid">
+                        <div class="bean-trace-row"><span class="k">Finca</span><span class="v">@(!string.IsNullOrWhiteSpace(Model.Farm) ? Model.Farm : (Model.Provider?.Name ?? "—"))</span></div>
+                        <div class="bean-trace-row"><span class="k">Altura</span><span class="v">@(string.IsNullOrWhiteSpace(Model.Altitude) ? "—" : Model.Altitude)</span></div>
+                        <div class="bean-trace-row"><span class="k">Proceso</span><span class="v">@(Model.Process.HasValue ? procLabel(Model.Process.Value) : "—")</span></div>
+                        <div class="bean-trace-row"><span class="k">Variedad</span><span class="v">@(string.IsNullOrWhiteSpace(Model.Variety) ? "—" : Model.Variety)</span></div>
+                        <div class="bean-trace-row"><span class="k">Lote</span><span class="v">@(string.IsNullOrWhiteSpace(Model.Lot) ? "—" : $"#{Model.Lot}")</span></div>
+                        <div class="bean-trace-row"><span class="k">Tostado</span><span class="v green">@roastText</span></div>
+                    </div>
+                </div>
+
+                <!-- Países disponibles (dato real del modelo) -->
+                @if (Model.ProductCountries.Any(c => c.IsAvailable))
+                {
+                    <div class="bean-detail-notes">
+                        @foreach (var pc in Model.ProductCountries.Where(c => c.IsAvailable))
+                        {
+                            <span class="bean-note">🌎 @pc.Country?.Name</span>
+                        }
+                    </div>
+                }
+
+                <div class="bean-detail-price">$@Model.Price.ToString("#,##0", co) <small>COP / bolsa 340 g</small></div>
+
+                <form asp-controller="Cart" asp-action="AddToCart" method="post">
+                    <input type="hidden" name="productId" value="@Model.ProductID" />
+                    <div class="bean-buy-row">
+                        <div class="bean-stepper">
+                            <button type="button" class="minus" onclick="beanStep(-1)">−</button>
+                            <input type="number" name="quantity" id="bean-qty" value="1" min="1" max="99" onchange="beanStep(0)" />
+                            <button type="button" class="plus" onclick="beanStep(1)">+</button>
+                        </div>
+                        <button type="submit" class="btn-bean" style="flex:1;">
+                            🛍 Agregar al carrito · <span id="bean-total">$@Model.Price.ToString("#,##0", co)</span>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="bean-reassure">
+                    <span>✓ Envío a Colombia en 3–5 días</span>
+                    <span>✓ Pago directo al productor</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        // Total vivo del botón (cantidad × precio unitario). Precio inyectado desde el modelo.
+        var beanUnitPrice = @Model.Price.ToString("0", System.Globalization.CultureInfo.InvariantCulture);
+        function beanStep(delta) {
+            var input = document.getElementById('bean-qty');
+            var q = parseInt(input.value, 10);
+            if (isNaN(q)) q = 1;
+            q += delta;
+            if (q < 1) q = 1;
+            if (q > 99) q = 99;
+            input.value = q;
+            var total = q * beanUnitPrice;
+            document.getElementById('bean-total').textContent = '$' + total.toLocaleString('es-CO');
+        }
+    </script>
+}
