@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Web.Constants;
@@ -66,6 +67,69 @@ public static class ContextSeed
             await context.DocumentTypes.AddRangeAsync(documentTypes);
             await context.SaveChangesAsync();
         }
+    }
+
+    /// <summary>
+    /// Catálogo de municipios (DIVIPOLA) usado como destino de envío. Se lee del JSON
+    /// que se copia junto al binario. Es idempotente y degrada en silencio: si el
+    /// archivo no está, la app arranca igual (el checkout usa la tarifa de respaldo).
+    /// </summary>
+    public static async Task SeedShippingCitiesAsync(ApplicationDbContext context, IWebHostEnvironment env)
+    {
+        if (await context.ShippingCities.AnyAsync()) return;
+
+        var candidatePaths = new[]
+        {
+            Path.Combine(env.ContentRootPath, "Data", "Seeds", "Data", "colombia-cities.json"),
+            Path.Combine(AppContext.BaseDirectory, "Data", "Seeds", "Data", "colombia-cities.json")
+        };
+
+        var path = candidatePaths.FirstOrDefault(File.Exists);
+        if (path == null) return; // Degradación segura: sin catálogo, pero la app levanta.
+
+        List<ShippingCitySeedRow>? rows;
+        try
+        {
+            var json = await File.ReadAllTextAsync(path);
+            rows = JsonSerializer.Deserialize<List<ShippingCitySeedRow>>(
+                json,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
+        catch (Exception)
+        {
+            // JSON corrupto o ilegible: no se puede bloquear el arranque por el catálogo.
+            return;
+        }
+
+        if (rows == null || rows.Count == 0) return;
+
+        var cities = rows
+            .Where(r => !string.IsNullOrWhiteSpace(r.DaneCode) && !string.IsNullOrWhiteSpace(r.Name))
+            .GroupBy(r => r.DaneCode!.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
+            .Select(r => new ShippingCity
+            {
+                ShippingCityID = Guid.NewGuid(),
+                DaneCode = r.DaneCode!.Trim(),
+                Name = r.Name!.Trim(),
+                Department = (r.Department ?? string.Empty).Trim(),
+                Status = true,
+                CreatedOn = DateTime.Now
+            })
+            .ToList();
+
+        if (cities.Count == 0) return;
+
+        await context.ShippingCities.AddRangeAsync(cities);
+        await context.SaveChangesAsync();
+    }
+
+    /// <summary>Fila del JSON de municipios (daneCode / name / department).</summary>
+    private sealed class ShippingCitySeedRow
+    {
+        public string? DaneCode { get; set; }
+        public string? Name { get; set; }
+        public string? Department { get; set; }
     }
 
     public static async Task SeedRolesAsync(UserManager<ApplicationUser> userManager, RoleManager<ApplicationRole> roleManager)

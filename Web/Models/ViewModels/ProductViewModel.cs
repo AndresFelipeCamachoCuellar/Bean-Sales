@@ -65,6 +65,25 @@ public class ProductViewModel
     [Display(Name = "Nº de reseñas")]
     public int? ReviewCount { get; set; }
 
+    // --- Empaque y envío (opcional: si falta, se usan los valores por defecto de configuración) ---
+    // Cotas ENTERAS a propósito: así el atributo data-val-range que emite jQuery Validation
+    // no lleva coma decimal (la cultura es-CO la escribiría como "0,1" y rompería la validación).
+    [Display(Name = "Peso por unidad (g)")]
+    [Range(1, 50000, ErrorMessage = "El peso debe estar entre 1 y 50000 gramos")]
+    public int? ShippingWeightGrams { get; set; }
+
+    [Display(Name = "Largo (cm)")]
+    [Range(1, 200, ErrorMessage = "El largo debe estar entre 1 y 200 cm")]
+    public decimal? LengthCm { get; set; }
+
+    [Display(Name = "Ancho (cm)")]
+    [Range(1, 200, ErrorMessage = "El ancho debe estar entre 1 y 200 cm")]
+    public decimal? WidthCm { get; set; }
+
+    [Display(Name = "Alto (cm)")]
+    [Range(1, 200, ErrorMessage = "El alto debe estar entre 1 y 200 cm")]
+    public decimal? HeightCm { get; set; }
+
     // Logic for Country Selection
     [Display(Name = "Países Objetivo")]
     public List<Guid> SelectedCountryIds { get; set; } = new List<Guid>();

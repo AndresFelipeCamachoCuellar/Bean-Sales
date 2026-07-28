@@ -55,6 +55,27 @@ public class Order
     [Column(TypeName = "decimal(18,2)")]
     public decimal TotalAmount { get; set; }
 
+    // --- Envío dinámico (nullable: los pedidos anteriores a la tarifa dinámica no lo tienen) ---
+
+    /// <summary>Municipio de destino (nombre legible, snapshot al momento de comprar).</summary>
+    [StringLength(120)]
+    public string? ShippingCity { get; set; }
+
+    /// <summary>Código DANE del municipio de destino (DIVIPOLA).</summary>
+    [StringLength(10)]
+    public string? ShippingCityDaneCode { get; set; }
+
+    /// <summary>Transportadora cotizada (nombre mostrado al cliente).</summary>
+    [StringLength(80)]
+    public string? ShippingCarrier { get; set; }
+
+    /// <summary>Días hábiles estimados de entrega según la cotización.</summary>
+    public int? ShippingEstimatedDays { get; set; }
+
+    /// <summary>Origen de la tarifa: "Fixed" | "Mipaquete" | "Fallback".</summary>
+    [StringLength(20)]
+    public string? ShippingQuoteSource { get; set; }
+
     // Navigation
     public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();
 }

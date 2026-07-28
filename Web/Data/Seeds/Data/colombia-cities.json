@@ -1,0 +1,847 @@
+[
+  {
+    "daneCode": "91001",
+    "name": "Leticia",
+    "department": "Amazonas"
+  },
+  {
+    "daneCode": "05045",
+    "name": "Apartadó",
+    "department": "Antioquia"
+  },
+  {
+    "daneCode": "05088",
+    "name": "Bello",
+    "department": "Antioquia"
+  },
+  {
+    "daneCode": "05129",
+    "name": "Caldas",
+    "department": "Antioquia"
+  },
+  {
+    "daneCode": "05154",
+    "name": "Caucasia",
+    "department": "Antioquia"
+  },
+  {
+    "daneCode": "05212",
+    "name": "Copacabana",
+    "department": "Antioquia"
+  },
+  {
+    "daneCode": "05266",
+    "name": "Envigado",
+    "department": "Antioquia"
+  },
+  {
+    "daneCode": "05308",
+    "name": "Girardota",
+    "department": "Antioquia"
+  },
+  {
+    "daneCode": "05360",
+    "name": "Itagüí",
+    "department": "Antioquia"
+  },
+  {
+    "daneCode": "05376",
+    "name": "La Ceja",
+    "department": "Antioquia"
+  },
+  {
+    "daneCode": "05380",
+    "name": "La Estrella",
+    "department": "Antioquia"
+  },
+  {
+    "daneCode": "05440",
+    "name": "Marinilla",
+    "department": "Antioquia"
+  },
+  {
+    "daneCode": "05001",
+    "name": "Medellín",
+    "department": "Antioquia"
+  },
+  {
+    "daneCode": "05615",
+    "name": "Rionegro",
+    "department": "Antioquia"
+  },
+  {
+    "daneCode": "05631",
+    "name": "Sabaneta",
+    "department": "Antioquia"
+  },
+  {
+    "daneCode": "05837",
+    "name": "Turbo",
+    "department": "Antioquia"
+  },
+  {
+    "daneCode": "81001",
+    "name": "Arauca",
+    "department": "Arauca"
+  },
+  {
+    "daneCode": "08001",
+    "name": "Barranquilla",
+    "department": "Atlántico"
+  },
+  {
+    "daneCode": "08296",
+    "name": "Galapa",
+    "department": "Atlántico"
+  },
+  {
+    "daneCode": "08433",
+    "name": "Malambo",
+    "department": "Atlántico"
+  },
+  {
+    "daneCode": "08573",
+    "name": "Puerto Colombia",
+    "department": "Atlántico"
+  },
+  {
+    "daneCode": "08638",
+    "name": "Sabanalarga",
+    "department": "Atlántico"
+  },
+  {
+    "daneCode": "08758",
+    "name": "Soledad",
+    "department": "Atlántico"
+  },
+  {
+    "daneCode": "11001",
+    "name": "Bogotá D.C.",
+    "department": "Bogotá D.C."
+  },
+  {
+    "daneCode": "13052",
+    "name": "Arjona",
+    "department": "Bolívar"
+  },
+  {
+    "daneCode": "13001",
+    "name": "Cartagena",
+    "department": "Bolívar"
+  },
+  {
+    "daneCode": "13244",
+    "name": "El Carmen de Bolívar",
+    "department": "Bolívar"
+  },
+  {
+    "daneCode": "13430",
+    "name": "Magangué",
+    "department": "Bolívar"
+  },
+  {
+    "daneCode": "13836",
+    "name": "Turbaco",
+    "department": "Bolívar"
+  },
+  {
+    "daneCode": "15176",
+    "name": "Chiquinquirá",
+    "department": "Boyacá"
+  },
+  {
+    "daneCode": "15238",
+    "name": "Duitama",
+    "department": "Boyacá"
+  },
+  {
+    "daneCode": "15516",
+    "name": "Paipa",
+    "department": "Boyacá"
+  },
+  {
+    "daneCode": "15759",
+    "name": "Sogamoso",
+    "department": "Boyacá"
+  },
+  {
+    "daneCode": "15001",
+    "name": "Tunja",
+    "department": "Boyacá"
+  },
+  {
+    "daneCode": "15407",
+    "name": "Villa de Leyva",
+    "department": "Boyacá"
+  },
+  {
+    "daneCode": "17174",
+    "name": "Chinchiná",
+    "department": "Caldas"
+  },
+  {
+    "daneCode": "17380",
+    "name": "La Dorada",
+    "department": "Caldas"
+  },
+  {
+    "daneCode": "17001",
+    "name": "Manizales",
+    "department": "Caldas"
+  },
+  {
+    "daneCode": "17614",
+    "name": "Riosucio",
+    "department": "Caldas"
+  },
+  {
+    "daneCode": "17873",
+    "name": "Villamaría",
+    "department": "Caldas"
+  },
+  {
+    "daneCode": "18001",
+    "name": "Florencia",
+    "department": "Caquetá"
+  },
+  {
+    "daneCode": "85010",
+    "name": "Aguazul",
+    "department": "Casanare"
+  },
+  {
+    "daneCode": "85001",
+    "name": "Yopal",
+    "department": "Casanare"
+  },
+  {
+    "daneCode": "19001",
+    "name": "Popayán",
+    "department": "Cauca"
+  },
+  {
+    "daneCode": "19573",
+    "name": "Puerto Tejada",
+    "department": "Cauca"
+  },
+  {
+    "daneCode": "19698",
+    "name": "Santander de Quilichao",
+    "department": "Cauca"
+  },
+  {
+    "daneCode": "20011",
+    "name": "Aguachica",
+    "department": "Cesar"
+  },
+  {
+    "daneCode": "20060",
+    "name": "Bosconia",
+    "department": "Cesar"
+  },
+  {
+    "daneCode": "20001",
+    "name": "Valledupar",
+    "department": "Cesar"
+  },
+  {
+    "daneCode": "27001",
+    "name": "Quibdó",
+    "department": "Chocó"
+  },
+  {
+    "daneCode": "25126",
+    "name": "Cajicá",
+    "department": "Cundinamarca"
+  },
+  {
+    "daneCode": "25175",
+    "name": "Chía",
+    "department": "Cundinamarca"
+  },
+  {
+    "daneCode": "25214",
+    "name": "Cota",
+    "department": "Cundinamarca"
+  },
+  {
+    "daneCode": "25269",
+    "name": "Facatativá",
+    "department": "Cundinamarca"
+  },
+  {
+    "daneCode": "25286",
+    "name": "Funza",
+    "department": "Cundinamarca"
+  },
+  {
+    "daneCode": "25290",
+    "name": "Fusagasugá",
+    "department": "Cundinamarca"
+  },
+  {
+    "daneCode": "25307",
+    "name": "Girardot",
+    "department": "Cundinamarca"
+  },
+  {
+    "daneCode": "25377",
+    "name": "La Calera",
+    "department": "Cundinamarca"
+  },
+  {
+    "daneCode": "25430",
+    "name": "Madrid",
+    "department": "Cundinamarca"
+  },
+  {
+    "daneCode": "25473",
+    "name": "Mosquera",
+    "department": "Cundinamarca"
+  },
+  {
+    "daneCode": "25740",
+    "name": "Sibaté",
+    "department": "Cundinamarca"
+  },
+  {
+    "daneCode": "25754",
+    "name": "Soacha",
+    "department": "Cundinamarca"
+  },
+  {
+    "daneCode": "25758",
+    "name": "Sopó",
+    "department": "Cundinamarca"
+  },
+  {
+    "daneCode": "25785",
+    "name": "Tabio",
+    "department": "Cundinamarca"
+  },
+  {
+    "daneCode": "25799",
+    "name": "Tenjo",
+    "department": "Cundinamarca"
+  },
+  {
+    "daneCode": "25817",
+    "name": "Tocancipá",
+    "department": "Cundinamarca"
+  },
+  {
+    "daneCode": "25843",
+    "name": "Ubaté",
+    "department": "Cundinamarca"
+  },
+  {
+    "daneCode": "25875",
+    "name": "Villeta",
+    "department": "Cundinamarca"
+  },
+  {
+    "daneCode": "25899",
+    "name": "Zipaquirá",
+    "department": "Cundinamarca"
+  },
+  {
+    "daneCode": "23162",
+    "name": "Cereté",
+    "department": "Córdoba"
+  },
+  {
+    "daneCode": "23417",
+    "name": "Lorica",
+    "department": "Córdoba"
+  },
+  {
+    "daneCode": "23466",
+    "name": "Montelíbano",
+    "department": "Córdoba"
+  },
+  {
+    "daneCode": "23001",
+    "name": "Montería",
+    "department": "Córdoba"
+  },
+  {
+    "daneCode": "23555",
+    "name": "Planeta Rica",
+    "department": "Córdoba"
+  },
+  {
+    "daneCode": "23660",
+    "name": "Sahagún",
+    "department": "Córdoba"
+  },
+  {
+    "daneCode": "94001",
+    "name": "Inírida",
+    "department": "Guainía"
+  },
+  {
+    "daneCode": "95001",
+    "name": "San José del Guaviare",
+    "department": "Guaviare"
+  },
+  {
+    "daneCode": "41132",
+    "name": "Campoalegre",
+    "department": "Huila"
+  },
+  {
+    "daneCode": "41298",
+    "name": "Garzón",
+    "department": "Huila"
+  },
+  {
+    "daneCode": "41396",
+    "name": "La Plata",
+    "department": "Huila"
+  },
+  {
+    "daneCode": "41001",
+    "name": "Neiva",
+    "department": "Huila"
+  },
+  {
+    "daneCode": "41551",
+    "name": "Pitalito",
+    "department": "Huila"
+  },
+  {
+    "daneCode": "41615",
+    "name": "Rivera",
+    "department": "Huila"
+  },
+  {
+    "daneCode": "44279",
+    "name": "Fonseca",
+    "department": "La Guajira"
+  },
+  {
+    "daneCode": "44430",
+    "name": "Maicao",
+    "department": "La Guajira"
+  },
+  {
+    "daneCode": "44001",
+    "name": "Riohacha",
+    "department": "La Guajira"
+  },
+  {
+    "daneCode": "44650",
+    "name": "San Juan del Cesar",
+    "department": "La Guajira"
+  },
+  {
+    "daneCode": "47189",
+    "name": "Ciénaga",
+    "department": "Magdalena"
+  },
+  {
+    "daneCode": "47245",
+    "name": "El Banco",
+    "department": "Magdalena"
+  },
+  {
+    "daneCode": "47288",
+    "name": "Fundación",
+    "department": "Magdalena"
+  },
+  {
+    "daneCode": "47001",
+    "name": "Santa Marta",
+    "department": "Magdalena"
+  },
+  {
+    "daneCode": "50006",
+    "name": "Acacías",
+    "department": "Meta"
+  },
+  {
+    "daneCode": "50313",
+    "name": "Granada",
+    "department": "Meta"
+  },
+  {
+    "daneCode": "50573",
+    "name": "Puerto López",
+    "department": "Meta"
+  },
+  {
+    "daneCode": "50001",
+    "name": "Villavicencio",
+    "department": "Meta"
+  },
+  {
+    "daneCode": "52356",
+    "name": "Ipiales",
+    "department": "Nariño"
+  },
+  {
+    "daneCode": "52001",
+    "name": "Pasto",
+    "department": "Nariño"
+  },
+  {
+    "daneCode": "52835",
+    "name": "Tumaco",
+    "department": "Nariño"
+  },
+  {
+    "daneCode": "52838",
+    "name": "Túquerres",
+    "department": "Nariño"
+  },
+  {
+    "daneCode": "54001",
+    "name": "Cúcuta",
+    "department": "Norte de Santander"
+  },
+  {
+    "daneCode": "54261",
+    "name": "El Zulia",
+    "department": "Norte de Santander"
+  },
+  {
+    "daneCode": "54405",
+    "name": "Los Patios",
+    "department": "Norte de Santander"
+  },
+  {
+    "daneCode": "54498",
+    "name": "Ocaña",
+    "department": "Norte de Santander"
+  },
+  {
+    "daneCode": "54518",
+    "name": "Pamplona",
+    "department": "Norte de Santander"
+  },
+  {
+    "daneCode": "54874",
+    "name": "Villa del Rosario",
+    "department": "Norte de Santander"
+  },
+  {
+    "daneCode": "86001",
+    "name": "Mocoa",
+    "department": "Putumayo"
+  },
+  {
+    "daneCode": "86568",
+    "name": "Puerto Asís",
+    "department": "Putumayo"
+  },
+  {
+    "daneCode": "63001",
+    "name": "Armenia",
+    "department": "Quindío"
+  },
+  {
+    "daneCode": "63130",
+    "name": "Calarcá",
+    "department": "Quindío"
+  },
+  {
+    "daneCode": "63190",
+    "name": "Circasia",
+    "department": "Quindío"
+  },
+  {
+    "daneCode": "63272",
+    "name": "Filandia",
+    "department": "Quindío"
+  },
+  {
+    "daneCode": "63401",
+    "name": "La Tebaida",
+    "department": "Quindío"
+  },
+  {
+    "daneCode": "63470",
+    "name": "Montenegro",
+    "department": "Quindío"
+  },
+  {
+    "daneCode": "63594",
+    "name": "Quimbaya",
+    "department": "Quindío"
+  },
+  {
+    "daneCode": "63690",
+    "name": "Salento",
+    "department": "Quindío"
+  },
+  {
+    "daneCode": "66088",
+    "name": "Belén de Umbría",
+    "department": "Risaralda"
+  },
+  {
+    "daneCode": "66170",
+    "name": "Dosquebradas",
+    "department": "Risaralda"
+  },
+  {
+    "daneCode": "66400",
+    "name": "La Virginia",
+    "department": "Risaralda"
+  },
+  {
+    "daneCode": "66001",
+    "name": "Pereira",
+    "department": "Risaralda"
+  },
+  {
+    "daneCode": "66682",
+    "name": "Santa Rosa de Cabal",
+    "department": "Risaralda"
+  },
+  {
+    "daneCode": "88564",
+    "name": "Providencia",
+    "department": "San Andrés y Providencia"
+  },
+  {
+    "daneCode": "88001",
+    "name": "San Andrés",
+    "department": "San Andrés y Providencia"
+  },
+  {
+    "daneCode": "68077",
+    "name": "Barbosa",
+    "department": "Santander"
+  },
+  {
+    "daneCode": "68081",
+    "name": "Barrancabermeja",
+    "department": "Santander"
+  },
+  {
+    "daneCode": "68001",
+    "name": "Bucaramanga",
+    "department": "Santander"
+  },
+  {
+    "daneCode": "68276",
+    "name": "Floridablanca",
+    "department": "Santander"
+  },
+  {
+    "daneCode": "68307",
+    "name": "Girón",
+    "department": "Santander"
+  },
+  {
+    "daneCode": "68406",
+    "name": "Lebrija",
+    "department": "Santander"
+  },
+  {
+    "daneCode": "68432",
+    "name": "Málaga",
+    "department": "Santander"
+  },
+  {
+    "daneCode": "68547",
+    "name": "Piedecuesta",
+    "department": "Santander"
+  },
+  {
+    "daneCode": "68679",
+    "name": "San Gil",
+    "department": "Santander"
+  },
+  {
+    "daneCode": "68755",
+    "name": "Socorro",
+    "department": "Santander"
+  },
+  {
+    "daneCode": "68861",
+    "name": "Vélez",
+    "department": "Santander"
+  },
+  {
+    "daneCode": "70215",
+    "name": "Corozal",
+    "department": "Sucre"
+  },
+  {
+    "daneCode": "70670",
+    "name": "Sampués",
+    "department": "Sucre"
+  },
+  {
+    "daneCode": "70708",
+    "name": "San Marcos",
+    "department": "Sucre"
+  },
+  {
+    "daneCode": "70820",
+    "name": "Santiago de Tolú",
+    "department": "Sucre"
+  },
+  {
+    "daneCode": "70001",
+    "name": "Sincelejo",
+    "department": "Sucre"
+  },
+  {
+    "daneCode": "73168",
+    "name": "Chaparral",
+    "department": "Tolima"
+  },
+  {
+    "daneCode": "73268",
+    "name": "Espinal",
+    "department": "Tolima"
+  },
+  {
+    "daneCode": "73275",
+    "name": "Flandes",
+    "department": "Tolima"
+  },
+  {
+    "daneCode": "73283",
+    "name": "Fresno",
+    "department": "Tolima"
+  },
+  {
+    "daneCode": "73319",
+    "name": "Guamo",
+    "department": "Tolima"
+  },
+  {
+    "daneCode": "73349",
+    "name": "Honda",
+    "department": "Tolima"
+  },
+  {
+    "daneCode": "73001",
+    "name": "Ibagué",
+    "department": "Tolima"
+  },
+  {
+    "daneCode": "73411",
+    "name": "Líbano",
+    "department": "Tolima"
+  },
+  {
+    "daneCode": "73443",
+    "name": "Mariquita",
+    "department": "Tolima"
+  },
+  {
+    "daneCode": "73449",
+    "name": "Melgar",
+    "department": "Tolima"
+  },
+  {
+    "daneCode": "73585",
+    "name": "Purificación",
+    "department": "Tolima"
+  },
+  {
+    "daneCode": "76109",
+    "name": "Buenaventura",
+    "department": "Valle del Cauca"
+  },
+  {
+    "daneCode": "76122",
+    "name": "Caicedonia",
+    "department": "Valle del Cauca"
+  },
+  {
+    "daneCode": "76001",
+    "name": "Cali",
+    "department": "Valle del Cauca"
+  },
+  {
+    "daneCode": "76130",
+    "name": "Candelaria",
+    "department": "Valle del Cauca"
+  },
+  {
+    "daneCode": "76147",
+    "name": "Cartago",
+    "department": "Valle del Cauca"
+  },
+  {
+    "daneCode": "76248",
+    "name": "El Cerrito",
+    "department": "Valle del Cauca"
+  },
+  {
+    "daneCode": "76275",
+    "name": "Florida",
+    "department": "Valle del Cauca"
+  },
+  {
+    "daneCode": "76306",
+    "name": "Ginebra",
+    "department": "Valle del Cauca"
+  },
+  {
+    "daneCode": "76111",
+    "name": "Guadalajara de Buga",
+    "department": "Valle del Cauca"
+  },
+  {
+    "daneCode": "76364",
+    "name": "Jamundí",
+    "department": "Valle del Cauca"
+  },
+  {
+    "daneCode": "76400",
+    "name": "La Unión",
+    "department": "Valle del Cauca"
+  },
+  {
+    "daneCode": "76520",
+    "name": "Palmira",
+    "department": "Valle del Cauca"
+  },
+  {
+    "daneCode": "76563",
+    "name": "Pradera",
+    "department": "Valle del Cauca"
+  },
+  {
+    "daneCode": "76622",
+    "name": "Roldanillo",
+    "department": "Valle del Cauca"
+  },
+  {
+    "daneCode": "76736",
+    "name": "Sevilla",
+    "department": "Valle del Cauca"
+  },
+  {
+    "daneCode": "76834",
+    "name": "Tuluá",
+    "department": "Valle del Cauca"
+  },
+  {
+    "daneCode": "76892",
+    "name": "Yumbo",
+    "department": "Valle del Cauca"
+  },
+  {
+    "daneCode": "76895",
+    "name": "Zarzal",
+    "department": "Valle del Cauca"
+  },
+  {
+    "daneCode": "97001",
+    "name": "Mitú",
+    "department": "Vaupés"
+  },
+  {
+    "daneCode": "99001",
+    "name": "Puerto Carreño",
+    "department": "Vichada"
+  }
+]

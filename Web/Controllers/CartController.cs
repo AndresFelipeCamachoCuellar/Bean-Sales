@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Web.Data;
 using Web.Models;
 using Web.Models.Enums;
+using Web.Services.Shipping;
 using System.Text.Json;
 
 namespace Web.Controllers;
@@ -12,25 +14,26 @@ public class CartController : Controller
 {
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IShippingQuoteService _shippingQuoteService;
+    private readonly ShippingOptions _shippingOptions;
 
-    // Costo de envío fijo (COP). Fuente única para vistas y creación de la orden.
-    private const decimal ShippingCost = 18000m;
-
-    public CartController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+    public CartController(
+        ApplicationDbContext context,
+        UserManager<ApplicationUser> userManager,
+        IShippingQuoteService shippingQuoteService,
+        IOptions<ShippingOptions> shippingOptions)
     {
         _context = context;
         _userManager = userManager;
+        _shippingQuoteService = shippingQuoteService;
+        _shippingOptions = shippingOptions.Value;
     }
 
     public async Task<IActionResult> Index()
     {
         var cartItems = await GetCartItemsAsync();
 
-        // Calculate Total
-        var subtotal = cartItems.Sum(i => i.Quantity * (i.Product?.Price ?? 0));
-        ViewBag.Total = subtotal;                     // subtotal (compat. con vistas existentes)
-        ViewBag.Shipping = ShippingCost;              // envío fijo
-        ViewBag.GrandTotal = subtotal + ShippingCost; // total a cobrar
+        await SetCartTotalsAsync(cartItems);
 
         return View(cartItems);
     }
@@ -144,10 +147,7 @@ public class CartController : Controller
         }
 
         // 3. Show Checkout View (Summary, Address, Payment placeholder)
-        var subtotal = cartItems.Sum(i => i.Quantity * (i.Product?.Price ?? 0));
-        ViewBag.Total = subtotal;
-        ViewBag.Shipping = ShippingCost;
-        ViewBag.GrandTotal = subtotal + ShippingCost;
+        await SetCartTotalsAsync(cartItems);
         return View(cartItems);
     }
 
@@ -177,12 +177,12 @@ public class CartController : Controller
         {
             var nombre = sinStock.Product?.Name ?? "un producto";
             TempData["CheckoutError"] = $"No hay stock suficiente para \"{nombre}\". Ajusta la cantidad e inténtalo de nuevo.";
-            var subtotalErr = cartItems.Sum(i => i.Quantity * (i.Product?.Price ?? 0));
-            ViewBag.Total = subtotalErr;
-            ViewBag.Shipping = ShippingCost;
-            ViewBag.GrandTotal = subtotalErr + ShippingCost;
+            await SetCartTotalsAsync(cartItems);
             return View(cartItems);
         }
+
+        // 3b. Cotizar el envío una sola vez para esta compra (misma tarifa que ve el cliente).
+        var totals = await SetCartTotalsAsync(cartItems);
 
         // 4-7. Crear orden + descontar stock + vaciar carrito de forma atómica
         await using var transaction = await _context.Database.BeginTransactionAsync();
@@ -201,7 +201,11 @@ public class CartController : Controller
                 ZipCode = zip,
                 ShippingCountry = country,
                 PaymentMethod = paymentMethod,
-                CurrencyCode = "COP"
+                CurrencyCode = "COP",
+                // Snapshot de la cotización de envío usada al cobrar.
+                ShippingCarrier = totals.CarrierName,
+                ShippingEstimatedDays = totals.EstimatedDays,
+                ShippingQuoteSource = totals.Source
             };
 
             decimal subtotal = 0m;
@@ -231,7 +235,7 @@ public class CartController : Controller
             }
 
             order.Subtotal = subtotal;
-            order.ShippingCost = ShippingCost; // TODO: cálculo de envío real
+            order.ShippingCost = totals.Shipping; // cotizado por IShippingQuoteService
             order.TotalAmount = order.Subtotal + order.ShippingCost;
 
             _context.Orders.Add(order);
@@ -252,10 +256,7 @@ public class CartController : Controller
         {
             await transaction.RollbackAsync();
             TempData["CheckoutError"] = "No se pudo procesar tu pedido. Inténtalo de nuevo.";
-            var subtotalCatch = cartItems.Sum(i => i.Quantity * (i.Product?.Price ?? 0));
-            ViewBag.Total = subtotalCatch;
-            ViewBag.Shipping = ShippingCost;
-            ViewBag.GrandTotal = subtotalCatch + ShippingCost;
+            await SetCartTotalsAsync(cartItems);
             return View(cartItems);
         }
     }
@@ -318,6 +319,56 @@ public class CartController : Controller
     }
 
     // Helpers
+
+    /// <summary>Totales del carrito ya cotizados, para vistas y para la orden.</summary>
+    private sealed record CartTotals(
+        decimal Subtotal,
+        decimal Shipping,
+        decimal GrandTotal,
+        string? CarrierName,
+        int? EstimatedDays,
+        string Source);
+
+    /// <summary>
+    /// Fuente ÚNICA de los totales del carrito: cotiza el envío y publica
+    /// ViewBag.Total (subtotal), ViewBag.Shipping y ViewBag.GrandTotal.
+    /// Todas las rutas que renderizan Cart/Index o Cart/Checkout pasan por aquí.
+    /// </summary>
+    private async Task<CartTotals> SetCartTotalsAsync(
+        IEnumerable<ShoppingCartItem> cartItems,
+        string? destinationDaneCode = null,
+        CancellationToken ct = default)
+    {
+        var items = cartItems as IList<ShoppingCartItem> ?? cartItems.ToList();
+
+        var subtotal = items.Sum(i => i.Quantity * (i.Product?.Price ?? 0m));
+
+        // Un solo bulto agregado con la heurística compartida (peso/dimensiones/valor declarado).
+        var package = ShippingPackageBuilder.Build(
+            items,
+            _shippingOptions.Origin.DaneCode,
+            destinationDaneCode ?? string.Empty,
+            _shippingOptions.Defaults);
+
+        var quote = await _shippingQuoteService.QuoteAsync(package.Request, ct);
+        var cheapest = quote.Cheapest;
+
+        // Sin opción cotizada se cae a la tarifa de configuración: el checkout nunca se queda sin precio.
+        var shipping = cheapest?.Price ?? _shippingOptions.FallbackCost;
+
+        ViewBag.Total = subtotal;               // subtotal (compat. con vistas existentes)
+        ViewBag.Shipping = shipping;            // envío cotizado
+        ViewBag.GrandTotal = subtotal + shipping;
+
+        return new CartTotals(
+            subtotal,
+            shipping,
+            subtotal + shipping,
+            cheapest?.CarrierName,
+            cheapest?.EstimatedDays,
+            quote.Source);
+    }
+
     private async Task<List<ShoppingCartItem>> GetCartItemsAsync()
     {
         if (User.Identity?.IsAuthenticated == true)

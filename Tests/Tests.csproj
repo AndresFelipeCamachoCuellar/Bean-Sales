@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Proyecto de pruebas unitarias. NO está incluido en Bean-Sales.slnx a propósito:
+    así `dotnet build` / `dotnet publish` de la solución y el workflow de despliegue
+    (que apunta explícitamente a Web/Web.csproj) siguen funcionando igual que antes.
+
+    Para correrlo:  dotnet test Tests/Tests.csproj
+    Para añadirlo a la solución (opcional):  dotnet sln Bean-Sales.slnx add Tests/Tests.csproj
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Web\Web.csproj" />
+  </ItemGroup>
+
+</Project>

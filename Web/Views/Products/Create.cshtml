@@ -106,6 +106,34 @@
             </div>
         </div>
 
+        <h2 class="bean-form-section-title">Empaque y envío (opcional)</h2>
+        <div class="bean-form-grid cols-3">
+            <div class="bean-field">
+                <label asp-for="ShippingWeightGrams" class="bean-label"></label>
+                <input asp-for="ShippingWeightGrams" class="bean-input" type="number" min="1" step="1" placeholder="Ej: 500" />
+                <span asp-validation-for="ShippingWeightGrams" class="bean-form-error"></span>
+                <span class="bean-field-hint">Peso de la bolsa empacada. Si lo dejas vacío se estiman 500 g por unidad.</span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="LengthCm" class="bean-label"></label>
+                <input asp-for="LengthCm" class="bean-input" type="number" min="1" step="0.1" placeholder="Ej: 20" />
+                <span asp-validation-for="LengthCm" class="bean-form-error"></span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="WidthCm" class="bean-label"></label>
+                <input asp-for="WidthCm" class="bean-input" type="number" min="1" step="0.1" placeholder="Ej: 12" />
+                <span asp-validation-for="WidthCm" class="bean-form-error"></span>
+            </div>
+            <div class="bean-field">
+                <label asp-for="HeightCm" class="bean-label"></label>
+                <input asp-for="HeightCm" class="bean-input" type="number" min="1" step="0.1" placeholder="Ej: 8" />
+                <span asp-validation-for="HeightCm" class="bean-form-error"></span>
+            </div>
+            <div class="bean-field col-span-2">
+                <span class="bean-field-hint">Estos datos hacen que la cotización de envío sea más precisa. Sin ellos se usan medidas estándar de una bolsa de 500 g.</span>
+            </div>
+        </div>
+
         <h2 class="bean-form-section-title">Países objetivo</h2>
         <div class="bean-field">
             <label asp-for="SelectedCountryIds" class="bean-label"></label>

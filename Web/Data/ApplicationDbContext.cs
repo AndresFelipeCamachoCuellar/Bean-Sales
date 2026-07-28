@@ -39,6 +39,9 @@ public class ApplicationDbContext : IdentityDbContext<
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
 
+    // Shipping
+    public DbSet<ShippingCity> ShippingCities { get; set; }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -103,5 +106,10 @@ public class ApplicationDbContext : IdentityDbContext<
             .WithMany()
             .HasForeignKey(oi => oi.ProductID)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Shipping: el código DANE identifica al municipio, no puede repetirse.
+        builder.Entity<ShippingCity>()
+            .HasIndex(c => c.DaneCode)
+            .IsUnique();
     }
 }

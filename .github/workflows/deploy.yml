@@ -41,19 +41,50 @@ jobs:
         # Salida ./publish = source-path por defecto de la action de deploy.
         run: dotnet publish Web/Web.csproj -c Release -o ./publish --runtime win-x86 --self-contained false --no-restore
 
-      - name: Inyectar connection string de producción
-        # Sobrescribe SOLO la DefaultConnection dentro del appsettings.json publicado,
-        # tomando el valor del secret (no se commitea nunca). Se modifica el base
-        # appsettings.json para que aplique sin depender del entorno del host.
+      - name: Inyectar secretos de producción (BD y envío)
+        # Sobrescribe SOLO la DefaultConnection y la configuración de envío dentro del
+        # appsettings.json publicado, tomando los valores de los secrets (nunca se
+        # commitean). Se modifica el base appsettings.json para que aplique sin
+        # depender del entorno del host.
+        #
+        # La parte de envío es DEFENSIVA: si el secret está vacío o la sección Shipping
+        # no existe, no se toca nada y el sitio sigue con la tarifa fija de respaldo.
         shell: pwsh
         env:
           PROD_CS: ${{ secrets.MONSTERASP_CONNECTION_STRING }}
+          MIPAQUETE_API_KEY: ${{ secrets.MIPAQUETE_API_KEY }}
+          SHIPPING_ORIGIN_DANE: ${{ secrets.SHIPPING_ORIGIN_DANE }}
+          SHIPPING_ORIGIN_CITY: ${{ secrets.SHIPPING_ORIGIN_CITY }}
         run: |
           $path = "./publish/appsettings.json"
           $cfg = Get-Content $path -Raw | ConvertFrom-Json
           $cfg.ConnectionStrings.DefaultConnection = $env:PROD_CS
-          $cfg | ConvertTo-Json -Depth 20 | Set-Content $path -Encoding utf8
           Write-Host "Connection string de producción inyectada en appsettings.json."
+
+          if ($cfg.PSObject.Properties.Name -contains 'Shipping') {
+            if ((-not [string]::IsNullOrWhiteSpace($env:MIPAQUETE_API_KEY)) -and ($cfg.Shipping.PSObject.Properties.Name -contains 'Mipaquete')) {
+              $cfg.Shipping.Mipaquete.ApiKey = $env:MIPAQUETE_API_KEY
+              $cfg.Shipping.Provider = 'Mipaquete'
+              Write-Host "API key de Mipaquete inyectada. Shipping:Provider = Mipaquete."
+            } else {
+              Write-Host "Sin MIPAQUETE_API_KEY: se conserva Shipping:Provider = Fixed."
+            }
+
+            if ($cfg.Shipping.PSObject.Properties.Name -contains 'Origin') {
+              if (-not [string]::IsNullOrWhiteSpace($env:SHIPPING_ORIGIN_DANE)) {
+                $cfg.Shipping.Origin.DaneCode = $env:SHIPPING_ORIGIN_DANE
+                Write-Host "Origen de envío (DANE) inyectado."
+              }
+              if (-not [string]::IsNullOrWhiteSpace($env:SHIPPING_ORIGIN_CITY)) {
+                $cfg.Shipping.Origin.CityName = $env:SHIPPING_ORIGIN_CITY
+                Write-Host "Origen de envío (ciudad) inyectado."
+              }
+            }
+          } else {
+            Write-Host "appsettings.json sin sección Shipping: se omite la inyección de envío."
+          }
+
+          $cfg | ConvertTo-Json -Depth 20 | Set-Content $path -Encoding utf8
 
       - name: Deploy a MonsterASP.NET vía Web Deploy
         # Action recomendada por la documentación de MonsterASP para Web Deploy.

@@ -78,6 +78,10 @@ public class ProductsController : Controller
                 TastingNotes = model.TastingNotes,
                 Rating = model.Rating,
                 ReviewCount = model.ReviewCount,
+                ShippingWeightGrams = model.ShippingWeightGrams,
+                LengthCm = model.LengthCm,
+                WidthCm = model.WidthCm,
+                HeightCm = model.HeightCm,
                 ProductStatus = ProductStatus.Draft,
                 Status = true,
                 CreatedBy = User.Identity?.Name ?? "SYSTEM",
@@ -142,6 +146,10 @@ public class ProductsController : Controller
             TastingNotes = product.TastingNotes,
             Rating = product.Rating,
             ReviewCount = product.ReviewCount,
+            ShippingWeightGrams = product.ShippingWeightGrams,
+            LengthCm = product.LengthCm,
+            WidthCm = product.WidthCm,
+            HeightCm = product.HeightCm,
             Status = product.ProductStatus,
             RejectionReason = product.RejectionReason,
             SelectedCountryIds = product.ProductCountries.Where(pc => pc.IsTargeted).Select(pc => pc.CountryID).ToList()
@@ -189,6 +197,10 @@ public class ProductsController : Controller
             product.TastingNotes = model.TastingNotes;
             product.Rating = model.Rating;
             product.ReviewCount = model.ReviewCount;
+            product.ShippingWeightGrams = model.ShippingWeightGrams;
+            product.LengthCm = model.LengthCm;
+            product.WidthCm = model.WidthCm;
+            product.HeightCm = model.HeightCm;
 
             // If it was Rejected, reset to Draft on edit? Usually yes, forcing user to resubmit.
             if (product.ProductStatus == ProductStatus.Rejected)

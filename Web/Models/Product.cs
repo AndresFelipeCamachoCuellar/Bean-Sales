@@ -66,6 +66,21 @@ public class Product
 
     public int? ReviewCount { get; set; } // Nº de reseñas
 
+    // --- Empaque y envío (nullable: el catálogo viejo sigue funcionando con los
+    //     valores por defecto de Shipping:Defaults) ---
+
+    /// <summary>Peso de la unidad empacada, en gramos. Si falta se asume el default de configuración (500 g).</summary>
+    public int? ShippingWeightGrams { get; set; }
+
+    [Column(TypeName = "decimal(6,2)")]
+    public decimal? LengthCm { get; set; }
+
+    [Column(TypeName = "decimal(6,2)")]
+    public decimal? WidthCm { get; set; }
+
+    [Column(TypeName = "decimal(6,2)")]
+    public decimal? HeightCm { get; set; }
+
     // Audit
     public bool Status { get; set; } = true; // Soft delete
 
