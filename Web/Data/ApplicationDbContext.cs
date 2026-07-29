@@ -107,6 +107,19 @@ public class ApplicationDbContext : IdentityDbContext<
             .HasForeignKey(oi => oi.ProductID)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // Pagos: el webhook de Wompi llega SIN sesión y solo trae la referencia,
+        // así que se busca el pedido por PaymentReference (índice único: la referencia
+        // no se puede repetir en Wompi). Filtrado para no chocar con los pedidos
+        // históricos, que tienen la columna en NULL.
+        builder.Entity<Order>()
+            .HasIndex(o => o.PaymentReference)
+            .IsUnique()
+            .HasFilter("[PaymentReference] IS NOT NULL");
+
+        // KPIs del dashboard y barrido de reservas vencidas.
+        builder.Entity<Order>()
+            .HasIndex(o => o.PaymentStatus);
+
         // Shipping: el código DANE identifica al municipio, no puede repetirse.
         builder.Entity<ShippingCity>()
             .HasIndex(c => c.DaneCode)

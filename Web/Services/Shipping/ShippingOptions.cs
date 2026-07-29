@@ -64,11 +64,38 @@ public class ShippingDefaultsOptions
     public decimal MinBillableWeightKg { get; set; } = 1m;
 }
 
-/// <summary>Placeholder de la integración real. Se completa en la tanda 2.</summary>
+/// <summary>
+/// Integración con la API v2 de mipaquete.com.
+/// Autenticación por dos headers de texto plano: "apikey" y "session-tracker".
+/// </summary>
 public class MipaqueteOptions
 {
-    public string BaseUrl { get; set; } = "https://api.mipaquete.com/";
+    /// <summary>
+    /// Host de la API. Por defecto, producción. Para probar contra el entorno de
+    /// pruebas de mipaquete basta cambiar este valor en el host (sin recompilar) a
+    /// "https://api-v2.dev.mpr.mipaquete.com".
+    /// </summary>
+    public string BaseUrl { get; set; } = "https://api-v2.mipaquete.com";
+
+    /// <summary>
+    /// Ruta del endpoint de cotización, relativa a <see cref="BaseUrl"/>.
+    /// "quoteShipping" está CONFIRMADO contra la documentación oficial; se deja como
+    /// configuración por si la API versiona la ruta, para corregirla desde el panel
+    /// del host sin recompilar (un 404 degrada a la tarifa de respaldo, no rompe la venta).
+    /// </summary>
+    public string QuotePath { get; set; } = "quoteShipping";
+
+    /// <summary>Timeout duro por intento. Por encima de ~5 s el usuario abandona el checkout.</summary>
     public int TimeoutSeconds { get; set; } = 4;
+
+    /// <summary>SECRETO. Nunca en appsettings.json commiteado ni en logs.</summary>
     public string ApiKey { get; set; } = string.Empty;
+
+    /// <summary>
+    /// GUID del header "session-tracker" que exige la API. Es OPCIONAL en configuración:
+    /// si se deja vacío, el servicio genera un GUID estable al arrancar y lo usa durante
+    /// toda la vida del proceso. Fijarlo aquí solo sirve para correlacionar llamadas
+    /// entre reinicios. NO es un secreto, pero tampoco se registra en logs.
+    /// </summary>
     public string SessionTracker { get; set; } = string.Empty;
 }

@@ -1,11 +1,53 @@
+@using Web.Services.Shipping
 @model List<Web.Models.ShoppingCartItem>
 
 @{
     ViewData["Title"] = "Checkout";
     var co = new System.Globalization.CultureInfo("es-CO");
+
     // Importes servidos por el controlador (fuente única del costo de envío).
     var envio = (decimal)ViewBag.Shipping;
     var granTotal = (decimal)ViewBag.GrandTotal;
+
+    // Catálogo de destino (DIVIPOLA) servido desde BD: no depende de la API externa.
+    IEnumerable<string> departamentos = ViewBag.Departments ?? Enumerable.Empty<string>();
+    IEnumerable<ShippingCityItem> ciudades = ViewBag.Cities ?? Enumerable.Empty<ShippingCityItem>();
+
+    string? depSeleccionado = ViewBag.SelectedDepartment as string;
+    string? daneSeleccionado = ViewBag.SelectedCityDaneCode as string;
+    string? ciudadSeleccionada = ViewBag.SelectedCityName as string;
+
+    // Con la tarifa plana (Provider = Fixed) el precio no depende de la ciudad:
+    // el checkout se comporta exactamente igual que antes.
+    bool requiereCiudad = ViewBag.ShippingRequiresCity is bool requiereFlag && requiereFlag;
+
+    // Fuera de Colombia no hay catálogo DIVIPOLA: se pide el departamento/estado como
+    // texto libre y se cobra la tarifa de configuración.
+    bool esNacional = ViewBag.IsDomestic is bool nacionalFlag ? nacionalFlag : true;
+
+    string estadoEnvio = ViewBag.ShippingStatus is string estado ? estado : "Ok";
+    string? mensajeEnvio = ViewBag.ShippingMessage as string;
+    string? transportadora = ViewBag.ShippingCarrier as string;
+    int? diasEnvio = ViewBag.ShippingDays is int dias ? dias : (int?)null;
+
+    bool sinCobertura = estadoEnvio == "NoCoverage" || estadoEnvio == "Invalid";
+    bool faltaCiudad = requiereCiudad && string.IsNullOrEmpty(daneSeleccionado);
+    bool pagoBloqueado = sinCobertura || faltaCiudad;
+
+    string etiquetaPago = pagoBloqueado
+        ? (sinCobertura ? "No disponible para este destino" : "Elige tu ciudad para continuar")
+        : $"Pagar ${granTotal.ToString("#,##0", co)} COP";
+
+    // Pedido del cliente que quedó esperando pago (reserva de stock vigente).
+    Guid? pedidoPendiente = ViewBag.PendingOrderId as Guid?;
+    string? pedidoPendienteCorto = ViewBag.PendingOrderShort as string;
+    int? pendienteMinutos = ViewBag.PendingOrderMinutes as int?;
+
+    // Prellenado del formulario (perfil real del cliente, no su email).
+    string formNombre = ViewBag.FormFirstName as string ?? string.Empty;
+    string formApellido = ViewBag.FormLastName as string ?? string.Empty;
+    string formDireccion = ViewBag.FormAddress as string ?? string.Empty;
+    string formZip = ViewBag.FormZip as string ?? string.Empty;
 }
 
 <section class="bean-checkout">
@@ -28,64 +70,138 @@
                         <i class="fas fa-exclamation-circle"></i> @TempData["CheckoutError"]
                     </div>
                 }
-                <form class="needs-validation" asp-controller="Cart" asp-action="Checkout" method="post" novalidate>
+                @if (pedidoPendiente.HasValue)
+                {
+                    <div class="bean-alert-info bean-pay-pending" role="status">
+                        <i class="fas fa-hourglass-half"></i>
+                        <span>
+                            Tienes el pedido <strong>#@pedidoPendienteCorto</strong> esperando pago@(pendienteMinutos.HasValue ? $" (vence en {pendienteMinutos.Value} min)" : "").
+                        </span>
+                        <div class="bean-pay-pending-actions">
+                            <a class="btn-bean-outline btn-bean-sm" asp-controller="Cart" asp-action="Pay" asp-route-id="@pedidoPendiente.Value">Retomar el pago</a>
+                            <form asp-controller="Cart" asp-action="CancelPayment" asp-route-id="@pedidoPendiente.Value" method="post">
+                                <button type="submit" class="bean-link-danger">Cancelarlo</button>
+                            </form>
+                        </div>
+                    </div>
+                }
+                <form class="needs-validation" id="beanCheckoutForm" asp-controller="Cart" asp-action="Checkout" method="post" novalidate>
                     <div class="bean-form-section">
                         <h2>Dirección de envío</h2>
                         <div class="bean-form-grid">
                             <div class="bean-field">
                                 <label for="firstName" class="bean-label">Nombre</label>
-                                <input type="text" class="bean-input" id="firstName" name="firstName" value="@User.Identity?.Name" required>
+                                <input type="text" class="bean-input" id="firstName" name="firstName" value="@formNombre" required>
                             </div>
                             <div class="bean-field">
                                 <label for="lastName" class="bean-label">Apellido</label>
-                                <input type="text" class="bean-input" id="lastName" name="lastName" value="" required>
+                                <input type="text" class="bean-input" id="lastName" name="lastName" value="@formApellido" required>
                             </div>
                             <div class="bean-field col-span-2">
                                 <label for="address" class="bean-label">Dirección</label>
-                                <input type="text" class="bean-input" id="address" name="address" placeholder="Calle 123 #45-67" required>
+                                <input type="text" class="bean-input" id="address" name="address" value="@formDireccion" placeholder="Calle 123 #45-67" required>
                             </div>
                             <div class="bean-field">
                                 <label for="country" class="bean-label">País</label>
                                 <select class="bean-select" id="country" name="country" required>
-                                    <option>Colombia</option>
-                                    <option>Canadá</option>
+                                    <option value="Colombia" selected>Colombia</option>
                                 </select>
+                                <span class="bean-field-hint">Por ahora solo despachamos dentro de Colombia.</span>
                             </div>
+                            @if (esNacional)
+                            {
+                                <div class="bean-field">
+                                    <label for="state" class="bean-label">Departamento</label>
+                                    <select class="bean-select" id="state" name="state" required>
+                                        <option value="">Selecciona tu departamento</option>
+                                        @foreach (var dep in departamentos)
+                                        {
+                                            <option value="@dep" selected="@(dep == depSeleccionado)">@dep</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="bean-field">
+                                    <label for="cityDaneCode" class="bean-label">Ciudad</label>
+                                    <select class="bean-select" id="cityDaneCode" name="cityDaneCode" required disabled="@(string.IsNullOrEmpty(depSeleccionado))">
+                                        <option value="">@(string.IsNullOrEmpty(depSeleccionado) ? "Elige primero el departamento" : "Selecciona tu ciudad")</option>
+                                        @foreach (var ciudad in ciudades)
+                                        {
+                                            <option value="@ciudad.DaneCode" selected="@(ciudad.DaneCode == daneSeleccionado)">@ciudad.Name</option>
+                                        }
+                                    </select>
+                                    <input type="hidden" id="cityName" name="cityName" value="@ciudadSeleccionada" />
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="bean-field col-span-2">
+                                    <label for="state" class="bean-label">Estado / Provincia</label>
+                                    <input type="text" class="bean-input" id="state" name="state" value="@depSeleccionado" required>
+                                    <span class="bean-field-hint">Los envíos fuera de Colombia se cotizan con tarifa estándar.</span>
+                                </div>
+                            }
                             <div class="bean-field">
-                                <label for="state" class="bean-label">Departamento</label>
-                                <select class="bean-select" id="state" name="state" required>
-                                    <option>Bogotá D.C.</option>
-                                    <option>Antioquia</option>
-                                </select>
+                                <label for="zip" class="bean-label">Código postal <span class="bean-optional">(opcional)</span></label>
+                                <input type="text" class="bean-input" id="zip" name="zip" value="@formZip" placeholder="110111">
                             </div>
-                            <div class="bean-field">
-                                <label for="zip" class="bean-label">Código postal</label>
-                                <input type="text" class="bean-input" id="zip" name="zip" placeholder="110111">
+                        </div>
+                    </div>
+
+                    <div class="bean-form-section" style="margin-top:26px;">
+                        <h2>Envío</h2>
+                        <div class="bean-ship-box" id="beanShipBox">
+                            <div class="bean-alert-info" id="beanShipPending" role="status" style="@(faltaCiudad && !sinCobertura ? "" : "display:none;")">
+                                <i class="fas fa-truck"></i>
+                                <span>Elige tu departamento y ciudad para calcular el costo del envío.</span>
+                            </div>
+                            <div class="bean-alert-error" id="beanShipAlert" role="alert" style="@(sinCobertura ? "" : "display:none;")">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <span id="beanShipAlertText">@(mensajeEnvio ?? "Todavía no llegamos a esa ciudad. Escríbenos y lo gestionamos contigo.")</span>
+                            </div>
+                            <div class="bean-ship-option" id="beanShipOption" style="@(pagoBloqueado ? "display:none;" : "")">
+                                <div class="bean-ship-option-main">
+                                    <span class="bean-ship-carrier" id="beanShipCarrier">@(transportadora ?? "Envío estándar")</span>
+                                    <span class="bean-ship-eta" id="beanShipEta">@(diasEnvio.HasValue ? $"Entrega estimada en {diasEnvio.Value} días hábiles" : "Entrega estimada en días hábiles")</span>
+                                </div>
+                                <span class="bean-ship-price" id="beanShipPrice">$@envio.ToString("#,##0", co)</span>
+                            </div>
+                            <div class="bean-alert-info" id="beanShipNote" role="status" style="@(estadoEnvio == "Fallback" ? "" : "display:none;")">
+                                <i class="fas fa-info-circle"></i>
+                                <span id="beanShipNoteText">No pudimos cotizar con la transportadora; se aplica una tarifa estándar.</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="bean-form-section" style="margin-top:26px;">
                         <h2>Método de pago</h2>
-                        <div class="bean-pay-methods">
-                            <label class="bean-pay-card selected" onclick="beanSelectPay(this)">
-                                <input id="credit" name="paymentMethod" type="radio" value="credit" checked required>
-                                <span class="label">Tarjeta de crédito / débito</span>
-                                <span class="brands">VISA · MC</span>
-                            </label>
-                            <label class="bean-pay-card" onclick="beanSelectPay(this)">
-                                <input id="paypal" name="paymentMethod" type="radio" value="paypal" required>
-                                <span class="label">PayPal</span>
-                            </label>
-                            <label class="bean-pay-card" onclick="beanSelectPay(this)">
-                                <input id="pse" name="paymentMethod" type="radio" value="pse" required>
-                                <span class="label">PSE · Débito bancario</span>
-                            </label>
+                        @*
+                            Con el Web Checkout de Wompi el método lo elige el cliente DENTRO
+                            de la pasarela, así que aquí no hay radios que enviar: este bloque
+                            es informativo. El monto nunca viaja desde el navegador.
+                        *@
+                        <div class="bean-pay-gateway">
+                            <div class="bean-pay-gateway-head">
+                                <span class="bean-pay-lock" aria-hidden="true"><i class="fas fa-lock"></i></span>
+                                <div>
+                                    <div class="bean-pay-gateway-title">Pago seguro con Wompi</div>
+                                    <div class="bean-pay-gateway-sub">
+                                        Te llevamos a la pasarela de Bancolombia para completar el pago
+                                        y vuelves aquí automáticamente.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bean-pay-brands">
+                                <span class="bean-pay-brand">Tarjetas</span>
+                                <span class="bean-pay-brand">PSE</span>
+                                <span class="bean-pay-brand">Nequi</span>
+                                <span class="bean-pay-brand">Bancolombia</span>
+                            </div>
                         </div>
                     </div>
 
-                    <button class="btn-bean btn-bean-block" type="submit" style="margin-top:26px;">
-                        Pagar $@(granTotal.ToString("#,##0", co)) COP
+                    <button class="btn-bean btn-bean-block" type="submit" id="beanPayBtn"
+                            disabled="@(pagoBloqueado ? "disabled" : null)" style="margin-top:26px;">
+                        <span id="beanPayLabel">@etiquetaPago</span>
                     </button>
                 </form>
             </div>
@@ -106,11 +222,14 @@
                 }
                 <div class="bean-summary-sep"></div>
                 <div class="bean-summary-row"><span>Subtotal</span><span class="val">$@(((decimal)ViewBag.Total).ToString("#,##0", co))</span></div>
-                <div class="bean-summary-row"><span>Envío</span><span class="val">$@envio.ToString("#,##0", co)</span></div>
+                <div class="bean-summary-row">
+                    <span>Envío</span>
+                    <span class="val" id="beanSummaryShipping">@(pagoBloqueado ? "—" : $"${envio.ToString("#,##0", co)}")</span>
+                </div>
                 <div class="bean-summary-sep"></div>
                 <div class="bean-summary-total">
                     <span class="lbl">Total</span>
-                    <span class="amt">$@(granTotal.ToString("#,##0", co))</span>
+                    <span class="amt" id="beanSummaryTotal">@(pagoBloqueado ? "—" : $"${granTotal.ToString("#,##0", co)}")</span>
                 </div>
                 <div class="bean-secure-note">🔒 Transacción cifrada · Devolución garantizada</div>
             </aside>
@@ -120,9 +239,211 @@
 
 @section Scripts {
     <script>
-        function beanSelectPay(card) {
-            document.querySelectorAll('.bean-pay-card').forEach(function (c) { c.classList.remove('selected'); });
-            card.classList.add('selected');
-        }
+        // ---------------------------------------------------------------
+        // Envío: departamento -> ciudad -> cotización server-side.
+        // El navegador NUNCA envía el precio: solo el código DANE. El importe
+        // real lo vuelve a calcular el servidor al confirmar el pedido.
+        // ---------------------------------------------------------------
+        (function () {
+            // Fuera de Colombia no se renderizan los selects: no hay nada que cablear
+            // y la tarifa ya viene calculada del servidor.
+            var hasCitySelector = @(esNacional ? "true" : "false");
+            if (!hasCitySelector) { return; }
+
+            var citiesUrl = '@Url.Action("Cities", "Cart")';
+            var quoteUrl = '@Url.Action("QuoteShipping", "Cart")';
+            var requiresCity = @(requiereCiudad ? "true" : "false");
+
+            var $form = $('#beanCheckoutForm');
+            var $dep = $('#state');
+            var $city = $('#cityDaneCode');
+            var $cityName = $('#cityName');
+            var $btn = $('#beanPayBtn');
+            var $label = $('#beanPayLabel');
+            var $alert = $('#beanShipAlert');
+            var $alertText = $('#beanShipAlertText');
+            var $pending = $('#beanShipPending');
+            var $option = $('#beanShipOption');
+            var $carrier = $('#beanShipCarrier');
+            var $eta = $('#beanShipEta');
+            var $price = $('#beanShipPrice');
+            var $note = $('#beanShipNote');
+            var $noteText = $('#beanShipNoteText');
+            var $sumShipping = $('#beanSummaryShipping');
+            var $sumTotal = $('#beanSummaryTotal');
+
+            function token() {
+                return $form.find('input[name="__RequestVerificationToken"]').val();
+            }
+
+            function escapeHtml(text) {
+                return String(text)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            }
+
+            function showAlert(message) {
+                $alertText.text(message);
+                $alert.show();
+                $pending.hide();
+                $option.hide();
+                $note.hide();
+            }
+
+            function block(message, label) {
+                showAlert(message);
+                $sumShipping.text('—');
+                $sumTotal.text('—');
+                $btn.prop('disabled', true);
+                $label.text(label || 'No disponible para este destino');
+            }
+
+            function pending() {
+                $alert.hide();
+                $pending.show();
+                $option.hide();
+                $note.hide();
+                $sumShipping.text('—');
+                $sumTotal.text('—');
+                $btn.prop('disabled', true);
+                $label.text('Elige tu ciudad para continuar');
+            }
+
+            function loading() {
+                $alert.hide();
+                $pending.hide();
+                $note.hide();
+                $option.show();
+                $carrier.text('Calculando envío…');
+                $eta.text('');
+                $price.text('…');
+                $sumShipping.text('…');
+                $btn.prop('disabled', true);
+                $label.text('Calculando envío…');
+            }
+
+            function render(data) {
+                if (!data || data.canCheckout !== true) {
+                    block((data && data.message) || 'No pudimos calcular el envío a ese destino.');
+                    return;
+                }
+
+                $alert.hide();
+                $pending.hide();
+                $option.show();
+                $carrier.text(data.carrier || 'Envío estándar');
+                $eta.text(data.days ? ('Entrega estimada en ' + data.days + ' días hábiles') : 'Entrega estimada en días hábiles');
+                $price.text('$' + data.shippingText);
+
+                if (data.status === 'Fallback') {
+                    $noteText.text(data.message || 'No pudimos cotizar con la transportadora; se aplica una tarifa estándar.');
+                    $note.show();
+                } else {
+                    $note.hide();
+                }
+
+                $sumShipping.text('$' + data.shippingText);
+                $sumTotal.text('$' + data.grandTotalText);
+                $btn.prop('disabled', false);
+                $label.text('Pagar $' + data.grandTotalText + ' COP');
+            }
+
+            function syncCityName() {
+                var selected = $city.find('option:selected');
+                $cityName.val($city.val() ? selected.text() : '');
+            }
+
+            function quote() {
+                syncCityName();
+                var dane = $city.val();
+
+                if (!dane) {
+                    if (requiresCity) { pending(); }
+                    return;
+                }
+
+                if (requiresCity) { loading(); }
+
+                $.ajax({
+                    url: quoteUrl,
+                    type: 'POST',
+                    dataType: 'json',
+                    headers: { 'RequestVerificationToken': token() },
+                    data: { daneCode: dane, __RequestVerificationToken: token() }
+                })
+                .done(function (data) { render(data); })
+                .fail(function () {
+                    // Falló la cotización desde el navegador: no se bloquea la venta.
+                    // El servidor vuelve a cotizar (y aplica el respaldo) al confirmar.
+                    $alert.hide();
+                    $pending.hide();
+                    $option.show();
+                    $carrier.text('Envío estándar');
+                    $eta.text('Entrega estimada en días hábiles');
+                    $noteText.text('No pudimos cotizar con la transportadora; se aplica una tarifa estándar.');
+                    $note.show();
+                    $btn.prop('disabled', false);
+                });
+            }
+
+            function loadCities(department, preselect) {
+                if (!department) {
+                    $city.prop('disabled', true).html('<option value="">Elige primero el departamento</option>');
+                    quote();
+                    return;
+                }
+
+                $city.prop('disabled', true).html('<option value="">Cargando ciudades…</option>');
+
+                $.getJSON(citiesUrl, { department: department })
+                    .done(function (data) {
+                        var html = '<option value="">Selecciona tu ciudad</option>';
+                        for (var i = 0; i < data.length; i++) {
+                            html += '<option value="' + escapeHtml(data[i].dane) + '">' + escapeHtml(data[i].name) + '</option>';
+                        }
+                        $city.html(html).prop('disabled', false);
+                        if (preselect) { $city.val(preselect); }
+                        quote();
+                    })
+                    .fail(function () {
+                        $city.html('<option value="">No pudimos cargar las ciudades</option>');
+                    });
+            }
+
+            $dep.on('change', function () { loadCities($(this).val(), null); });
+            $city.on('change', function () { quote(); });
+
+            // Último cinturón de seguridad: sin ciudad no se postea el pedido.
+            $form.on('submit', function (e) {
+                if (!$city.val()) {
+                    e.preventDefault();
+                    showAlert('Selecciona el departamento y la ciudad de destino para calcular el envío.');
+                    $city.trigger('focus');
+                }
+            });
+
+            syncCityName();
+        })();
+
+        // ---------------------------------------------------------------
+        // Anti doble clic al salir hacia la pasarela.
+        // Se registra AL FINAL a propósito: así corre DESPUÉS del handler de envío
+        // y puede respetar su preventDefault() cuando falta la ciudad.
+        // El servidor también lo cubre: si ya hay un pedido esperando pago, lo retoma.
+        // ---------------------------------------------------------------
+        (function () {
+            var form = document.getElementById('beanCheckoutForm');
+            var btn = document.getElementById('beanPayBtn');
+            var label = document.getElementById('beanPayLabel');
+            if (!form || !btn) { return; }
+
+            form.addEventListener('submit', function (e) {
+                if (e.defaultPrevented) { return; }
+                if (btn.disabled) { return; }
+
+                btn.disabled = true;
+                if (label) { label.textContent = 'Conectando con Wompi…'; }
+            });
+        })();
     </script>
 }

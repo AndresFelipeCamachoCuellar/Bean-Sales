@@ -30,12 +30,15 @@ public class DashboardController : Controller
 
         // ---- KPIs (datos reales) ----
         // Ventas del mes actual (SumAsync sobre decimal no-nullable => 0 si vacío).
+        // ⚠️ Solo cuentan los pedidos PAGADOS: desde la integración con Wompi existen
+        //    pedidos en Pending (stock reservado) que todavía no son una venta.
         var salesThisMonth = await _context.Orders
-            .Where(o => o.OrderDate >= monthStart)
+            .Where(o => o.OrderDate >= monthStart && o.PaymentStatus == PaymentStatus.Approved)
             .SumAsync(o => o.TotalAmount);
 
         var salesPrevMonth = await _context.Orders
-            .Where(o => o.OrderDate >= prevMonthStart && o.OrderDate < monthStart)
+            .Where(o => o.OrderDate >= prevMonthStart && o.OrderDate < monthStart
+                        && o.PaymentStatus == PaymentStatus.Approved)
             .SumAsync(o => o.TotalAmount);
 
         // Nº de pedidos (total histórico) y del mes/mes anterior (para tendencia real).
@@ -54,7 +57,8 @@ public class DashboardController : Controller
 
         // Bolsas vendidas este mes (suma de cantidades de líneas de pedidos del mes).
         var bagsThisMonth = await _context.OrderItems
-            .Where(oi => oi.Order!.OrderDate >= monthStart)
+            .Where(oi => oi.Order!.OrderDate >= monthStart
+                         && oi.Order.PaymentStatus == PaymentStatus.Approved)
             .SumAsync(oi => (int?)oi.Quantity) ?? 0;
 
         var vm = new DashboardViewModel
@@ -92,7 +96,7 @@ public class DashboardController : Controller
         var rangeStart = currentWeekStart.AddDays(-7 * 7); // inicio de la semana S1
 
         var ordersInRange = await _context.Orders
-            .Where(o => o.OrderDate >= rangeStart)
+            .Where(o => o.OrderDate >= rangeStart && o.PaymentStatus == PaymentStatus.Approved)
             .Select(o => new { o.OrderDate, o.TotalAmount })
             .ToListAsync();
 
@@ -148,6 +152,7 @@ public class DashboardController : Controller
         var activityPool = new List<(DateTime When, ActivityItem Item)>();
 
         var recentOrders = await _context.Orders
+            .Where(o => o.PaymentStatus == PaymentStatus.Approved)
             .OrderByDescending(o => o.OrderDate)
             .Take(5)
             .Select(o => new

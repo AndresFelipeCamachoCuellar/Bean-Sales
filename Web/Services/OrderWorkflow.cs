@@ -18,6 +18,14 @@ public static class OrderWorkflow
         _ => Array.Empty<OrderStatus>() // Delivered y Cancelled son terminales
     };
 
+    /// <summary>
+    /// ¿Se puede avanzar de estado desde el back-office?
+    /// Un pedido en Pending está esperando el PAGO: confirmarlo a mano equivaldría a
+    /// despachar café gratis. El resto de transiciones no dependen del pago.
+    /// </summary>
+    public static bool CanAdvance(OrderStatus current, PaymentStatus payment) =>
+        current != OrderStatus.Pending || payment == PaymentStatus.Approved;
+
     /// <summary>Un pedido se puede cancelar salvo que ya esté entregado o cancelado.</summary>
     public static bool CanCancel(OrderStatus current) =>
         current != OrderStatus.Delivered && current != OrderStatus.Cancelled;

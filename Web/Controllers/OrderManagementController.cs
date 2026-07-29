@@ -168,6 +168,14 @@ public class OrderManagementController : Controller
             return Back(returnUrl);
         }
 
+        // Un pedido en Pending está esperando el PAGO: confirmarlo a mano sería despachar
+        // sin cobrar. La verdad del pago la ponen el webhook de Wompi o la reconsulta.
+        if (!OrderWorkflow.CanAdvance(estadoActual, order.PaymentStatus))
+        {
+            TempData["OrderError"] = "Este pedido todavía no está pagado: no se puede confirmar a mano.";
+            return Back(returnUrl);
+        }
+
         order.OrderStatus = nuevoEstado;
         await _context.SaveChangesAsync();
 
