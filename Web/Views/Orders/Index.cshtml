@@ -8,13 +8,33 @@
     var nombre = ViewBag.FirstName as string ?? "";
 
     // Mapeo de estado -> etiqueta, clase de badge y categoría de filtro.
-    // Categorías de filtro: "en-camino" | "entregado" | "cancelado".
-    (string Label, string BadgeClass, string Filter) EstadoUi(OrderStatus s) => s switch
+    // Categorías de filtro: "por-pagar" | "en-camino" | "entregado" | "cancelado".
+    // El PAGO manda sobre la logística: un pedido sin pagar no "va en camino".
+    (string Label, string BadgeClass, string Filter) EstadoUi(Web.Models.Order o)
     {
-        OrderStatus.Delivered => ("Entregado", "bean-badge-delivered", "entregado"),
-        OrderStatus.Cancelled => ("Cancelado", "bean-badge-cancelled", "cancelado"),
-        _ => ("En camino", "bean-badge-shipping", "en-camino")
-    };
+        if (o.OrderStatus == OrderStatus.Pending)
+        {
+            if (o.PaymentStatus == PaymentStatus.Declined || o.PaymentStatus == PaymentStatus.Error)
+            {
+                return ("Pago rechazado", "bean-badge-failed", "por-pagar");
+            }
+
+            return ("Pendiente de pago", "bean-badge-pending", "por-pagar");
+        }
+
+        if (o.OrderStatus == OrderStatus.Cancelled)
+        {
+            var sinPagar = o.PaymentStatus != PaymentStatus.Approved;
+            return (sinPagar ? "Pago no completado" : "Cancelado", "bean-badge-cancelled", "cancelado");
+        }
+
+        if (o.OrderStatus == OrderStatus.Delivered)
+        {
+            return ("Entregado", "bean-badge-delivered", "entregado");
+        }
+
+        return ("En camino", "bean-badge-shipping", "en-camino");
+    }
 }
 
 <section class="bean-account">
@@ -42,6 +62,7 @@
                 {
                     <div class="bean-order-filters" role="tablist">
                         <button type="button" class="bean-filter-pill active" data-filter="all">Todos</button>
+                        <button type="button" class="bean-filter-pill" data-filter="por-pagar">Por pagar</button>
                         <button type="button" class="bean-filter-pill" data-filter="en-camino">En camino</button>
                         <button type="button" class="bean-filter-pill" data-filter="entregado">Entregados</button>
                     </div>
@@ -62,7 +83,7 @@
                 <div class="bean-order-list">
                     @foreach (var order in Model)
                     {
-                        var ui = EstadoUi(order.OrderStatus);
+                        var ui = EstadoUi(order);
                         var idCorto = order.OrderID.ToString().Substring(0, 8).ToUpper();
                         var bolsas = order.Items.Sum(i => i.Quantity);
                         var lotes = order.Items.Count;
@@ -112,7 +133,13 @@
 
                             <!-- Acción según estado -->
                             <div class="bean-order-action">
-                                @if (ui.Filter == "entregado")
+                                @if (ui.Filter == "por-pagar")
+                                {
+                                    <a class="btn-bean btn-bean-sm" asp-controller="Cart" asp-action="Pay" asp-route-id="@order.OrderID">
+                                        @(ui.Label == "Pago rechazado" ? "Reintentar" : "Pagar")
+                                    </a>
+                                }
+                                else if (ui.Filter == "entregado" || ui.Filter == "cancelado")
                                 {
                                     <a class="btn-bean-outline btn-bean-sm" asp-controller="Home" asp-action="Index">Volver a pedir</a>
                                 }

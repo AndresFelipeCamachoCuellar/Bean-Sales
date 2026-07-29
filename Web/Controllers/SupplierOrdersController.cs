@@ -46,7 +46,10 @@ public class SupplierOrdersController : Controller
             .Include(o => o.User)
             .Include(o => o.Items)
                 .ThenInclude(i => i.Product)
-            .Where(o => o.Items.Any(i => i.Product != null && i.Product.ProviderID == providerId))
+            // Solo pedidos PAGADOS: el proveedor no debe preparar café de un pedido que
+            // todavía está esperando el pago (o que se abandonó en la pasarela).
+            .Where(o => o.PaymentStatus == PaymentStatus.Approved
+                        && o.Items.Any(i => i.Product != null && i.Product.ProviderID == providerId))
             .OrderByDescending(o => o.OrderDate)
             .ToListAsync();
 

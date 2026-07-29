@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Web.Data;
 using Web.Data.Seeds;
 using Web.Models;
+using Web.Services.Payments;
 using Web.Services.Shipping;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,30 +25,68 @@ builder.Services.AddMemoryCache();
 
 builder.Services.Configure<ShippingOptions>(builder.Configuration.GetSection("Shipping"));
 
-// La tarifa plana se registra siempre: es el proveedor por defecto y, cuando exista
-// el cotizador real, será además su red de seguridad (fallback).
+// La tarifa plana se registra siempre: es el proveedor por defecto y, además,
+// la red de seguridad (fallback) del cotizador real.
 builder.Services.AddScoped<FixedShippingQuoteService>();
+
+// El toggle se lee UNA vez, en el arranque: cambiar de proveedor exige reiniciar la
+// app (en MonsterASP cambiar la config ya recicla el app pool). Evita quedarse a
+// medio checkout con dos proveedores distintos.
+var shippingProvider = builder.Configuration["Shipping:Provider"];
+var mipaqueteRequested = string.Equals(shippingProvider, "Mipaquete", StringComparison.OrdinalIgnoreCase);
+
+// Sin credencial no tiene sentido levantar el cotizador real: cotizaría, fallaría y
+// degradaría en CADA checkout (una llamada HTTP perdida por pedido). Se decide una vez
+// aquí y se deja rastro explícito en el log del host.
+var mipaqueteApiKey = builder.Configuration["Shipping:Mipaquete:ApiKey"];
+var mipaqueteHasApiKey = !string.IsNullOrWhiteSpace(mipaqueteApiKey);
+var useMipaquete = mipaqueteRequested && mipaqueteHasApiKey;
+
+if (useMipaquete)
+{
+    // Typed client: evita el agotamiento de sockets de `new HttpClient()` y maneja bien el DNS.
+    // El timeout real por intento lo aplica el servicio con un CancellationTokenSource;
+    // aquí se deja un margen para que el corte lo controle él y no el HttpClient.
+    var shippingTimeoutSeconds = builder.Configuration.GetValue<int?>("Shipping:Mipaquete:TimeoutSeconds") ?? 4;
+    if (shippingTimeoutSeconds <= 0) shippingTimeoutSeconds = 4;
+
+    builder.Services.AddHttpClient<MipaqueteShippingQuoteService>(client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(shippingTimeoutSeconds + 5);
+    });
+}
 
 builder.Services.AddScoped<IShippingQuoteService>(sp =>
 {
-    var shippingOptions = sp.GetRequiredService<IOptions<ShippingOptions>>().Value;
-    var provider = shippingOptions.Provider;
-
-    if (!string.Equals(provider, "Fixed", StringComparison.OrdinalIgnoreCase))
+    // La decisión ya está tomada arriba; aquí solo se entrega. El diagnóstico se
+    // registra UNA vez al arrancar (ver más abajo) y no en cada petición.
+    if (useMipaquete)
     {
-        // La implementación de Mipaquete llega en la siguiente tanda. Mientras tanto
-        // no se rompe el checkout: se cotiza con la tarifa plana y se deja rastro.
-        sp.GetRequiredService<ILoggerFactory>()
-            .CreateLogger("Web.Services.Shipping")
-            .LogWarning(
-                "Shipping:Provider = '{Provider}' no tiene implementación disponible; se usa la tarifa fija de respaldo.",
-                provider);
+        return sp.GetRequiredService<MipaqueteShippingQuoteService>();
     }
 
     return sp.GetRequiredService<FixedShippingQuoteService>();
 });
 
 builder.Services.AddScoped<IShippingCityService, ShippingCityService>();
+
+// ---------- Pagos (Wompi · Web Checkout) ----------
+// Los secretos NO viven en appsettings.json: llegan de appsettings.Development.json
+// (gitignored) o inyectados por el pipeline desde GitHub Secrets.
+builder.Services.Configure<WompiOptions>(builder.Configuration.GetSection("Wompi"));
+
+var wompiTimeoutSeconds = builder.Configuration.GetValue<int?>("Wompi:TimeoutSeconds") ?? 8;
+if (wompiTimeoutSeconds <= 0) wompiTimeoutSeconds = 8;
+
+// Typed client: evita el agotamiento de sockets y maneja bien el DNS. El corte real
+// por intento lo aplica el servicio con un CancellationTokenSource.
+builder.Services.AddHttpClient<IPaymentGateway, WompiPaymentGateway>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(wompiTimeoutSeconds + 5);
+});
+
+builder.Services.AddScoped<PaymentApplicationService>();
+builder.Services.AddScoped<PendingOrderExpirationService>();
 
 
 builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options => options.SignIn.RequireConfirmedAccount = false)
@@ -66,6 +105,64 @@ builder.Services.AddSession(options =>
 });
 
 var app = builder.Build();
+
+// ---------- Diagnóstico del proveedor de envío (una sola vez, al arrancar) ----------
+if (useMipaquete)
+{
+    app.Logger.LogInformation("Cotización de envío: mipaquete.com (API v2). Respaldo: tarifa fija.");
+}
+else if (mipaqueteRequested)
+{
+    // Provider = Mipaquete pero sin API key: falta cargar el secreto en el host.
+    app.Logger.LogWarning(
+        "Shipping:Provider = 'Mipaquete' pero Shipping:Mipaquete:ApiKey está vacía: se cotiza con la " +
+        "tarifa fija. Carga la credencial (secret MIPAQUETE_API_KEY) en el host y reinicia la app.");
+}
+else if (!string.Equals(shippingProvider, "Fixed", StringComparison.OrdinalIgnoreCase)
+         && !string.IsNullOrWhiteSpace(shippingProvider))
+{
+    app.Logger.LogWarning(
+        "Shipping:Provider = '{Provider}' no tiene implementación disponible; se usa la tarifa fija de respaldo.",
+        shippingProvider);
+}
+
+// ---------- Diagnóstico de la pasarela de pagos (una sola vez, al arrancar) ----------
+// NUNCA se registra el valor de una llave: solo si está presente.
+{
+    var wompi = app.Services.GetRequiredService<IOptions<WompiOptions>>().Value;
+
+    if (!wompi.Enabled)
+    {
+        app.Logger.LogWarning(
+            "Pagos DESACTIVADOS (Wompi:Enabled = false): el checkout confirma pedidos sin cobrar.");
+    }
+    else if (!wompi.CanCharge)
+    {
+        app.Logger.LogWarning(
+            "Pagos NO configurados (falta Wompi:PublicKey y/o Wompi:IntegritySecret): el checkout " +
+            "confirma pedidos sin cobrar. Carga las llaves en el host y reinicia la app.");
+    }
+    else
+    {
+        app.Logger.LogInformation(
+            "Pagos: Wompi Web Checkout, ambiente '{Ambiente}'. Secreto de eventos {Eventos}. " +
+            "Llave privada {Privada}. Reserva de pago: {Minutos} min.",
+            wompi.EventEnvironment,
+            wompi.CanValidateEvents ? "presente" : "AUSENTE (el webhook responderá 503)",
+            WompiOptions.HasValue(wompi.PrivateKey) ? "presente" : "ausente",
+            wompi.ExpirationMinutesOrDefault);
+
+        // Mezclar ambientes es el error más caro de esta integración: se avisa fuerte.
+        var esperado = wompi.EventEnvironment == "prod" ? "pub_prod_" : "pub_test_";
+        if (!wompi.PublicKey.StartsWith(esperado, StringComparison.Ordinal))
+        {
+            app.Logger.LogError(
+                "La llave pública de Wompi no corresponde al ambiente configurado ('{Ambiente}': se esperaba " +
+                "el prefijo {Prefijo}). Revisa Wompi:Environment y las llaves antes de cobrar.",
+                wompi.EventEnvironment, esperado);
+        }
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -89,6 +186,12 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
+
+// Rutas por ATRIBUTO. Las usan el webhook de Wompi (/pagos/wompi/eventos) y el retorno
+// del cliente (/pagos/resultado/{orderId}), que necesitan URLs estables y ajenas al
+// patrón {controller}/{action}/{id}. Comparte el mismo data source que MapControllerRoute,
+// así que no duplica endpoints ni cambia el comportamiento de las rutas convencionales.
+app.MapControllers();
 
 // Seed Data
 using (var scope = app.Services.CreateScope())

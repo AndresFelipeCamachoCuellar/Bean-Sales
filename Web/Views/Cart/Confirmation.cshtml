@@ -7,8 +7,26 @@
     var co = new System.Globalization.CultureInfo("es-CO");
     var orderShort = Model.OrderID.ToString().Substring(0, 8).ToUpper();
 
-    // Paso actual según el estado (Confirmado=1 · Tostado y empacado=2 · En camino=3 · Entregado=4)
-    var step = Model.OrderStatus switch
+    // ----- Estado del PAGO (4 desenlaces) -------------------------------------
+    // El pago y la logística son dimensiones distintas: PaymentStatus manda aquí.
+    bool pagado = Model.PaymentStatus == PaymentStatus.Approved;
+    bool vencido = !pagado
+        && (Model.PaymentStatus == PaymentStatus.Expired
+            || Model.PaymentStatus == PaymentStatus.Voided
+            || Model.OrderStatus == OrderStatus.Cancelled);
+    bool fallido = !pagado && !vencido
+        && (Model.PaymentStatus == PaymentStatus.Declined || Model.PaymentStatus == PaymentStatus.Error);
+    bool esperandoPago = !pagado && !vencido && !fallido;
+
+    bool puedeReintentar = ViewBag.CanRetryPayment is bool reintentarFlag && reintentarFlag;
+    int? minutosRestantes = ViewBag.PaymentMinutesLeft as int?;
+
+    // Entrega estimada: usa los días cotizados por la transportadora si los hay.
+    var entregaEstimada = Model.OrderDate.AddDays(Model.ShippingEstimatedDays ?? 5);
+
+    // Paso actual según el estado (Confirmado=1 · Tostado y empacado=2 · En camino=3 · Entregado=4).
+    // Solo tiene sentido cuando el pago está aprobado.
+    var step = !pagado ? 0 : Model.OrderStatus switch
     {
         OrderStatus.Confirmed => 1,
         OrderStatus.Processing => 2,
@@ -36,52 +54,167 @@
 
 <section class="bean-checkout">
     <div class="bean-container">
-        <!-- Cabecera de agradecimiento -->
-        <div class="bean-confirm-head bean-fadeup">
-            <div class="bean-confirm-check"><i class="fas fa-check"></i></div>
-            <h1 class="bean-h1 bean-confirm-title">¡Gracias, @Model.FirstName! Tu café va en camino.</h1>
-            <p class="bean-confirm-sub">
-                Pedido <strong>#@orderShort</strong> · @Model.OrderDate.ToString("d 'de' MMMM, yyyy", co)
-                <br />Te enviamos un comprobante por correo.
-            </p>
-        </div>
+
+        @if (TempData["PaymentError"] != null)
+        {
+            <div class="bean-alert-info" role="status" style="margin-bottom:18px;">
+                <i class="fas fa-info-circle"></i> <span>@TempData["PaymentError"]</span>
+            </div>
+        }
+
+        <!-- Cabecera: cambia según el desenlace del pago -->
+        @if (pagado)
+        {
+            <div class="bean-confirm-head bean-fadeup">
+                <div class="bean-confirm-check"><i class="fas fa-check"></i></div>
+                <h1 class="bean-h1 bean-confirm-title">¡Gracias, @Model.FirstName! Tu café va en camino.</h1>
+                <p class="bean-confirm-sub">
+                    Pedido <strong>#@orderShort</strong> · @Model.OrderDate.ToString("d 'de' MMMM, yyyy", co)
+                    <br />Te enviamos un comprobante por correo.
+                </p>
+            </div>
+        }
+        else if (esperandoPago)
+        {
+            <div class="bean-confirm-head bean-fadeup">
+                <div class="bean-confirm-check is-waiting"><i class="fas fa-hourglass-half"></i></div>
+                <h1 class="bean-h1 bean-confirm-title">Estamos confirmando tu pago</h1>
+                <p class="bean-confirm-sub">
+                    Pedido <strong>#@orderShort</strong> · @Model.OrderDate.ToString("d 'de' MMMM, yyyy", co)
+                    <br />Si pagaste por PSE puede tardar unos minutos. No cierres esta página.
+                    @if (minutosRestantes.HasValue)
+                    {
+                        <br />
+                        <span>Reservamos tus lotes por @minutosRestantes.Value minutos más.</span>
+                    }
+                </p>
+                @if (puedeReintentar)
+                {
+                    <div class="bean-pay-actions">
+                        <form asp-controller="Cart" asp-action="RetryPayment" asp-route-id="@Model.OrderID" method="post">
+                            <button type="submit" class="btn-bean">Ir a pagar</button>
+                        </form>
+                        <form asp-controller="Cart" asp-action="CancelPayment" asp-route-id="@Model.OrderID" method="post">
+                            <button type="submit" class="btn-bean-outline btn-bean-sm">Cancelar el pedido</button>
+                        </form>
+                    </div>
+                }
+            </div>
+        }
+        else if (fallido)
+        {
+            <div class="bean-confirm-head bean-fadeup">
+                <div class="bean-confirm-check is-failed"><i class="fas fa-exclamation"></i></div>
+                <h1 class="bean-h1 bean-confirm-title">No pudimos procesar tu pago</h1>
+                <p class="bean-confirm-sub">
+                    Pedido <strong>#@orderShort</strong>
+                    @if (!string.IsNullOrWhiteSpace(Model.PaymentStatusMessage))
+                    {
+                        <br />
+                        <span>@Model.PaymentStatusMessage</span>
+                    }
+                    <br />Tus lotes siguen reservados@(minutosRestantes.HasValue ? $" por {minutosRestantes.Value} minutos más" : "").
+                </p>
+                <div class="bean-pay-actions">
+                    @if (puedeReintentar)
+                    {
+                        <form asp-controller="Cart" asp-action="RetryPayment" asp-route-id="@Model.OrderID" method="post">
+                            <button type="submit" class="btn-bean">Reintentar el pago</button>
+                        </form>
+                    }
+                    <form asp-controller="Cart" asp-action="CancelPayment" asp-route-id="@Model.OrderID" method="post">
+                        <button type="submit" class="btn-bean-outline btn-bean-sm">Cancelar el pedido</button>
+                    </form>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="bean-confirm-head bean-fadeup">
+                <div class="bean-confirm-check is-expired"><i class="fas fa-times"></i></div>
+                <h1 class="bean-h1 bean-confirm-title">Este pedido se canceló</h1>
+                <p class="bean-confirm-sub">
+                    Pedido <strong>#@orderShort</strong>
+                    <br />No se completó el pago, así que liberamos los lotes para otros clientes.
+                </p>
+                <div class="bean-pay-actions">
+                    <a class="btn-bean" asp-controller="Home" asp-action="Index">Volver a pedir</a>
+                </div>
+            </div>
+        }
 
         <div class="bean-checkout-grid" style="margin-top:34px;">
-            <!-- ===== Línea de tiempo de seguimiento ===== -->
+            <!-- ===== Línea de tiempo de seguimiento (solo con el pago aprobado) ===== -->
             <div class="bean-form-col">
                 <div class="bean-form-section">
-                    <h2>Seguimiento del envío</h2>
-                    <div class="bean-timeline">
-                        @foreach (var h in hitos)
-                        {
-                            var estado = EstadoHito(h.Num);
-                            <div class="bean-tl-item @estado">
-                                <div class="bean-tl-marker">
-                                    @if (estado == "done")
-                                    {
-                                        <i class="fas fa-check"></i>
-                                    }
-                                    else
-                                    {
-                                        <span class="dot"></span>
-                                    }
+                    @if (pagado)
+                    {
+                        <h2>Seguimiento del envío</h2>
+                        <div class="bean-timeline">
+                            @foreach (var h in hitos)
+                            {
+                                var estado = EstadoHito(h.Num);
+                                <div class="bean-tl-item @estado">
+                                    <div class="bean-tl-marker">
+                                        @if (estado == "done")
+                                        {
+                                            <i class="fas fa-check"></i>
+                                        }
+                                        else
+                                        {
+                                            <span class="dot"></span>
+                                        }
+                                    </div>
+                                    <div class="bean-tl-body">
+                                        <div class="bean-tl-title">@h.Titulo</div>
+                                        <div class="bean-tl-detail">@h.Detalle</div>
+                                    </div>
                                 </div>
-                                <div class="bean-tl-body">
-                                    <div class="bean-tl-title">@h.Titulo</div>
-                                    <div class="bean-tl-detail">@h.Detalle</div>
-                                </div>
-                            </div>
-                        }
-                    </div>
-
-                    <div class="bean-tl-callout">
-                        <i class="fas fa-truck"></i>
-                        <div>
-                            <strong>Entrega estimada:</strong>
-                            @Model.OrderDate.AddDays(5).ToString("d 'de' MMMM", co)
-                            <div class="muted">Recibirás el número de guía cuando el pedido salga a reparto.</div>
+                            }
                         </div>
-                    </div>
+
+                        <div class="bean-tl-callout">
+                            <i class="fas fa-truck"></i>
+                            <div>
+                                <strong>Entrega estimada:</strong>
+                                @entregaEstimada.ToString("d 'de' MMMM", co)
+                                <div class="muted">Recibirás el número de guía cuando el pedido salga a reparto.</div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <h2>Estado del pago</h2>
+                        <div class="bean-pay-state">
+                            <div class="bean-pay-state-row">
+                                <span>Estado</span>
+                                <span class="val">
+                                    @(esperandoPago ? "Pendiente de pago" : (fallido ? "Pago rechazado" : "Pago no completado"))
+                                </span>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(Model.PaymentReference))
+                            {
+                                <div class="bean-pay-state-row">
+                                    <span>Referencia</span>
+                                    <span class="val">@Model.PaymentReference</span>
+                                </div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.PaymentMethodUsed))
+                            {
+                                <div class="bean-pay-state-row">
+                                    <span>Medio de pago</span>
+                                    <span class="val">@Model.PaymentMethodUsed</span>
+                                </div>
+                            }
+                        </div>
+                        <div class="bean-tl-callout">
+                            <i class="fas fa-shield-halved"></i>
+                            <div>
+                                <strong>Tu pedido solo se despacha cuando el pago se confirma.</strong>
+                                <div class="muted">Wompi (Bancolombia) procesa el cobro; nosotros nunca vemos los datos de tu tarjeta.</div>
+                            </div>
+                        </div>
+                    }
                 </div>
             </div>
 
@@ -114,7 +247,7 @@
                     <div class="val">
                         @Model.FirstName @Model.LastName<br />
                         @Model.Address<br />
-                        @(!string.IsNullOrEmpty(Model.State) ? Model.State + ", " : "")@Model.ShippingCountry
+                        @(!string.IsNullOrEmpty(Model.ShippingCity) ? Model.ShippingCity + ", " : "")@(!string.IsNullOrEmpty(Model.State) ? Model.State + ", " : "")@Model.ShippingCountry
                         @(!string.IsNullOrEmpty(Model.ZipCode) ? " · " + Model.ZipCode : "")
                     </div>
                 </div>
@@ -126,3 +259,24 @@
         </div>
     </div>
 </section>
+
+@section Scripts {
+    @* Las secciones se declaran SIEMPRE en el nivel superior de la vista; la condición va dentro. *@
+    @if (esperandoPago)
+    {
+        <script>
+            // Mientras el pago no resuelve, la página se refresca sola durante ~2 minutos:
+            // el webhook suele llegar en segundos, pero PSE puede tardar.
+            (function () {
+                var clave = 'beanPayPoll:@Model.OrderID';
+                var intentos = parseInt(sessionStorage.getItem(clave) || '0', 10);
+                if (intentos >= 15) { return; }
+
+                setTimeout(function () {
+                    sessionStorage.setItem(clave, String(intentos + 1));
+                    window.location.reload();
+                }, 8000);
+            })();
+        </script>
+    }
+}

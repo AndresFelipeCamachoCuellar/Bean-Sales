@@ -1880,3 +1880,145 @@ select.bean-auth-input { appearance: none; -webkit-appearance: none;
     .bean-value-grid,
     .bean-steps { grid-template-columns: 1fr; }
 }
+
+/* =====================================================================
+   23. ENVÍO DINÁMICO EN EL CHECKOUT — selector de ciudad + cotización
+   Puramente aditivo: no modifica ninguna regla anterior.
+   ===================================================================== */
+
+/* Ayudas de campo (país fijo, código postal opcional) */
+.bean-field-hint { font-size: 11.5px; color: var(--bean-muted); margin-top: 4px; }
+.bean-optional { font-weight: 500; color: var(--bean-muted); text-transform: none; }
+
+/* Un select deshabilitado tiene que verse deshabilitado */
+.bean-select:disabled,
+.bean-input:disabled { background: #F4EFE8; color: var(--bean-muted); cursor: not-allowed; }
+
+/* Bloque de la opción de envío cotizada */
+.bean-ship-box { display: flex; flex-direction: column; gap: 12px; }
+
+.bean-ship-option {
+    display: flex; align-items: center; gap: 14px;
+    background: #fff; border: 1px solid var(--bean-border); border-radius: 14px;
+    padding: 15px 18px;
+}
+.bean-ship-option-main { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.bean-ship-carrier { font-weight: 600; font-size: 14.5px; color: var(--bean-ink); }
+.bean-ship-eta { font-size: 12.5px; color: var(--bean-muted); }
+.bean-ship-price { font-weight: 700; font-size: 15px; color: var(--bean-ink); white-space: nowrap; }
+
+/* Aviso discreto: se cotizó con la tarifa de respaldo, la venta sigue */
+.bean-alert-info {
+    display: flex; align-items: center; gap: 10px;
+    background: #F4EFE8; border: 1px solid var(--bean-border);
+    color: var(--bean-body); border-radius: var(--r-input);
+    padding: 11px 15px; font-size: 13px; font-weight: 500;
+}
+.bean-alert-info i { font-size: 15px; color: var(--bean-terra); }
+
+/* Botón de pago inhabilitado (sin ciudad / sin cobertura) */
+.btn-bean:disabled,
+.btn-bean[disabled] {
+    background: #D8CEC2; color: #fff; cursor: not-allowed;
+    box-shadow: none; transform: none;
+}
+.btn-bean:disabled:hover,
+.btn-bean[disabled]:hover { transform: none; color: #fff; }
+
+@media (max-width: 700px) {
+    .bean-ship-option { align-items: flex-start; flex-direction: column; gap: 8px; }
+    .bean-ship-price { align-self: flex-end; }
+}
+
+/* =====================================================================
+   24. PAGOS (Wompi) — bloque del checkout, puente de redirección y
+   estados de pago en la confirmación y en "Mis pedidos".
+   Puramente aditivo: no modifica ninguna regla anterior.
+   ===================================================================== */
+
+/* ---- Checkout: bloque informativo de la pasarela ---- */
+.bean-pay-gateway {
+    background: #fff; border: 1px solid var(--bean-border); border-radius: 14px;
+    padding: 18px 20px; display: flex; flex-direction: column; gap: 14px;
+}
+.bean-pay-gateway-head { display: flex; align-items: flex-start; gap: 14px; }
+.bean-pay-lock {
+    width: 40px; height: 40px; border-radius: 50%; flex: 0 0 40px;
+    background: var(--bean-terra-grad); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 16px;
+}
+.bean-pay-gateway-title { font-weight: 700; font-size: 15px; color: var(--bean-ink); }
+.bean-pay-gateway-sub { font-size: 13px; color: var(--bean-muted); margin-top: 3px; line-height: 1.45; }
+.bean-pay-brands { display: flex; flex-wrap: wrap; gap: 8px; }
+.bean-pay-brand {
+    background: #F4EFE8; border: 1px solid var(--bean-border); border-radius: var(--r-pill);
+    padding: 5px 13px; font-size: 12px; font-weight: 600; color: var(--bean-body);
+}
+
+/* ---- Checkout: aviso de pedido esperando pago ---- */
+.bean-pay-pending { flex-wrap: wrap; }
+.bean-pay-pending-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.bean-pay-pending-actions form { margin: 0; }
+.bean-link-danger {
+    background: none; border: none; padding: 0; cursor: pointer;
+    font-family: var(--font-body); font-size: 13px; font-weight: 600;
+    color: var(--bean-error-2); text-decoration: underline;
+}
+.bean-link-danger:hover { color: var(--bean-error); }
+
+/* ---- Puente de redirección a la pasarela ---- */
+.bean-pay-bridge { text-align: center; max-width: 560px; margin: 40px auto; }
+.bean-pay-bridge-title { font-size: 26px; margin: 0 0 12px; line-height: 1.2; }
+.bean-pay-bridge-sub { font-size: 14px; color: var(--bean-body); margin: 0 0 24px; line-height: 1.6; }
+.bean-pay-bridge-note { font-size: 12.5px; color: var(--bean-muted); margin-top: 18px; }
+.bean-pay-bridge-spinner {
+    width: 42px; height: 42px; margin: 0 auto 22px; border-radius: 50%;
+    border: 3px solid #E6DBCF; border-top-color: var(--bean-terra);
+    animation: bean-pay-spin .9s linear infinite;
+}
+@keyframes bean-pay-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+    .bean-pay-bridge-spinner { animation: none; }
+}
+
+/* ---- Confirmación: variantes del círculo según el desenlace del pago ---- */
+.bean-confirm-check.is-waiting {
+    background: linear-gradient(135deg, #e0b464, var(--bean-warn));
+    box-shadow: 0 12px 30px rgba(201, 150, 47, .3);
+}
+.bean-confirm-check.is-failed {
+    background: linear-gradient(135deg, #c86f6f, var(--bean-error));
+    box-shadow: 0 12px 30px rgba(176, 74, 74, .3);
+}
+.bean-confirm-check.is-expired {
+    background: linear-gradient(135deg, #b3a79a, #8a7d70);
+    box-shadow: 0 12px 30px rgba(138, 125, 112, .3);
+}
+
+/* ---- Confirmación: acciones de pago (reintentar / cancelar) ---- */
+.bean-pay-actions {
+    display: flex; align-items: center; justify-content: center;
+    gap: 12px; flex-wrap: wrap; margin-top: 18px;
+}
+.bean-pay-actions form { margin: 0; }
+
+/* ---- Confirmación: ficha del estado del pago ---- */
+.bean-pay-state { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+.bean-pay-state-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    font-size: 13.5px; color: var(--bean-muted);
+    border-bottom: 1px dashed var(--bean-border); padding-bottom: 10px;
+}
+.bean-pay-state-row:last-child { border-bottom: none; padding-bottom: 0; }
+.bean-pay-state-row .val {
+    color: var(--bean-ink); font-weight: 600; text-align: right; word-break: break-all;
+}
+
+/* ---- Mis pedidos: badges de pago ---- */
+.bean-badge-pending { background: var(--bean-warn-bg); color: var(--bean-warn-2); }
+.bean-badge-failed { background: #F9E9E9; color: var(--bean-error); }
+
+@media (max-width: 700px) {
+    .bean-pay-pending-actions { margin-left: 0; width: 100%; }
+    .bean-pay-actions { flex-direction: column; align-items: stretch; }
+}

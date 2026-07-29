@@ -1,0 +1,114 @@
+@model Web.Services.Payments.PaymentCheckoutRequest
+
+@{
+    ViewData["Title"] = "Redirigiendo al pago seguro";
+    Layout = "_LayoutStore";
+    var co = new System.Globalization.CultureInfo("es-CO");
+    var pedidoCorto = Model.OrderID.ToString("N").Substring(0, 8).ToUpperInvariant();
+}
+
+@*
+    Puente hacia el Web Checkout de Wompi.
+
+    Es el <form action="https://checkout.wompi.co/p/" method="GET"> LITERAL de la
+    documentación: así se evita la incógnita de cómo codificar el parámetro
+    "signature:integrity" en una URL construida a mano.
+
+    Aquí NO hay ningún secreto: solo viajan la llave PÚBLICA, la referencia, el monto,
+    la moneda, la expiración y el hash ya calculado en el servidor. Si alguien edita el
+    monto desde DevTools, la firma deja de cuadrar y Wompi rechaza la transacción: ése
+    es exactamente el propósito de la firma de integridad.
+*@
+
+<section class="bean-checkout">
+    <div class="bean-container">
+        <div class="bean-pay-bridge bean-fadeup">
+            <div class="bean-pay-bridge-spinner" aria-hidden="true"></div>
+            <h1 class="bean-h1 bean-pay-bridge-title">Te estamos llevando al pago seguro</h1>
+            <p class="bean-pay-bridge-sub">
+                Pedido <strong>#@pedidoCorto</strong>
+                · Total <strong>$@Model.AmountInPesos.ToString("#,##0", co) @Model.Currency</strong>
+                <br />Vas a completar el pago en Wompi (Bancolombia). No cierres esta ventana.
+            </p>
+
+            <form id="beanWompiForm" action="@Model.CheckoutUrl" method="GET">
+                <!-- OBLIGATORIOS -->
+                <input type="hidden" name="public-key" value="@Model.PublicKey" />
+                <input type="hidden" name="currency" value="@Model.Currency" />
+                <input type="hidden" name="amount-in-cents" value="@Model.AmountInCents" />
+                <input type="hidden" name="reference" value="@Model.Reference" />
+                <input type="hidden" name="signature:integrity" value="@Model.IntegritySignature" />
+
+                <!-- OPCIONALES -->
+                <input type="hidden" name="redirect-url" value="@Model.RedirectUrl" />
+                @if (!string.IsNullOrWhiteSpace(Model.ExpirationTimeIso))
+                {
+                    <input type="hidden" name="expiration-time" value="@Model.ExpirationTimeIso" />
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.CustomerEmail))
+                {
+                    <input type="hidden" name="customer-data:email" value="@Model.CustomerEmail" />
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.CustomerFullName))
+                {
+                    <input type="hidden" name="customer-data:full-name" value="@Model.CustomerFullName" />
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.ShippingAddressLine1))
+                {
+                    <input type="hidden" name="shipping-address:address-line-1" value="@Model.ShippingAddressLine1" />
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.ShippingCity))
+                {
+                    <input type="hidden" name="shipping-address:city" value="@Model.ShippingCity" />
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.ShippingRegion))
+                {
+                    <input type="hidden" name="shipping-address:region" value="@Model.ShippingRegion" />
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.ShippingCountry))
+                {
+                    <input type="hidden" name="shipping-address:country" value="@Model.ShippingCountry" />
+                }
+
+                <button type="submit" class="btn-bean" id="beanWompiBtn">
+                    Continuar al pago seguro
+                </button>
+            </form>
+
+            <p class="bean-pay-bridge-note">
+                🔒 Wompi procesa el pago. Tus datos de tarjeta nunca pasan por nuestro sitio.
+            </p>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        // Auto-submit: el botón queda como respaldo si el navegador no ejecuta JS.
+        (function () {
+            var form = document.getElementById('beanWompiForm');
+            var btn = document.getElementById('beanWompiBtn');
+            if (!form) { return; }
+
+            var enviado = false;
+            form.addEventListener('submit', function () {
+                if (enviado) { return; }
+                enviado = true;
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = 'Conectando con Wompi…';
+                }
+            });
+
+            setTimeout(function () {
+                if (enviado) { return; }
+                enviado = true;
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = 'Conectando con Wompi…';
+                }
+                form.submit();
+            }, 400);
+        })();
+    </script>
+}
