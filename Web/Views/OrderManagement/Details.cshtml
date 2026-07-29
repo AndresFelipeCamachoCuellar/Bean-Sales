@@ -154,6 +154,10 @@
             <div style="font-size:13.5px; color:var(--bean-body); line-height:1.7;">
                 <div style="font-weight:700; color:var(--bean-ink);">@order.FirstName @order.LastName</div>
                 <div>@clienteEmail</div>
+                @if (!string.IsNullOrWhiteSpace(order.CustomerPhone))
+                {
+                    <div>Cel. @order.CustomerPhone</div>
+                }
                 <div style="margin-top:10px;">@order.Address</div>
                 <div>
                     @order.State

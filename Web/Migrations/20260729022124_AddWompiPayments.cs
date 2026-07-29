@@ -89,6 +89,18 @@ namespace Web.Migrations
                 name: "IX_Orders_PaymentStatus",
                 table: "Orders",
                 column: "PaymentStatus");
+
+            // Backfill de pedidos históricos: se crearon ANTES de existir la pasarela,
+            // así que en la práctica ya estaban "pagados" (el checkout los confirmaba
+            // directo). Sin esto quedarían como PaymentStatus = Pending (0) y el
+            // Dashboard reportaría $0 en ventas y "Mis pedidos" los mostraría como
+            // pago no completado. Se excluyen los cancelados (OrderStatus = 5).
+            // PaymentStatus = 1 => Approved.
+            migrationBuilder.Sql(@"
+                UPDATE [Orders]
+                   SET [PaymentStatus] = 1,
+                       [PaidAt] = [OrderDate]
+                 WHERE [OrderStatus] <> 5;");
         }
 
         /// <inheritdoc />

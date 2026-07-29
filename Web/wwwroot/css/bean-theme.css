@@ -610,12 +610,35 @@
    14. CHECKOUT
    --------------------------------------------------------------------- */
 .bean-checkout { padding: 30px 0 50px; }
-.bean-steps { display: flex; align-items: center; gap: 12px; margin-bottom: 30px; flex-wrap: wrap; }
-.bean-step { display: inline-flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 600; color: var(--bean-muted); }
-.bean-step .num { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; background: #e6ddce; color: #fff; }
+/* Stepper "1 Envío — 2 Pago — 3 Confirmación": UNA sola línea.
+   Los pasos no se encogen ni se parten (flex: 0 0 auto + nowrap) y el conector es
+   el único elemento elástico, así que el sobrante horizontal se lo come él en vez
+   de empujar el paso 3 a una segunda fila. */
+.bean-steps { display: flex; align-items: center; gap: 12px; margin-bottom: 30px; flex-wrap: nowrap; }
+.bean-step {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-size: 14px; font-weight: 600; color: var(--bean-muted);
+    flex: 0 0 auto; white-space: nowrap;
+}
+.bean-step .num {
+    width: 26px; height: 26px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: 0 0 26px; font-size: 13px; background: #e6ddce; color: #fff;
+}
 .bean-step.active { color: var(--bean-ink); }
 .bean-step.active .num { background: var(--bean-terra-grad); }
-.bean-step-line { width: 42px; height: 1px; background: #e6ddce; }
+.bean-step-line { flex: 1 1 42px; max-width: 42px; min-width: 16px; height: 1px; background: #e6ddce; }
+
+/* Móvil: se acorta el conector y se reduce el texto; sigue cabiendo en una fila.
+   overflow-x como último recurso: en pantallas muy angostas el stepper se desplaza
+   en lugar de romper la maqueta. */
+@media (max-width: 560px) {
+    .bean-steps { gap: 8px; margin-bottom: 22px; overflow-x: auto; scrollbar-width: none; }
+    .bean-steps::-webkit-scrollbar { display: none; }
+    .bean-step { font-size: 12.5px; gap: 6px; }
+    .bean-step .num { width: 22px; height: 22px; flex-basis: 22px; font-size: 11.5px; }
+    .bean-step-line { flex-basis: 12px; max-width: 20px; min-width: 8px; }
+}
 
 .bean-checkout-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 40px; align-items: start; }
 .bean-form-section h2 { font-family: var(--font-head); font-weight: 800; font-size: 24px; color: var(--bean-ink); margin: 0 0 18px; }
@@ -1842,25 +1865,30 @@ select.bean-auth-input { appearance: none; -webkit-appearance: none;
 }
 .bean-value-card p { font-size: 13.5px; color: var(--bean-body); margin: 0; line-height: 1.55; }
 
-/* --- NOSOTROS: cómo funciona ----------------------------------------- */
+/* --- NOSOTROS: cómo funciona -----------------------------------------
+   ⚠️ Clases con prefijo propio (.bean-how-steps / .bean-how-step). Antes se
+   llamaban .bean-steps / .bean-step y COLISIONABAN con el stepper del checkout
+   (sección 14): al ir después en el archivo, ganaban por orden y convertían los
+   3 pasos del checkout en una grilla de 4 columnas con tarjetas blancas, lo que
+   tiraba "3 Confirmación" a una segunda fila. -------------------------- */
 .bean-how { background: var(--bean-cream-chip); padding: 46px 0; margin-top: 8px; }
-.bean-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
-.bean-step {
+.bean-how-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+.bean-how-step {
     background: #fff; border: 1px solid var(--bean-border);
     border-radius: var(--r-card-lg); padding: 22px 20px; position: relative;
 }
-.bean-step .n {
+.bean-how-step .n {
     font-family: var(--font-head); font-weight: 800; font-size: 15px;
     color: #fff; background: var(--bean-terra-grad);
     width: 40px; height: 40px; border-radius: 50%;
     display: inline-flex; align-items: center; justify-content: center;
     margin-bottom: 14px;
 }
-.bean-step h3 {
+.bean-how-step h3 {
     font-family: var(--font-head); font-weight: 700; font-size: 17px;
     color: var(--bean-ink); margin: 0 0 8px; line-height: 1.25;
 }
-.bean-step p { font-size: 13.5px; color: var(--bean-body); margin: 0; line-height: 1.55; }
+.bean-how-step p { font-size: 13.5px; color: var(--bean-body); margin: 0; line-height: 1.55; }
 
 /* --- CTA doble sobre el banner oscuro -------------------------------- */
 .bean-b2b-ctas { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -1869,7 +1897,7 @@ select.bean-auth-input { appearance: none; -webkit-appearance: none;
 @media (max-width: 1024px) {
     .bean-pagehead h1 { font-size: 40px; }
     .bean-value-grid,
-    .bean-steps { grid-template-columns: repeat(2, 1fr); }
+    .bean-how-steps { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 700px) {
     .bean-pagehead { padding: 42px 0 38px; }
@@ -1878,7 +1906,7 @@ select.bean-auth-input { appearance: none; -webkit-appearance: none;
     .bean-pagehead-stats { gap: 22px; flex-wrap: wrap; justify-content: center; }
     .bean-origin-block { padding: 20px 18px 22px; }
     .bean-value-grid,
-    .bean-steps { grid-template-columns: 1fr; }
+    .bean-how-steps { grid-template-columns: 1fr; }
 }
 
 /* =====================================================================
@@ -1888,6 +1916,9 @@ select.bean-auth-input { appearance: none; -webkit-appearance: none;
 
 /* Ayudas de campo (país fijo, código postal opcional) */
 .bean-field-hint { font-size: 11.5px; color: var(--bean-muted); margin-top: 4px; }
+/* Campo con error de validación en el navegador (celular) */
+.bean-field-hint.is-invalid { color: var(--bean-error-2); font-weight: 600; }
+.bean-input.is-invalid, .bean-select.is-invalid { border-color: var(--bean-error-2); }
 .bean-optional { font-weight: 500; color: var(--bean-muted); text-transform: none; }
 
 /* Un select deshabilitado tiene que verse deshabilitado */
@@ -1971,6 +2002,16 @@ select.bean-auth-input { appearance: none; -webkit-appearance: none;
 .bean-pay-bridge-title { font-size: 26px; margin: 0 0 12px; line-height: 1.2; }
 .bean-pay-bridge-sub { font-size: 14px; color: var(--bean-body); margin: 0 0 24px; line-height: 1.6; }
 .bean-pay-bridge-note { font-size: 12.5px; color: var(--bean-muted); margin-top: 18px; }
+.bean-pay-bridge-note a { color: var(--bean-terra-dark); font-weight: 600; }
+
+/* Salidas de la pantalla puente: el cliente nunca queda encerrado esperando a Wompi. */
+.bean-pay-bridge-escape {
+    display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+    gap: 10px; margin-top: 18px; font-size: 13px;
+}
+.bean-pay-bridge-escape a { color: var(--bean-body); font-weight: 600; text-decoration: underline; }
+.bean-pay-bridge-escape a:hover { color: var(--bean-terra-dark); }
+.bean-pay-bridge-escape span { color: var(--bean-muted); }
 .bean-pay-bridge-spinner {
     width: 42px; height: 42px; margin: 0 auto 22px; border-radius: 50%;
     border: 3px solid #E6DBCF; border-top-color: var(--bean-terra);
