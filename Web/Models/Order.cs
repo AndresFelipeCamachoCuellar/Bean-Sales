@@ -36,6 +36,15 @@ public class Order
 
     public string? ZipCode { get; set; }
 
+    /// <summary>
+    /// Celular de quien recibe el pedido. Nullable porque los pedidos anteriores a este
+    /// campo no lo tienen, pero el checkout lo exige: Wompi obliga a enviar
+    /// <c>shipping-address:phone-number</c> siempre que se envíe el bloque de dirección
+    /// (y la transportadora lo necesita para coordinar la entrega).
+    /// </summary>
+    [StringLength(30)]
+    public string? CustomerPhone { get; set; }
+
     [Required]
     public string ShippingCountry { get; set; } = string.Empty;
 

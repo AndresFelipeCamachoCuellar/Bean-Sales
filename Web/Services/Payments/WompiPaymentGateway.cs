@@ -102,7 +102,12 @@ public sealed class WompiPaymentGateway : IPaymentGateway
 
         var fullName = $"{order.FirstName} {order.LastName}".Trim();
 
-        return new PaymentCheckoutRequest(
+        // El celular alimenta DOS bloques distintos de Wompi:
+        //  · shipping-address:phone-number  -> obligatorio si se manda la dirección
+        //  · customer-data:phone-number     -> prellena los datos del pagador (+ prefijo)
+        var phone = PaymentContact.NormalizePhone(order.CustomerPhone);
+
+        var checkout = new PaymentCheckoutRequest(
             CheckoutUrl: string.IsNullOrWhiteSpace(_options.CheckoutUrl)
                 ? "https://checkout.wompi.co/p/"
                 : _options.CheckoutUrl.Trim(),
@@ -115,13 +120,33 @@ public sealed class WompiPaymentGateway : IPaymentGateway
             ExpirationTimeIso: expirationIso,
             CustomerEmail: customerEmail,
             CustomerFullName: string.IsNullOrWhiteSpace(fullName) ? null : fullName,
-            ShippingAddressLine1: order.Address,
-            ShippingCity: order.ShippingCity,
-            ShippingRegion: order.State,
+            CustomerPhone: phone,
+            CustomerPhonePrefix: phone is null ? null : PaymentContact.DefaultPhonePrefix,
+            ShippingAddressLine1: Clean(order.Address),
+            ShippingCity: Clean(order.ShippingCity),
+            ShippingRegion: Clean(order.State),
             ShippingCountry: ToIsoCountry(order.ShippingCountry),
+            ShippingPhone: phone,
+            ShippingName: string.IsNullOrWhiteSpace(fullName) ? null : fullName,
             OrderID: order.OrderID,
             AmountInPesos: order.TotalAmount);
+
+        // Blindaje observable: si por datos históricos el bloque de envío queda incompleto
+        // se omite entero (la vista respeta CanSendShippingAddress). Se registra para poder
+        // detectarlo en logs sin que el cliente pierda la venta.
+        if (!checkout.CanSendShippingAddress)
+        {
+            _logger.LogWarning(
+                "Pedido {OrderId}: datos de envío incompletos para Wompi (celular presente: {HasPhone}). " +
+                "Se omite el bloque shipping-address para no romper el cobro.",
+                order.OrderID, phone is not null);
+        }
+
+        return checkout;
     }
+
+    private static string? Clean(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     /// <summary>Formato exigido por Wompi: ISO-8601 en UTC con milisegundos ("…T20:28:50.000Z").</summary>
     internal static string? ToIso8601Utc(DateTime? value)

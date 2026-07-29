@@ -53,21 +53,29 @@
                 {
                     <input type="hidden" name="customer-data:full-name" value="@Model.CustomerFullName" />
                 }
-                @if (!string.IsNullOrWhiteSpace(Model.ShippingAddressLine1))
+                @if (Model.CanSendCustomerPhone)
+                {
+                    <input type="hidden" name="customer-data:phone-number" value="@Model.CustomerPhone" />
+                    <input type="hidden" name="customer-data:phone-number-prefix" value="@Model.CustomerPhonePrefix" />
+                }
+
+                @*
+                    shipping-address es TODO-O-NADA: Wompi exige address-line-1, city, region,
+                    country Y phone-number en cuanto se manda uno de ellos. Si falta alguno se
+                    omite el bloque completo (es opcional) en vez de arriesgar un rechazo del
+                    tipo "Parámetro «shipping-address:phone-number» no proveído".
+                *@
+                @if (Model.CanSendShippingAddress)
                 {
                     <input type="hidden" name="shipping-address:address-line-1" value="@Model.ShippingAddressLine1" />
-                }
-                @if (!string.IsNullOrWhiteSpace(Model.ShippingCity))
-                {
                     <input type="hidden" name="shipping-address:city" value="@Model.ShippingCity" />
-                }
-                @if (!string.IsNullOrWhiteSpace(Model.ShippingRegion))
-                {
                     <input type="hidden" name="shipping-address:region" value="@Model.ShippingRegion" />
-                }
-                @if (!string.IsNullOrWhiteSpace(Model.ShippingCountry))
-                {
                     <input type="hidden" name="shipping-address:country" value="@Model.ShippingCountry" />
+                    <input type="hidden" name="shipping-address:phone-number" value="@Model.ShippingPhone" />
+                    @if (!string.IsNullOrWhiteSpace(Model.ShippingName))
+                    {
+                        <input type="hidden" name="shipping-address:name" value="@Model.ShippingName" />
+                    }
                 }
 
                 <button type="submit" class="btn-bean" id="beanWompiBtn">
@@ -75,8 +83,22 @@
                 </button>
             </form>
 
+            @*
+                Salidas SIEMPRE visibles. Si Wompi rechaza los parámetros o el cliente vuelve
+                atrás, no puede quedarse encerrado en esta pantalla.
+            *@
+            <div class="bean-pay-bridge-escape">
+                <a asp-controller="Cart" asp-action="Checkout">&larr; Volver al checkout</a>
+                <span aria-hidden="true">·</span>
+                <a asp-controller="Cart" asp-action="Confirmation" asp-route-id="@Model.OrderID">Ver este pedido</a>
+                <span aria-hidden="true">·</span>
+                <a asp-controller="Orders" asp-action="Index">Ver mis pedidos</a>
+            </div>
+
             <p class="bean-pay-bridge-note">
                 🔒 Wompi procesa el pago. Tus datos de tarjeta nunca pasan por nuestro sitio.
+                Tu pedido queda reservado: si algo sale mal puedes reintentar el pago desde
+                <a asp-controller="Cart" asp-action="Confirmation" asp-route-id="@Model.OrderID">el detalle del pedido</a>.
             </p>
         </div>
     </div>
@@ -85,30 +107,52 @@
 @section Scripts {
     <script>
         // Auto-submit: el botón queda como respaldo si el navegador no ejecuta JS.
+        //
+        // Regla: el botón NUNCA puede quedar muerto. Se deshabilita solo mientras el
+        // navegador sale hacia la pasarela y se rehabilita a los 3 s (o al volver por
+        // historial), porque si Wompi rechaza los parámetros el cliente aterriza de
+        // vuelta aquí y tiene que poder reintentar o salir.
         (function () {
             var form = document.getElementById('beanWompiForm');
             var btn = document.getElementById('beanWompiBtn');
             if (!form) { return; }
 
-            var enviado = false;
-            form.addEventListener('submit', function () {
-                if (enviado) { return; }
-                enviado = true;
-                if (btn) {
-                    btn.disabled = true;
-                    btn.textContent = 'Conectando con Wompi…';
-                }
-            });
+            var etiquetaOriginal = btn ? btn.textContent.trim() : '';
+            var rearmar = null;
 
-            setTimeout(function () {
-                if (enviado) { return; }
-                enviado = true;
+            function liberar() {
+                if (rearmar) { clearTimeout(rearmar); rearmar = null; }
                 if (btn) {
-                    btn.disabled = true;
-                    btn.textContent = 'Conectando con Wompi…';
+                    btn.disabled = false;
+                    btn.textContent = etiquetaOriginal;
                 }
+            }
+
+            function saliendo() {
+                if (!btn) { return; }
+                btn.disabled = true;
+                btn.textContent = 'Conectando con Wompi…';
+                // Red de seguridad: si en 3 s seguimos en esta página, algo falló.
+                if (rearmar) { clearTimeout(rearmar); }
+                rearmar = setTimeout(liberar, 3000);
+            }
+
+            form.addEventListener('submit', saliendo);
+
+            // Volver atrás desde Wompi (incluida la caché de página del navegador).
+            window.addEventListener('pageshow', liberar);
+            window.addEventListener('popstate', liberar);
+
+            // Primer envío automático; el usuario ya tiene el botón y los enlaces de escape.
+            var auto = setTimeout(function () {
+                saliendo();
                 form.submit();
             }, 400);
+
+            // Si toca el botón antes del auto-submit, no se envía dos veces.
+            if (btn) {
+                btn.addEventListener('click', function () { clearTimeout(auto); });
+            }
         })();
     </script>
 }

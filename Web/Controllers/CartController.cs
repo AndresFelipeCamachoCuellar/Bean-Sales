@@ -27,6 +27,7 @@ public class CartController : Controller
     private readonly PaymentApplicationService _paymentApplication;
     private readonly PendingOrderExpirationService _paymentExpiration;
     private readonly WompiOptions _wompiOptions;
+    private readonly ILogger<CartController> _logger;
 
     public CartController(
         ApplicationDbContext context,
@@ -37,7 +38,8 @@ public class CartController : Controller
         IPaymentGateway paymentGateway,
         PaymentApplicationService paymentApplication,
         PendingOrderExpirationService paymentExpiration,
-        IOptions<WompiOptions> wompiOptions)
+        IOptions<WompiOptions> wompiOptions,
+        ILogger<CartController> logger)
     {
         _context = context;
         _userManager = userManager;
@@ -48,6 +50,7 @@ public class CartController : Controller
         _paymentApplication = paymentApplication;
         _paymentExpiration = paymentExpiration;
         _wompiOptions = wompiOptions.Value;
+        _logger = logger;
     }
 
     public async Task<IActionResult> Index()
@@ -189,6 +192,8 @@ public class CartController : Controller
         ViewBag.FormLastName = user?.LastName ?? string.Empty;
         ViewBag.FormAddress = string.Empty;
         ViewBag.FormZip = string.Empty;
+        // Identity ya guarda el celular en AspNetUsers: si el cliente lo tiene, se prellena.
+        ViewBag.FormPhone = user?.PhoneNumber ?? string.Empty;
 
         // 4. Show Checkout View (Summary, Address, Payment placeholder)
         await PrepareCheckoutViewAsync(cartItems, null, null, domestic: true);
@@ -278,7 +283,7 @@ public class CartController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Checkout(string firstName, string lastName, string address,
-        string country, string state, string zip, string? paymentMethod,
+        string country, string state, string zip, string? phone, string? paymentMethod,
         string? cityDaneCode, string? cityName, CancellationToken ct)
     {
         // 1. Validate Auth (mismo criterio que el GET)
@@ -310,10 +315,24 @@ public class CartController : Controller
         ViewBag.FormLastName = lastName;
         ViewBag.FormAddress = address;
         ViewBag.FormZip = zip;
+        ViewBag.FormPhone = phone;
 
         // El cotizador nacional (DANE + transportadoras colombianas) solo aplica a Colombia.
         // Fuera del país se cobra la tarifa de configuración y no se pide ciudad.
         var domestic = IsDomesticDestination(country);
+
+        // 2b. Celular OBLIGATORIO. Wompi exige shipping-address:phone-number en cuanto se
+        //     manda el bloque de dirección, y la transportadora lo necesita para entregar.
+        //     Se normaliza con la MISMA regla que usa la pasarela: si ahí no pasa, aquí tampoco.
+        var normalizedPhone = PaymentContact.NormalizePhone(phone);
+        if (normalizedPhone is null)
+        {
+            TempData["CheckoutError"] = string.IsNullOrWhiteSpace(phone)
+                ? "Escribe un celular de contacto: la transportadora lo necesita para coordinar la entrega."
+                : "Ese celular no parece válido. Escríbelo con indicativo si es del exterior (ej. 3001234567).";
+            await PrepareCheckoutViewAsync(cartItems, cityDaneCode, state, domestic, ct);
+            return View(cartItems);
+        }
 
         // 3. Validar stock por ítem
         var sinStock = cartItems
@@ -371,6 +390,8 @@ public class CartController : Controller
                 Address = address,
                 State = state,
                 ZipCode = zip,
+                // Normalizado (solo dígitos): es lo que viaja a Wompi y a la transportadora.
+                CustomerPhone = normalizedPhone,
                 ShippingCountry = country,
                 // El método REAL lo elige el cliente dentro de Wompi y llega por el webhook.
                 PaymentMethod = cobrarConPasarela
@@ -451,12 +472,27 @@ public class CartController : Controller
                 ? RedirectToAction(nameof(Pay), new { id = order.OrderID })
                 : RedirectToAction(nameof(Confirmation), new { id = order.OrderID });
         }
-        catch
+        catch (Exception ex)
         {
             // Sin CancellationToken a propósito: si la petición se canceló, el rollback
             // y el re-render tienen que ocurrir igual.
             await transaction.RollbackAsync();
-            TempData["CheckoutError"] = "No se pudo procesar tu pedido. Inténtalo de nuevo.";
+
+            // El detalle REAL queda en el log (nivel Error, con la excepción completa):
+            // antes solo se veía el mensaje genérico en pantalla y no había forma de
+            // diagnosticar nada. Aquí no entra ningún secreto: solo datos del pedido.
+            _logger.LogError(ex,
+                "Falló la creación del pedido del usuario {UserId}. Destino: {City} ({Dane}), " +
+                "país {Country}, {ItemCount} ítem(s), envío {Shipping} ({Source}).",
+                user.Id, city?.Name ?? "n/d", city?.DaneCode ?? "n/d", country,
+                cartItems.Count, totals.Shipping, totals.Source);
+
+            TempData["CheckoutError"] = ex is DbUpdateException
+                ? "No pudimos guardar tu pedido (problema temporal con nuestra base de datos). " +
+                  "Tu carrito sigue intacto: vuelve a intentarlo en un momento."
+                : "No pudimos completar tu pedido. Ya registramos el detalle del error; " +
+                  "tu carrito sigue intacto, inténtalo de nuevo o escríbenos si vuelve a pasar.";
+
             await PrepareCheckoutViewAsync(cartItems, city?.DaneCode, state, domestic);
             return View(cartItems);
         }
@@ -511,7 +547,25 @@ public class CartController : Controller
         var redirectUrl = Url.Action(nameof(PaymentResult), "Cart",
             new { orderId = order.OrderID }, Request.Scheme) ?? string.Empty;
 
-        var checkout = _paymentGateway.BuildCheckout(order, redirectUrl, user.Email);
+        // Armar el formulario firmado no debería fallar, pero si falla (configuración
+        // incompleta, datos del pedido inconsistentes) el cliente NO puede quedarse en
+        // blanco: se registra el detalle y se lo manda al detalle del pedido, donde
+        // puede reintentar el pago o cancelar y liberar el stock.
+        PaymentCheckoutRequest checkout;
+        try
+        {
+            checkout = _paymentGateway.BuildCheckout(order, redirectUrl, user.Email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "No se pudo preparar el pago del pedido {OrderId} (intento {Attempt}, total {Total} {Currency}).",
+                order.OrderID, order.PaymentAttempt, order.TotalAmount, order.CurrencyCode);
+
+            TempData["PaymentError"] = "No pudimos iniciar el pago con la pasarela. " +
+                "Tu pedido quedó reservado: vuelve a intentar el pago desde aquí.";
+            return RedirectToAction(nameof(Confirmation), new { id = order.OrderID });
+        }
 
         return View("PayRedirect", checkout);
     }

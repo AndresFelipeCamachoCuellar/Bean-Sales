@@ -47,12 +47,45 @@ public sealed record PaymentCheckoutRequest(
     string? ExpirationTimeIso,
     string? CustomerEmail,
     string? CustomerFullName,
+    string? CustomerPhone,
+    string? CustomerPhonePrefix,
     string? ShippingAddressLine1,
     string? ShippingCity,
     string? ShippingRegion,
     string? ShippingCountry,
+    string? ShippingPhone,
+    string? ShippingName,
     Guid OrderID,
-    decimal AmountInPesos);
+    decimal AmountInPesos)
+{
+    /// <summary>
+    /// ¿Se puede enviar el bloque <c>shipping-address:*</c>?
+    ///
+    /// Wompi trata el bloque como TODO-O-NADA: si se envía alguno de sus subcampos
+    /// obligatorios (<c>address-line-1</c>, <c>city</c>, <c>region</c>, <c>country</c> y
+    /// <c>phone-number</c>) exige los cinco, y si falta uno rechaza la transacción con
+    /// "Parámetro «shipping-address:phone-number» no proveído".
+    ///
+    /// El bloque completo es OPCIONAL, así que ante cualquier dato faltante se omite
+    /// entero: es preferible perder el prellenado de la dirección en la pasarela a
+    /// bloquear el cobro.
+    /// </summary>
+    public bool CanSendShippingAddress =>
+        !string.IsNullOrWhiteSpace(ShippingAddressLine1)
+        && !string.IsNullOrWhiteSpace(ShippingCity)
+        && !string.IsNullOrWhiteSpace(ShippingRegion)
+        && !string.IsNullOrWhiteSpace(ShippingCountry)
+        && !string.IsNullOrWhiteSpace(ShippingPhone);
+
+    /// <summary>
+    /// ¿Se puede enviar el teléfono del pagador? La doc exige que
+    /// <c>customer-data:phone-number</c> viaje SIEMPRE acompañado de
+    /// <c>customer-data:phone-number-prefix</c>; sin el prefijo se omiten los dos.
+    /// </summary>
+    public bool CanSendCustomerPhone =>
+        !string.IsNullOrWhiteSpace(CustomerPhone)
+        && !string.IsNullOrWhiteSpace(CustomerPhonePrefix);
+}
 
 /// <summary>
 /// Foto del estado de una transacción, venga del webhook o de la consulta al API.
@@ -68,6 +101,45 @@ public sealed record PaymentSnapshot(
     string? Environment,
     string? Currency,
     string Source);
+
+/// <summary>
+/// Datos de contacto que exige cualquier pasarela/transportadora. Vive aquí (y no en la
+/// implementación de Wompi) para que el checkout valide el celular con la MISMA regla que
+/// se usará al cobrar, sin acoplarse a una pasarela concreta.
+/// </summary>
+public static class PaymentContact
+{
+    /// <summary>Indicativo país por defecto: Wompi solo cobra en COP y hoy solo se despacha Colombia.</summary>
+    public const string DefaultPhonePrefix = "+57";
+
+    /// <summary>
+    /// Deja el celular en solo dígitos (las pasarelas no aceptan espacios ni guiones) y le
+    /// quita el indicativo 57 si el cliente lo escribió, para no duplicarlo con el prefijo.
+    /// Devuelve <c>null</c> si no queda un número plausible: así el llamador puede rechazar
+    /// el formulario o, en el peor caso, omitir el bloque de datos incompleto.
+    /// </summary>
+    public static string? NormalizePhone(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+
+        var digits = new string(value.Where(char.IsAsciiDigit).ToArray());
+
+        // "+57 301 234 5678" / "0057 301..." -> "3012345678"
+        if (digits.Length == 12 && digits.StartsWith("57", StringComparison.Ordinal))
+        {
+            digits = digits.Substring(2);
+        }
+        else if (digits.Length == 14 && digits.StartsWith("0057", StringComparison.Ordinal))
+        {
+            digits = digits.Substring(4);
+        }
+
+        // Un fijo nacional tiene 7 dígitos; el tope evita mandar basura a la pasarela.
+        if (digits.Length < 7 || digits.Length > 15) return null;
+
+        return digits;
+    }
+}
 
 /// <summary>Conversión de importes. COP no tiene decimales: el monto va en centavos = pesos × 100.</summary>
 public static class PaymentAmounts

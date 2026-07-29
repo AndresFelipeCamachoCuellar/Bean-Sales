@@ -48,6 +48,7 @@
     string formApellido = ViewBag.FormLastName as string ?? string.Empty;
     string formDireccion = ViewBag.FormAddress as string ?? string.Empty;
     string formZip = ViewBag.FormZip as string ?? string.Empty;
+    string formCelular = ViewBag.FormPhone as string ?? string.Empty;
 }
 
 <section class="bean-checkout">
@@ -100,6 +101,18 @@
                             <div class="bean-field col-span-2">
                                 <label for="address" class="bean-label">Dirección</label>
                                 <input type="text" class="bean-input" id="address" name="address" value="@formDireccion" placeholder="Calle 123 #45-67" required>
+                            </div>
+                            @*
+                                Celular OBLIGATORIO: la transportadora lo necesita para
+                                coordinar la entrega y Wompi exige shipping-address:phone-number
+                                cuando se le envía la dirección de envío.
+                            *@
+                            <div class="bean-field">
+                                <label for="phone" class="bean-label">Celular</label>
+                                <input type="tel" class="bean-input" id="phone" name="phone" value="@formCelular"
+                                       placeholder="3001234567" inputmode="tel" autocomplete="tel"
+                                       minlength="7" maxlength="20" required>
+                                <span class="bean-field-hint" id="phoneHint">Para coordinar la entrega. Solo números.</span>
                             </div>
                             <div class="bean-field">
                                 <label for="country" class="bean-label">País</label>
@@ -423,6 +436,60 @@
             });
 
             syncCityName();
+        })();
+
+        // ---------------------------------------------------------------
+        // Celular: validación simple en el navegador (el formulario es novalidate,
+        // así que el `required` del input no basta). El servidor VUELVE a validarlo
+        // con la misma regla: esto solo evita un viaje de ida y vuelta.
+        // Se registra ANTES del anti doble clic para que su preventDefault se respete.
+        // ---------------------------------------------------------------
+        (function () {
+            var form = document.getElementById('beanCheckoutForm');
+            var input = document.getElementById('phone');
+            var hint = document.getElementById('phoneHint');
+            if (!form || !input) { return; }
+
+            var textoAyuda = hint ? hint.textContent : '';
+
+            function digitos(valor) {
+                return (valor || '').replace(/\D/g, '');
+            }
+
+            function marcarError(mensaje) {
+                input.classList.add('is-invalid');
+                if (hint) {
+                    hint.textContent = mensaje;
+                    hint.classList.add('is-invalid');
+                }
+            }
+
+            function limpiarError() {
+                input.classList.remove('is-invalid');
+                if (hint) {
+                    hint.textContent = textoAyuda;
+                    hint.classList.remove('is-invalid');
+                }
+            }
+
+            function esValido() {
+                var d = digitos(input.value);
+                return d.length >= 7 && d.length <= 15;
+            }
+
+            input.addEventListener('input', function () {
+                if (input.classList.contains('is-invalid') && esValido()) { limpiarError(); }
+            });
+
+            form.addEventListener('submit', function (e) {
+                if (esValido()) { limpiarError(); return; }
+
+                e.preventDefault();
+                marcarError(input.value.trim() === ''
+                    ? 'Escribe tu celular: la transportadora lo necesita para entregar.'
+                    : 'Ese celular no parece válido (mínimo 7 dígitos).');
+                input.focus();
+            });
         })();
 
         // ---------------------------------------------------------------
