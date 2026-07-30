@@ -41,7 +41,7 @@ jobs:
         # Salida ./publish = source-path por defecto de la action de deploy.
         run: dotnet publish Web/Web.csproj -c Release -o ./publish --runtime win-x86 --self-contained false --no-restore
 
-      - name: Inyectar secretos de producción (BD, envío y pagos)
+      - name: Inyectar secretos de producción (BD, envío, pagos e imágenes)
         # Sobrescribe SOLO la DefaultConnection y la configuración de envío dentro del
         # appsettings.json publicado, tomando los valores de los secrets (nunca se
         # commitean). Se modifica el base appsettings.json para que aplique sin
@@ -53,6 +53,9 @@ jobs:
         # La parte de PAGOS es igual de defensiva: si faltan las llaves de Wompi, la
         # sección queda vacía y el checkout confirma pedidos sin cobrar (comportamiento
         # anterior), en vez de romper el sitio.
+        #
+        # La parte de IMÁGENES (Cloudinary) también: sin las 3 credenciales el gestor de
+        # fotos queda en modo lectura y el catálogo usa el patrón de respaldo.
         shell: pwsh
         env:
           PROD_CS: ${{ secrets.MONSTERASP_CONNECTION_STRING }}
@@ -65,6 +68,9 @@ jobs:
           WOMPI_EVENTS_SECRET: ${{ secrets.WOMPI_EVENTS_SECRET }}
           WOMPI_ENVIRONMENT: ${{ secrets.WOMPI_ENVIRONMENT }}
           WOMPI_BASE_URL: ${{ secrets.WOMPI_BASE_URL }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
         run: |
           $path = "./publish/appsettings.json"
           $cfg = Get-Content $path -Raw | ConvertFrom-Json
@@ -128,6 +134,33 @@ jobs:
             }
           } else {
             Write-Host "appsettings.json sin sección Wompi: se omite la inyección de pagos."
+          }
+
+          # ---- Imágenes de producto (Cloudinary) ----
+          # CloudName y ApiKey NO son secretos (viajan al navegador por diseño), pero se
+          # manejan como secrets por comodidad operativa y para no volver a tener
+          # credenciales en el repo. ApiSecret SÍ es secreto: jamás se imprime.
+          if ($cfg.PSObject.Properties.Name -contains 'Cloudinary') {
+            if (-not [string]::IsNullOrWhiteSpace($env:CLOUDINARY_CLOUD_NAME)) {
+              $cfg.Cloudinary.CloudName = $env:CLOUDINARY_CLOUD_NAME
+              Write-Host "Cloudinary: cloud name inyectado."
+            }
+            if (-not [string]::IsNullOrWhiteSpace($env:CLOUDINARY_API_KEY)) {
+              $cfg.Cloudinary.ApiKey = $env:CLOUDINARY_API_KEY
+              Write-Host "Cloudinary: API key inyectada."
+            }
+            if (-not [string]::IsNullOrWhiteSpace($env:CLOUDINARY_API_SECRET)) {
+              $cfg.Cloudinary.ApiSecret = $env:CLOUDINARY_API_SECRET
+              Write-Host "Cloudinary: API secret inyectado."
+            }
+
+            if ([string]::IsNullOrWhiteSpace($env:CLOUDINARY_CLOUD_NAME) -or `
+                [string]::IsNullOrWhiteSpace($env:CLOUDINARY_API_KEY) -or `
+                [string]::IsNullOrWhiteSpace($env:CLOUDINARY_API_SECRET)) {
+              Write-Host "Cloudinary SIN credenciales completas: el gestor de fotos quedara deshabilitado (el sitio despliega igual)."
+            }
+          } else {
+            Write-Host "appsettings.json sin seccion Cloudinary: se omite la inyeccion de imagenes."
           }
 
           $cfg | ConvertTo-Json -Depth 20 | Set-Content $path -Encoding utf8

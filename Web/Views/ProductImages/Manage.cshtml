@@ -1,0 +1,79 @@
+@model Web.Models.ViewModels.ProductImageManagerViewModel
+@using Web.Models.Enums
+@{
+    ViewData["Title"] = "Fotos del lote";
+    Layout = "_Layout";
+
+    var product = ViewBag.Product as Web.Models.Product;
+    var backToApprovals = ViewBag.ReturnToApprovals is bool b && b;
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Fotos del lote</h1>
+        <p class="bean-panel-sub">
+            @Model.ProductName
+            @if (product is not null && product.Provider is not null)
+            {
+                <text> · @product.Provider.Name</text>
+            }
+        </p>
+    </div>
+    @if (backToApprovals)
+    {
+        <a asp-controller="ProductApproval" asp-action="Index" class="bean-btn-pill outline">
+            <i class="fas fa-arrow-left"></i> Volver a aprobaciones
+        </a>
+    }
+    else
+    {
+        <a asp-controller="Products" asp-action="Index" class="bean-btn-pill outline">
+            <i class="fas fa-arrow-left"></i> Volver a mis lotes
+        </a>
+    }
+</div>
+
+@if (product is not null)
+{
+    <div class="bean-panel-card">
+        <div class="bean-panel-datagrid">
+            <div class="k">Producto</div><div class="v">@product.Name</div>
+            <div class="k">Proveedor</div><div class="v">@(product.Provider?.Name ?? "—")</div>
+            <div class="k">Estado</div>
+            <div class="v">
+                @switch (product.ProductStatus)
+                {
+                    case ProductStatus.Draft:
+                        <span class="bean-status draft"><span class="dot"></span>Borrador</span>
+                        break;
+                    case ProductStatus.PendingApproval:
+                        <span class="bean-status pending"><span class="dot"></span>Pendiente aprobación</span>
+                        break;
+                    case ProductStatus.ApprovedToShip:
+                        <span class="bean-status ship"><span class="dot"></span>Esperando envío</span>
+                        break;
+                    case ProductStatus.Shipped:
+                        <span class="bean-status transit"><span class="dot"></span>Enviado / por recibir</span>
+                        break;
+                    case ProductStatus.Active:
+                        <span class="bean-status active"><span class="dot"></span>Activo · en venta</span>
+                        break;
+                    case ProductStatus.Rejected:
+                        <span class="bean-status rejected"><span class="dot"></span>Rechazado</span>
+                        break;
+                }
+            </div>
+            <div class="k">Origen</div>
+            <div class="v">@(string.IsNullOrWhiteSpace(product.Origin) ? "—" : product.Origin)</div>
+        </div>
+    </div>
+}
+
+<div class="bean-panel-card">
+    @* La partial va SUELTA (no dentro de un form): trae su propio token antiforgery. *@
+    <partial name="_ProductImageManager" model="Model" />
+</div>
+
+@section Scripts {
+    <script src="~/js/bean-media.js" asp-append-version="true"></script>
+}

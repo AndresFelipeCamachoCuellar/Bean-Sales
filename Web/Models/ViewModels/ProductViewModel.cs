@@ -89,4 +89,11 @@ public class ProductViewModel
     public List<Guid> SelectedCountryIds { get; set; } = new List<Guid>();
 
     public IEnumerable<SelectListItem>? AvailableCountries { get; set; }
+
+    /// <summary>
+    /// Galería de fotos del lote. Solo se llena en <c>Edit</c> (GET): en <c>Create</c> el
+    /// producto todavía no existe, así que no hay a qué colgar las fotos. Queda NULL en
+    /// el POST (no se renderiza dentro del form), y la vista lo trata como opcional.
+    /// </summary>
+    public ProductImageManagerViewModel? ImageManager { get; set; }
 }

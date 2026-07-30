@@ -9,6 +9,7 @@ using Web.Data;
 using Web.Models;
 using Web.Models.Enums;
 using Web.Models.ViewModels;
+using Web.Services.Media;
 
 namespace Web.Controllers;
 
@@ -17,11 +18,16 @@ public class ProductsController : Controller
 {
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ProductImageService _images;
 
-    public ProductsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+    public ProductsController(
+        ApplicationDbContext context,
+        UserManager<ApplicationUser> userManager,
+        ProductImageService images)
     {
         _context = context;
         _userManager = userManager;
+        _images = images;
     }
 
     [HasPermission(Modules.Products, Permissions.Read)]
@@ -67,7 +73,10 @@ public class ProductsController : Controller
                 Description = model.Description,
                 Price = model.Price,
                 Stock = model.Stock,
-                ImageUrl = model.ImageUrl, // TODO: Implement Image Upload
+                // Portada denormalizada. La escribe ProductImageService cuando se sube la
+                // primera foto; aquí solo se respeta lo que venga del formulario (una URL
+                // externa pegada a mano sigue siendo válida como respaldo).
+                ImageUrl = model.ImageUrl,
                 Origin = model.Origin,
                 Farm = model.Farm,
                 Altitude = model.Altitude,
@@ -102,7 +111,12 @@ public class ProductsController : Controller
 
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+
+            // Las fotos necesitan un producto que exista (el public_id se firma con su
+            // ProductID). Por eso, en vez de volver al listado, se lleva al proveedor
+            // directo a la pantalla donde SÍ puede subirlas.
+            TempData["Flash"] = "Borrador guardado. Ahora agrega las fotos del lote.";
+            return RedirectToAction(nameof(Edit), new { id = product.ProductID });
         }
 
         await LoadCountries(model);
@@ -155,6 +169,10 @@ public class ProductsController : Controller
             SelectedCountryIds = product.ProductCountries.Where(pc => pc.IsTargeted).Select(pc => pc.CountryID).ToList()
         };
 
+        // Gestor de fotos: el proveedor puede editarlas mientras el lote sea suyo y esté
+        // en Borrador o Rechazado (ya validado arriba). Después las gestiona Bean.
+        model.ImageManager = await _images.BuildManagerAsync(product, canEdit: true, role: ImageUploader.Provider);
+
         await LoadCountries(model);
         return View(model);
     }
@@ -178,6 +196,7 @@ public class ProductsController : Controller
             if (product.ProductStatus != ProductStatus.Draft && product.ProductStatus != ProductStatus.Rejected)
             {
                  ModelState.AddModelError("", "No se puede editar un producto que está en proceso de aprobación o ya aprobado.");
+                 model.ImageManager = await _images.BuildManagerAsync(product, canEdit: false, role: ImageUploader.Provider);
                  await LoadCountries(model);
                  return View(model);
             }
@@ -186,7 +205,17 @@ public class ProductsController : Controller
             product.Description = model.Description;
             product.Price = model.Price;
             product.Stock = model.Stock;
-            product.ImageUrl = model.ImageUrl;
+
+            // ⚠️ ImageUrl es la PORTADA denormalizada que mantiene ProductImageService.
+            // El formulario del producto no la expone, así que model.ImageUrl llega null:
+            // sobrescribirla borraría la portada recién sincronizada. Solo se toma del
+            // formulario cuando el lote NO tiene fotos en la galería (compatibilidad con
+            // las URLs externas que se pegaban a mano antes de este incremento).
+            if (await _images.CountAsync(product.ProductID) == 0)
+            {
+                product.ImageUrl = model.ImageUrl;
+            }
+
             product.Origin = model.Origin;
             product.Farm = model.Farm;
             product.Altitude = model.Altitude;
@@ -231,6 +260,19 @@ public class ProductsController : Controller
 
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
+        }
+
+        // ModelState inválido: se rearma el gestor de fotos para que el proveedor no
+        // pierda de vista lo que ya subió (las fotos NO viven en este formulario).
+        if (Guid.TryParse(model.ProductId, out var editingId))
+        {
+            var editing = await _context.Products
+                .FirstOrDefaultAsync(p => p.ProductID == editingId && p.ProviderID == currentUser.ProviderID);
+
+            if (editing is not null)
+            {
+                model.ImageManager = await _images.BuildManagerAsync(editing, canEdit: true, role: ImageUploader.Provider);
+            }
         }
 
         await LoadCountries(model);

@@ -39,6 +39,18 @@
     </div>
 </div>
 
+@*
+    Gestor de fotos ANTES del formulario de países (y fuera de él: no se anidan forms).
+    Este es el punto que pidió el PO: cuando el lote físico llega a bodega es cuando Bean
+    lo fotografía, y ahora se hace en la misma pantalla que lo activa.
+*@
+@if (ViewBag.ImageManager is Web.Models.ViewModels.ProductImageManagerViewModel imageManager)
+{
+    <div class="bean-panel-card">
+        <partial name="_ProductImageManager" model="imageManager" />
+    </div>
+}
+
 <form asp-action="Receive" method="post" class="bean-panel-card">
     <input type="hidden" name="id" value="@Model.ProductID" />
 
@@ -83,3 +95,7 @@
         <a asp-action="Index" class="bean-btn-receive manage">Cancelar</a>
     </div>
 </form>
+
+@section Scripts {
+    <script src="~/js/bean-media.js" asp-append-version="true"></script>
+}

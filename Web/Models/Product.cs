@@ -95,4 +95,12 @@ public class Product
 
     // Navigation
     public ICollection<ProductCountry> ProductCountries { get; set; } = new List<ProductCountry>();
+
+    /// <summary>
+    /// Galería de fotos del lote (Cloudinary). NO se debe cargar con Include en el
+    /// catálogo, el carrito ni los pedidos: esas vistas usan <see cref="ImageUrl"/>,
+    /// que es la portada denormalizada. Solo se incluye donde se muestra la galería
+    /// completa (Home/Details) o el gestor de fotos.
+    /// </summary>
+    public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
 }

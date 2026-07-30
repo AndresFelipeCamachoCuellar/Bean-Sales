@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Web.Data;
 using Web.Data.Seeds;
 using Web.Models;
+using Web.Services.Media;
 using Web.Services.Payments;
 using Web.Services.Shipping;
 
@@ -88,6 +89,39 @@ builder.Services.AddHttpClient<IPaymentGateway, WompiPaymentGateway>(client =>
 builder.Services.AddScoped<PaymentApplicationService>();
 builder.Services.AddScoped<PendingOrderExpirationService>();
 
+// ---------- Imágenes de producto (Cloudinary · subida directa firmada) ----------
+// El archivo NUNCA pasa por nuestro proceso: el navegador lo sube directo al CDN con un
+// ticket que firmamos aquí. Con 256 MB de RAM y app pool de 32 bits, bufferear multipart
+// era la peor decisión posible. Los secretos NO viven en appsettings.json commiteado.
+builder.Services.Configure<CloudinaryOptions>(builder.Configuration.GetSection("Cloudinary"));
+
+// La decisión se toma UNA vez, en el arranque (igual que el proveedor de envío): sin las
+// 3 credenciales se registra la implementación deshabilitada y el sitio funciona
+// exactamente como antes de este incremento.
+var cloudinaryEnabled = builder.Configuration.GetValue<bool?>("Cloudinary:Enabled") ?? true;
+var cloudinaryConfigured = cloudinaryEnabled
+    && CloudinaryOptions.HasValue(builder.Configuration["Cloudinary:CloudName"])
+    && CloudinaryOptions.HasValue(builder.Configuration["Cloudinary:ApiKey"])
+    && CloudinaryOptions.HasValue(builder.Configuration["Cloudinary:ApiSecret"]);
+
+if (cloudinaryConfigured)
+{
+    var cloudinaryDeleteTimeout = builder.Configuration.GetValue<int?>("Cloudinary:DeleteTimeoutSeconds") ?? 6;
+    if (cloudinaryDeleteTimeout <= 0) cloudinaryDeleteTimeout = 6;
+
+    // Typed client: solo se usa para borrar recursos (POST /image/destroy).
+    builder.Services.AddHttpClient<IProductImageStorage, CloudinaryImageStorage>(client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(cloudinaryDeleteTimeout + 5);
+    });
+}
+else
+{
+    builder.Services.AddScoped<IProductImageStorage, DisabledImageStorage>();
+}
+
+builder.Services.AddScoped<ProductImageService>();
+
 
 builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options => options.SignIn.RequireConfirmedAccount = false)
     .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -161,6 +195,34 @@ else if (!string.Equals(shippingProvider, "Fixed", StringComparison.OrdinalIgnor
                 "el prefijo {Prefijo}). Revisa Wompi:Environment y las llaves antes de cobrar.",
                 wompi.EventEnvironment, esperado);
         }
+    }
+}
+
+// ---------- Diagnóstico de la galería de fotos (una sola vez, al arrancar) ----------
+// NUNCA se registra el valor de una credencial: solo si está presente.
+{
+    var cloudinary = app.Services.GetRequiredService<IOptions<CloudinaryOptions>>().Value;
+
+    if (cloudinaryConfigured)
+    {
+        app.Logger.LogInformation(
+            "Imágenes de producto: Cloudinary '{CloudName}', carpeta '{Carpeta}', máx {Fotos} fotos de {MB} MB " +
+            "(mínimo {Min}px, formatos {Formatos}).",
+            cloudinary.CloudName, cloudinary.FolderOrDefault, cloudinary.MaxImagesOrDefault,
+            cloudinary.MaxFileSizeMb, cloudinary.MinDimensionOrDefault, cloudinary.AllowedFormatsCsv);
+    }
+    else if (!cloudinaryEnabled)
+    {
+        app.Logger.LogWarning(
+            "Galería de fotos DESACTIVADA (Cloudinary:Enabled = false): el gestor queda en modo lectura " +
+            "y el catálogo usa el patrón de respaldo.");
+    }
+    else
+    {
+        app.Logger.LogWarning(
+            "Imágenes de producto NO configuradas (faltan Cloudinary:CloudName / ApiKey / ApiSecret): el gestor " +
+            "de fotos queda en modo lectura y el catálogo usa el patrón de respaldo. Carga las credenciales en " +
+            "el host y reinicia la app.");
     }
 }
 

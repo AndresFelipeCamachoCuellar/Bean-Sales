@@ -14,6 +14,14 @@
     <a asp-action="Index" class="bean-btn-pill outline"><i class="fas fa-arrow-left"></i> Volver</a>
 </div>
 
+@if (TempData["Flash"] is string flash && !string.IsNullOrWhiteSpace(flash))
+{
+    <div class="bean-panel-note">
+        <i class="fas fa-check-circle"></i>
+        <div>@flash</div>
+    </div>
+}
+
 @if (Model.Status == Web.Models.Enums.ProductStatus.Rejected)
 {
     <div class="bean-panel-note danger">
@@ -180,6 +188,19 @@
     </form>
 </div>
 
+@*
+    Gestor de fotos: va FUERA del <form> de arriba a propósito (no se pueden anidar
+    formularios y, además, cada foto se sube y se registra al instante por AJAX, sin
+    depender de que se guarde el producto).
+*@
+@if (Model.ImageManager != null)
+{
+    <div class="bean-form-card">
+        <partial name="_ProductImageManager" model="Model.ImageManager" />
+    </div>
+}
+
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script src="~/js/bean-media.js" asp-append-version="true"></script>
 }
