@@ -33,6 +33,7 @@ public class ApplicationDbContext : IdentityDbContext<
     // Product Workflow
     public DbSet<Product> Products { get; set; }
     public DbSet<ProductCountry> ProductCountries { get; set; }
+    public DbSet<ProductImage> ProductImages { get; set; }
     public DbSet<ShoppingCartItem> ShoppingCartItems { get; set; }
 
     // Sales Cycle
@@ -84,6 +85,27 @@ public class ApplicationDbContext : IdentityDbContext<
             .HasOne(pc => pc.Country)
             .WithMany(c => c.ProductCountries) // Need to add this to Country.cs
             .HasForeignKey(pc => pc.CountryID);
+
+        // Galería de fotos: si algún día se borra DURO un producto, sus fotos se van con
+        // él. No introduce "multiple cascade paths" porque ProductImage no tiene otra FK.
+        // ⚠️ La cascada limpia la BD pero NO Cloudinary: para eso existe
+        // ProductImageService.DeleteAllForProductAsync, que hay que llamar explícitamente.
+        builder.Entity<ProductImage>()
+            .HasOne(i => i.Product)
+            .WithMany(p => p.Images)
+            .HasForeignKey(i => i.ProductID)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // La consulta de la galería es SIEMPRE "por producto, ordenado".
+        builder.Entity<ProductImage>()
+            .HasIndex(i => new { i.ProductID, i.SortOrder });
+
+        // El public_id identifica el recurso en Cloudinary: duplicarlo sería un doble
+        // registro (dos filas apuntando al mismo archivo). Siempre viene con valor,
+        // así que el índice no necesita filtro.
+        builder.Entity<ProductImage>()
+            .HasIndex(i => i.PublicId)
+            .IsUnique();
 
         // Sales Cycle Configurations
         // Order -> User (no borrar pedidos si se borra el usuario: histórico de ventas)

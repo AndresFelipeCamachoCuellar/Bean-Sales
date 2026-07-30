@@ -1,9 +1,17 @@
 @model Web.Models.Product
 @using Web.Models.Enums
+@using Web.Services.Media
 
 @{
     ViewData["Title"] = Model.Name;
     var co = new System.Globalization.CultureInfo("es-CO");
+
+    // Galería real (viene del Include filtrado de HomeController.Details). Si el lote no
+    // tiene fotos, todo degrada al patrón de granos exactamente como antes.
+    var gallery = ProductImageUrls.Gallery(Model.Images);
+    var coverImage = ProductImageUrls.Cover(gallery);
+    var mainUrl = ProductImageUrls.For(coverImage, ImageVariant.Main) ?? Model.ImageUrl;
+    var mainAlt = ProductImageUrls.AltFor(coverImage, Model.Name);
 
     Func<CoffeeProcess, string> procLabel = p => p switch
     {
@@ -38,22 +46,41 @@
         <div class="bean-detail-grid">
             <!-- ===== Media ===== -->
             <div class="bean-detail-media">
-                <div class="bean-detail-frame bean-img o1" style="@(string.IsNullOrEmpty(Model.ImageUrl) ? "" : $"background-image:url('{Model.ImageUrl}');background-size:cover;background-position:center;")">
+                <div id="beanMainFrame" class="bean-detail-frame bean-img o1" role="img" aria-label="@mainAlt"
+                     style="@(string.IsNullOrEmpty(mainUrl) ? "" : $"background-image:url('{mainUrl}');background-size:cover;background-position:center;")">
                     <span class="bean-badge bean-badge-stock badge-tl">● En stock · @Model.Stock bolsas</span>
                     @if (!string.IsNullOrWhiteSpace(Model.Lot))
                     {
                         <span class="bean-badge bean-badge-lot badge-tr">Lote #@Model.Lot</span>
                     }
-                    @if (string.IsNullOrEmpty(Model.ImageUrl))
+                    @if (string.IsNullOrEmpty(mainUrl))
                     {
                         <span class="foto-tag">[ foto del producto ]</span>
                     }
                 </div>
-                <div class="bean-thumbs">
-                    <div class="bean-thumb active bean-img o1"></div>
-                    <div class="bean-thumb bean-img o2"></div>
-                    <div class="bean-thumb bean-img o3"></div>
-                </div>
+
+                @* Miniaturas reales: solo tienen sentido si hay más de una foto. *@
+                @if (gallery.Count > 1)
+                {
+                    <div class="bean-thumbs">
+                        @foreach (var image in gallery)
+                        {
+                            var thumbUrl = ProductImageUrls.For(image, ImageVariant.Thumb);
+                            var largeUrl = ProductImageUrls.For(image, ImageVariant.Main);
+                            var isActive = coverImage != null && image.ProductImageID == coverImage.ProductImageID;
+                            var thumbAlt = ProductImageUrls.AltFor(image, Model.Name);
+                            // La URL grande viaja en un data-* (no dentro de un literal de JS
+                            // en línea): el atributo se codifica y no hay contexto de script
+                            // del que escapar.
+                            <button type="button"
+                                    class="bean-thumb bean-img o1 @(isActive ? "active" : "")"
+                                    title="@thumbAlt"
+                                    aria-label="@thumbAlt"
+                                    data-bean-full="@largeUrl"
+                                    style="@(string.IsNullOrEmpty(thumbUrl) ? "" : $"background-image:url('{thumbUrl}');background-size:cover;background-position:center;")"></button>
+                        }
+                    </div>
+                }
             </div>
 
             <!-- ===== Info ===== -->
@@ -132,6 +159,30 @@
 
 @section Scripts {
     <script>
+        // Galería: al hacer clic en una miniatura, su foto pasa a ser la principal.
+        // La URL se lee del data-* del botón (nunca se inyecta en el HTML como código).
+        (function () {
+            var thumbs = document.querySelectorAll('.bean-thumbs .bean-thumb');
+            var frame = document.getElementById('beanMainFrame');
+
+            Array.prototype.forEach.call(thumbs, function (thumb) {
+                thumb.addEventListener('click', function () {
+                    var url = thumb.getAttribute('data-bean-full');
+
+                    if (frame && url) {
+                        frame.style.backgroundImage = "url('" + url + "')";
+                        frame.style.backgroundSize = 'cover';
+                        frame.style.backgroundPosition = 'center';
+                        var tag = frame.querySelector('.foto-tag');
+                        if (tag) { tag.style.display = 'none'; }
+                    }
+
+                    Array.prototype.forEach.call(thumbs, function (t) { t.classList.remove('active'); });
+                    thumb.classList.add('active');
+                });
+            });
+        })();
+
         // Total vivo del botón (cantidad × precio unitario). Precio inyectado desde el modelo.
         var beanUnitPrice = @Model.Price.ToString("0", System.Globalization.CultureInfo.InvariantCulture);
         function beanStep(delta) {

@@ -181,7 +181,11 @@ namespace Web.Controllers
                 .Include(p => p.Provider)
                 .Include(p => p.ProductCountries)
                 .ThenInclude(pc => pc.Country)
-                .FirstOrDefaultAsync(p => p.ProductID == id && p.Status); // Ensure active? Status=true means not soft deleted. 
+                // Include FILTRADO: la galería solo se carga AQUÍ. El catálogo (Index),
+                // Origenes, el carrito y los pedidos usan Product.ImageUrl (la portada
+                // denormalizada) para no traer N imágenes por producto.
+                .Include(p => p.Images.Where(i => i.Status))
+                .FirstOrDefaultAsync(p => p.ProductID == id && p.Status); // Ensure active? Status=true means not soft deleted.
                 // Should we check ProductStatus.Active? Ideally yes, but maybe user wants to share link?
                 // Let's hide if not active for public.
             

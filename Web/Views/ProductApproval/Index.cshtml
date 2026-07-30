@@ -46,8 +46,13 @@
     {
         origin = (origin % 6) + 1;
         var group = GroupOf(item.ProductStatus);
+        // Portada real (Product.ImageUrl ya trae la transformación de catálogo).
+        var thumbStyle = string.IsNullOrEmpty(item.ImageUrl)
+            ? ""
+            : $"background-image:url('{item.ImageUrl}');background-size:cover;background-position:center;";
+        var photoCount = item.Images.Count(i => i.Status);
         <div class="bean-appr-card" data-group="@group">
-            <span class="bean-img bean-appr-thumb o@(origin)"></span>
+            <span class="bean-img bean-appr-thumb o@(origin)" style="@thumbStyle"></span>
 
             <div class="bean-appr-info">
                 <p class="bean-appr-name">@item.Name</p>
@@ -98,6 +103,13 @@
             </div>
 
             <div class="bean-appr-actions">
+                @* Las fotos son ortogonales a la máquina de estados: Bean puede gestionarlas
+                   en CUALQUIER estado del lote (requisito del PO). *@
+                <a asp-controller="ProductImages" asp-action="Manage" asp-route-id="@item.ProductID"
+                   class="bean-btn-receive manage" title="Gestionar fotos del lote">
+                    <i class="fas fa-camera"></i> Fotos · @photoCount
+                </a>
+
                 @if (item.ProductStatus == ProductStatus.PendingApproval)
                 {
                     <form asp-action="Approve" asp-route-id="@item.ProductID" method="post" class="d-inline" onsubmit="return confirm('¿Aprobar producto? El proveedor será notificado para enviar.');">

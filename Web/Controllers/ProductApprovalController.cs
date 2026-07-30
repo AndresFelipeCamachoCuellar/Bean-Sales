@@ -7,6 +7,7 @@ using Web.Constants;
 using Web.Data;
 using Web.Models;
 using Web.Models.Enums;
+using Web.Services.Media;
 
 namespace Web.Controllers;
 
@@ -15,11 +16,16 @@ public class ProductApprovalController : Controller
 {
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ProductImageService _images;
 
-    public ProductApprovalController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+    public ProductApprovalController(
+        ApplicationDbContext context,
+        UserManager<ApplicationUser> userManager,
+        ProductImageService images)
     {
         _context = context;
         _userManager = userManager;
+        _images = images;
     }
 
     [HasPermission(Modules.ProductApprovals, Permissions.Read)]
@@ -38,6 +44,9 @@ public class ProductApprovalController : Controller
             .Include(p => p.Provider)
             .Include(p => p.ProductCountries)
             .ThenInclude(pc => pc.Country)
+            // Include FILTRADO: solo para mostrar el contador "Fotos · N" de cada fila.
+            // La miniatura sale de Product.ImageUrl (portada denormalizada), no de aquí.
+            .Include(p => p.Images.Where(i => i.Status))
             .Where(p => statusesOfInterest.Contains(p.ProductStatus) && p.Status)
             .OrderBy(p => p.ProductStatus)
             .ThenByDescending(p => p.CreatedOn)
@@ -99,6 +108,7 @@ public class ProductApprovalController : Controller
     public async Task<IActionResult> Receive(Guid id)
     {
         var product = await _context.Products
+            .Include(p => p.Provider)
             .Include(p => p.ProductCountries)
             .ThenInclude(pc => pc.Country)
             .FirstOrDefaultAsync(p => p.ProductID == id);
@@ -110,6 +120,11 @@ public class ProductApprovalController : Controller
         {
             return RedirectToAction(nameof(Index));
         }
+
+        // El momento en que el lote FÍSICO llega a bodega es el momento en que Bean lo
+        // fotografía: por eso el gestor de fotos vive también en esta pantalla, la misma
+        // que activa el producto. El staff siempre puede editar (ProductApprovals/Update).
+        ViewBag.ImageManager = await _images.BuildManagerAsync(product, canEdit: true, role: ImageUploader.Admin);
 
         return View(product);
     }

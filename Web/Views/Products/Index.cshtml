@@ -87,8 +87,13 @@ else
         {
             origin = (origin % 6) + 1;
             var stockClass = item.Stock <= 5 ? "stock-low" : "stock-ok";
+            // Portada real (Product.ImageUrl ya viene con la transformación de catálogo);
+            // si el lote no tiene fotos, se conserva el patrón de granos de respaldo.
+            var thumbStyle = string.IsNullOrEmpty(item.ImageUrl)
+                ? ""
+                : $"background-image:url('{item.ImageUrl}');background-size:cover;background-position:center;";
             <div class="bean-prov-lot">
-                <span class="bean-img bean-prov-lot-thumb o@(origin)"></span>
+                <span class="bean-img bean-prov-lot-thumb o@(origin)" style="@thumbStyle"></span>
 
                 <div class="bean-prov-lot-info">
                     <div class="nm">@item.Name</div>

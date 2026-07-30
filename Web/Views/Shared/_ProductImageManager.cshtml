@@ -1,0 +1,116 @@
+@model Web.Models.ViewModels.ProductImageManagerViewModel
+@*
+    Gestor de fotos del lote. Partial COMPARTIDA por:
+      · Views/Products/Edit.cshtml          (proveedor, lote en Borrador/Rechazado)
+      · Views/ProductImages/Manage.cshtml   (staff de Bean, cualquier lote)
+      · Views/ProductApproval/Receive.cshtml(staff, al recibir el lote en bodega)
+
+    ⚠️ Debe renderizarse FUERA de cualquier <form>: contiene su propio token
+       antiforgery y no debe anidarse en el formulario del producto.
+
+    ⚠️ La vista anfitriona debe cargar el script:
+           <script src="~/js/bean-media.js" asp-append-version="true"></script>
+       dentro de su @@section Scripts.
+
+    NO viaja aquí ningún secreto: el api_key de Cloudinary se entrega solo dentro
+    del ticket firmado, y solo después de autorizar al usuario sobre este producto.
+*@
+@{
+    var jsonOptions = new System.Text.Json.JsonSerializerOptions
+    {
+        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+    };
+    var imagesJson = System.Text.Json.JsonSerializer.Serialize(Model.Images, jsonOptions);
+    var maxMb = Model.MaxFileSizeMb.ToString("0.#", new System.Globalization.CultureInfo("es-CO"));
+}
+
+<div class="bean-media"
+     data-bean-media
+     data-product-id="@Model.ProductID"
+     data-max-images="@Model.MaxImages"
+     data-max-bytes="@Model.MaxFileSizeBytes"
+     data-min-dimension="@Model.MinDimensionPx"
+     data-formats="@string.Join(",", Model.AllowedFormats)"
+     data-formats-label="@Model.FormatsLabel"
+     data-images="@imagesJson"
+     data-ticket-url="@Url.Action("Ticket", "ProductImages")"
+     data-register-url="@Url.Action("Register", "ProductImages")"
+     data-delete-url="@Url.Action("Delete", "ProductImages")"
+     data-cover-url="@Url.Action("Cover", "ProductImages")"
+     data-reorder-url="@Url.Action("Reorder", "ProductImages")"
+     data-alt-url="@Url.Action("Alt", "ProductImages")">
+
+    @Html.AntiForgeryToken()
+
+    <div class="bean-media-head">
+        <div>
+            <h3 class="bean-media-title">Fotos del lote</h3>
+            <p class="bean-media-sub">
+                La primera foto (o la que marques como portada) es la que se ve en el catálogo,
+                el carrito y los pedidos.
+            </p>
+        </div>
+        <span class="bean-media-count" data-bean-media-count>@Model.Count de @Model.MaxImages</span>
+    </div>
+
+    <div class="bean-media-alert" data-bean-media-error style="display:none;"></div>
+
+    @if (!Model.StorageEnabled)
+    {
+        <div class="bean-panel-note">
+            <i class="fas fa-camera"></i>
+            <div>
+                <strong>La galería de fotos aún no está configurada.</strong><br />
+                Falta cargar las credenciales de Cloudinary en el servidor. Mientras tanto el catálogo
+                usa el patrón de respaldo y el resto del formulario funciona con normalidad.
+            </div>
+        </div>
+    }
+    else if (!Model.CanEdit)
+    {
+        <div class="bean-panel-note">
+            <i class="fas fa-lock"></i>
+            <div>
+                Este lote ya salió de tu bandeja: a partir de ahora las fotos las gestiona el equipo de Bean.
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="bean-media-drop @(Model.MaxImagesReached ? "is-full" : "")" data-bean-media-drop>
+            <input type="file"
+                   class="bean-media-input"
+                   accept="@Model.AcceptAttribute"
+                   multiple
+                   data-bean-media-input />
+            <span class="bean-media-drop-ico"><i class="fas fa-cloud-upload-alt"></i></span>
+            <span class="bean-media-drop-main" data-bean-media-pickhint
+                  style="@(Model.MaxImagesReached ? "display:none;" : "")">
+                Arrastra tus fotos aquí o haz clic para elegir
+            </span>
+            <span class="bean-media-drop-main" data-bean-media-fullhint
+                  style="@(Model.MaxImagesReached ? "" : "display:none;")">
+                Llegaste al máximo de @Model.MaxImages fotos. Elimina una para subir otra.
+            </span>
+            <span class="bean-media-drop-hint">
+                @Model.FormatsLabel · máx @maxMb MB
+                @if (Model.MinDimensionPx > 0)
+                {
+                    @* Paréntesis explícitos: el "×" pegado a una expresión implícita es
+                       terreno resbaladizo en Razor. *@
+                    <text>· mínimo @(Model.MinDimensionPx)×@(Model.MinDimensionPx) px</text>
+                }
+            </span>
+        </div>
+    }
+
+    <div class="bean-media-grid" data-bean-media-grid></div>
+
+    <div class="bean-media-empty" data-bean-media-empty style="@(Model.Count == 0 ? "" : "display:none;")">
+        <span class="bean-img bean-media-empty-ph o1"></span>
+        <div>
+            <strong>Aún no hay fotos de este lote.</strong><br />
+            Sin fotos, el catálogo muestra el patrón de granos de respaldo.
+        </div>
+    </div>
+</div>

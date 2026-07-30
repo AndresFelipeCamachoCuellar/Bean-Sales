@@ -159,6 +159,23 @@
     </form>
 </div>
 
+@*
+    Las fotos necesitan un lote que ya exista (el identificador del recurso en la nube se
+    firma con el ProductID). Por eso aquí solo va el aviso: al guardar el borrador se
+    redirige a la pantalla de edición, que sí lleva el gestor de fotos.
+*@
+<div class="bean-form-card">
+    <h2 class="bean-form-section-title">Fotos del lote</h2>
+    <div class="bean-panel-note">
+        <i class="fas fa-camera"></i>
+        <div>
+            <strong>Guarda el borrador y te llevamos a la pantalla de fotos.</strong><br />
+            Ahí podrás subir hasta 6 fotos, elegir la portada y ordenarlas. Sin fotos, tu lote se
+            muestra en el catálogo con un patrón de respaldo.
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }

@@ -2063,3 +2063,137 @@ select.bean-auth-input { appearance: none; -webkit-appearance: none;
     .bean-pay-pending-actions { margin-left: 0; width: 100%; }
     .bean-pay-actions { flex-direction: column; align-items: stretch; }
 }
+
+/* =====================================================================
+   25. GALERÍA DE FOTOS DE PRODUCTO (Cloudinary)
+   Gestor reutilizable (_ProductImageManager) + ajustes de las miniaturas
+   del detalle. Sección puramente ADITIVA: no redefine nada anterior.
+   ===================================================================== */
+
+/* ---- Contenedor ---- */
+.bean-media { display: block; }
+.bean-media.is-busy { opacity: .75; pointer-events: none; }
+
+.bean-media-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.bean-media-title {
+    font-family: var(--font-head); font-weight: 700; font-size: 19px;
+    color: var(--bean-ink); margin: 0 0 4px;
+}
+.bean-media-sub { font-size: 13px; color: var(--bean-muted); margin: 0; max-width: 60ch; }
+.bean-media-count {
+    flex: none; background: var(--bean-cream); color: var(--bean-muted);
+    border: 1px solid var(--bean-border); border-radius: var(--r-pill);
+    padding: 5px 14px; font-size: 12.5px; font-weight: 600; white-space: nowrap;
+}
+
+/* ---- Franja de error (mensajes concretos, en español) ---- */
+.bean-media-alert {
+    background: #F9E9E9; border: 1px solid var(--bean-error-border, #E4C6C6);
+    color: var(--bean-error-2, #8C3A3A); border-radius: 12px;
+    padding: 11px 14px; font-size: 13.5px; margin-bottom: 14px;
+}
+
+/* ---- Dropzone ---- */
+.bean-media-drop {
+    position: relative; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 6px; text-align: center; cursor: pointer;
+    border: 2px dashed var(--bean-border); border-radius: 16px;
+    padding: 26px 18px; background: #fff; transition: border-color .18s ease, background .18s ease;
+}
+.bean-media-drop:hover, .bean-media-drop.is-dragover {
+    border-color: var(--bean-terra); background: rgba(217, 138, 95, .06);
+}
+.bean-media-drop.is-full { cursor: not-allowed; border-style: solid; background: var(--bean-cream); }
+.bean-media-drop-ico { font-size: 24px; color: var(--bean-terra); }
+.bean-media-drop-main { font-size: 14.5px; font-weight: 600; color: var(--bean-ink); }
+.bean-media-drop-hint { font-size: 12.5px; color: var(--bean-muted); }
+/* El input real se oculta: el clic lo dispara el dropzone. */
+.bean-media-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+/* ---- Grid de tarjetas ---- */
+.bean-media-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 14px; margin-top: 16px;
+}
+.bean-media-grid:empty { margin-top: 0; }
+
+.bean-media-item {
+    position: relative; aspect-ratio: 1/1; border-radius: 14px; overflow: hidden;
+    background-color: var(--origin-1); background-size: cover; background-position: center;
+    border: 2px solid transparent; box-shadow: 0 6px 16px rgba(42, 32, 25, .08);
+}
+.bean-media-item.is-cover { border-color: var(--bean-terra); }
+
+.bean-media-cover-badge {
+    position: absolute; top: 8px; left: 8px; z-index: 2;
+    background: linear-gradient(135deg, #d98a5f, #B4552E); color: #fff;
+    border-radius: var(--r-pill); padding: 3px 11px; font-size: 11px; font-weight: 700;
+}
+
+/* Acciones: visibles al hover en escritorio, siempre en táctil. */
+.bean-media-actions {
+    position: absolute; top: 8px; right: 8px; z-index: 2;
+    display: flex; gap: 6px; opacity: 0; transition: opacity .18s ease;
+}
+.bean-media-item:hover .bean-media-actions, .bean-media-item:focus-within .bean-media-actions { opacity: 1; }
+
+.bean-media-act {
+    width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;
+    border: none; border-radius: 50%; cursor: pointer; font-size: 13px; line-height: 1;
+    background: rgba(255, 255, 255, .94); color: var(--bean-ink);
+    box-shadow: 0 2px 8px rgba(42, 32, 25, .22);
+}
+.bean-media-act:hover { background: #fff; transform: scale(1.08); }
+.bean-media-act:disabled { opacity: .35; cursor: default; transform: none; }
+.bean-media-act.danger { color: var(--bean-error-2, #8C3A3A); }
+
+/* Pie: texto alternativo + metadatos */
+.bean-media-foot {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+    display: flex; flex-direction: column; gap: 3px;
+    padding: 8px; background: linear-gradient(to top, rgba(29, 21, 16, .88), rgba(29, 21, 16, 0));
+}
+.bean-media-alt {
+    width: 100%; border: 1px solid rgba(255, 255, 255, .35); border-radius: 8px;
+    background: rgba(255, 255, 255, .92); color: var(--bean-ink);
+    font-family: var(--font-body); font-size: 11.5px; padding: 4px 7px;
+}
+.bean-media-alt:focus { outline: 2px solid var(--bean-terra); outline-offset: 1px; }
+.bean-media-meta { font-size: 10.5px; color: rgba(255, 255, 255, .82); }
+
+/* Tarjeta fantasma mientras sube, con progreso real */
+.bean-media-item.is-uploading {
+    opacity: .6; display: flex; align-items: flex-end;
+    background-color: var(--bean-cream);
+}
+.bean-media-progress {
+    display: block; width: 100%; height: 6px; margin: 10px;
+    border-radius: var(--r-pill); background: rgba(42, 32, 25, .14); overflow: hidden;
+}
+.bean-media-progress i {
+    display: block; width: 0; height: 100%;
+    background: linear-gradient(135deg, #d98a5f, #B4552E); transition: width .18s ease;
+}
+
+/* ---- Estado vacío ---- */
+.bean-media-empty {
+    display: flex; align-items: center; gap: 14px; margin-top: 16px;
+    font-size: 13.5px; color: var(--bean-muted);
+}
+.bean-media-empty-ph { flex: none; width: 72px; height: 72px; border-radius: 14px; display: block; }
+
+/* ---- Miniaturas del detalle: la galería real usa <button> ---- */
+.bean-thumbs .bean-thumb {
+    padding: 0; background-color: var(--origin-1); cursor: pointer;
+    -webkit-appearance: none; appearance: none;
+}
+.bean-thumbs .bean-thumb:focus-visible { outline: 2px solid var(--bean-terra); outline-offset: 2px; }
+
+@media (max-width: 700px) {
+    /* En táctil no hay hover: los controles se muestran siempre. */
+    .bean-media-actions { opacity: 1; }
+    .bean-media-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+}
