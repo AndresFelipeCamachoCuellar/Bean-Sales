@@ -258,6 +258,8 @@ public class CartController : Controller
             message = totals.Message,
             canCheckout = !blocked,
             carrier = totals.CarrierName,
+            // URL absoluta https ya validada en el servicio; hoy ninguna vista la pinta.
+            carrierLogoUrl = totals.CarrierLogoUrl,
             days = totals.EstimatedDays,
             city = city.Name,
             subtotal = totals.Subtotal,
@@ -745,7 +747,9 @@ public class CartController : Controller
         int? EstimatedDays,
         string Source,
         ShippingQuoteStatus Status,
-        string? Message);
+        string? Message,
+        // Logo de la transportadora, si el cotizador lo expone (la tarifa fija no).
+        string? CarrierLogoUrl = null);
 
     /// <summary>Importe con el formato del storefront ("18.040"), sin el signo.</summary>
     private static string Money(decimal value) => value.ToString("#,##0", CoCulture);
@@ -860,7 +864,8 @@ public class CartController : Controller
             cheapest?.EstimatedDays,
             quote.Source,
             quote.Status,
-            quote.Message);
+            quote.Message,
+            cheapest?.LogoUrl);
     }
 
     /// <summary>
@@ -883,6 +888,7 @@ public class CartController : Controller
         ViewBag.ShippingStatus = totals.Status.ToString();
         ViewBag.ShippingMessage = totals.Message;
         ViewBag.ShippingCarrier = totals.CarrierName;
+        ViewBag.ShippingCarrierLogo = totals.CarrierLogoUrl;
         ViewBag.ShippingDays = totals.EstimatedDays;
 
         return totals;

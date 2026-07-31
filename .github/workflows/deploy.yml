@@ -59,6 +59,7 @@ jobs:
         shell: pwsh
         env:
           PROD_CS: ${{ secrets.MONSTERASP_CONNECTION_STRING }}
+          MIPAQUETE_CUSTOMER_KEY: ${{ secrets.MIPAQUETE_CUSTOMER_KEY }}
           MIPAQUETE_API_KEY: ${{ secrets.MIPAQUETE_API_KEY }}
           SHIPPING_ORIGIN_DANE: ${{ secrets.SHIPPING_ORIGIN_DANE }}
           SHIPPING_ORIGIN_CITY: ${{ secrets.SHIPPING_ORIGIN_CITY }}
@@ -78,12 +79,25 @@ jobs:
           Write-Host "Connection string de producción inyectada en appsettings.json."
 
           if ($cfg.PSObject.Properties.Name -contains 'Shipping') {
-            if ((-not [string]::IsNullOrWhiteSpace($env:MIPAQUETE_API_KEY)) -and ($cfg.Shipping.PSObject.Properties.Name -contains 'Mipaquete')) {
-              $cfg.Shipping.Mipaquete.ApiKey = $env:MIPAQUETE_API_KEY
-              $cfg.Shipping.Provider = 'Mipaquete'
-              Write-Host "API key de Mipaquete inyectada. Shipping:Provider = Mipaquete."
+            # La credencial que exige /routes/quoteShipping es la CUSTOMER KEY (UUID del
+            # comercio, header "customer-key"), NO el JWT. Por eso el proveedor dinámico
+            # se activa con MIPAQUETE_CUSTOMER_KEY; la API key se inyecta si existe, pero
+            # ya no manda (queda para los endpoints de guía/tracking de v1.1).
+            if ($cfg.Shipping.PSObject.Properties.Name -contains 'Mipaquete') {
+              if (-not [string]::IsNullOrWhiteSpace($env:MIPAQUETE_CUSTOMER_KEY)) {
+                $cfg.Shipping.Mipaquete.CustomerKey = $env:MIPAQUETE_CUSTOMER_KEY
+                $cfg.Shipping.Provider = 'Mipaquete'
+                Write-Host "Customer key de Mipaquete inyectada. Shipping:Provider = Mipaquete."
+              } else {
+                Write-Host "Sin MIPAQUETE_CUSTOMER_KEY: se conserva Shipping:Provider = Fixed."
+              }
+
+              if (-not [string]::IsNullOrWhiteSpace($env:MIPAQUETE_API_KEY)) {
+                $cfg.Shipping.Mipaquete.ApiKey = $env:MIPAQUETE_API_KEY
+                Write-Host "API key de Mipaquete inyectada (no se usa al cotizar)."
+              }
             } else {
-              Write-Host "Sin MIPAQUETE_API_KEY: se conserva Shipping:Provider = Fixed."
+              Write-Host "appsettings.json sin seccion Shipping:Mipaquete: se omite la inyeccion de credenciales de envio."
             }
 
             if ($cfg.Shipping.PSObject.Properties.Name -contains 'Origin') {

@@ -8,39 +8,47 @@ using Microsoft.Extensions.Options;
 namespace Web.Services.Shipping;
 
 /// <summary>
-/// Cotizador real contra la API v2 de mipaquete.com.
+/// Cotizador real contra la API de mipaquete.com.
 ///
 /// Reglas no negociables (ADR-014 §3.4):
 ///  · NUNCA lanza por fallo de la API: cualquier error de red/HTTP degrada a la
 ///    tarifa fija (<see cref="ShippingQuoteStatus.Fallback"/>) y la venta continúa.
 ///  · Solo "sin cobertura" bloquea (<see cref="ShippingQuoteStatus.NoCoverage"/>):
 ///    ahí el problema no es cotizar, es que físicamente no se puede entregar.
-///  · La API key jamás se escribe en logs.
+///  · Las credenciales jamás se escriben en logs.
 ///
 /// ─────────────────────────────────────────────────────────────────────────────
-/// CONTRATO CONFIRMADO contra la documentación oficial de mipaquete API v2
+/// CONTRATO REAL, VALIDADO EN VIVO (jul-2026) — no es el de la doc pública
 /// ─────────────────────────────────────────────────────────────────────────────
-/// Autenticación: DOS headers de texto plano, "apikey" (el JWT de la cuenta) y
-/// "session-tracker" (un GUID). Ver <see cref="SessionTracker"/>.
+/// La documentación pública describe el entorno DEV (api-v2.dev.mpr.mipaquete.com)
+/// con el header "apikey"; ese esquema NO funciona contra producción. El contrato
+/// de abajo se obtuvo inspeccionando el tráfico del panel de mipaquete y se probó
+/// con éxito (devolvió 4 transportadoras).
 ///
-/// POST {BaseUrl}/quoteShipping
+/// Autenticación: DOS headers de texto plano,
+///   customer-key:    UUID del comercio  (Shipping:Mipaquete:CustomerKey)
+///   session-tracker: un GUID            (ver <see cref="SessionTracker"/>)
+/// ⚠️ NO se envía el header "apikey" en este endpoint.
+///
+/// POST {BaseUrl}/routes/quoteShipping
 ///   {
-///     "originLocationCode": "05001000",   // DANE(5) + sufijo de zona(3)
+///     "originCountryCode": "170",         // 170 = Colombia
+///     "originLocationCode": "76001000",   // DANE(5) + sufijo de zona(3)
+///     "destinyCountryCode": "170",
 ///     "destinyLocationCode": "11001000",  // ⚠️ "destiny", no "destination"
-///     "height": 14, "width": 25, "length": 35,   // cm, ENTEROS
+///     "height": 10, "width": 10, "length": 10,   // cm, ENTEROS
 ///     "weight": 3,                                // kg, ENTERO
 ///     "quantity": 1,
-///     "declaredValue": 200000
+///     "declaredValue": 10000,
+///     "saleValue": 0                      // 0 = sin pago contraentrega
 ///   }
 ///   · "length" es el nombre aquí; en createSending el mismo dato se llama "large".
-///   · "saleValue" solo aplica a pago contraentrega ⇒ NO se envía (ver el DTO).
-///   · "originCountryCode"/"destinyCountryCode" ("484") son opcionales en envíos
-///     nacionales ⇒ NO se envían (todo el MVP es Colombia→Colombia).
 ///
 /// 200 OK ⇒ ARRAY de opciones:
-///   [{ "id", "deliveryCompanyName": "COORDINADORA", "shippingCost": 22200,
+///   [{ "id", "deliveryCompanyName": "SERVIENTREGA", "shippingCost": 20650,
 ///      "shippingTime": 2880,           // ⚠️ MINUTOS (2880 = 2 días)
-///      "deliveryCompanyId": "5cb0...", "score": 4, ... }]
+///      "deliveryCompanyId": "5cb0...", "deliveryCompanyImgUrl": "https://...",
+///      "score": 4, "routeType": "nacional", "type": "messaging", ... }]
 ///   · Array VACÍO ⇒ no hay transportadora para esa ruta ⇒ NoCoverage.
 ///
 /// Entorno de pruebas: apuntar Shipping:Mipaquete:BaseUrl a
@@ -128,10 +136,12 @@ public sealed class MipaqueteShippingQuoteService : IShippingQuoteService
             return BuildFallback();
         }
 
-        if (string.IsNullOrWhiteSpace(mipaquete.ApiKey))
+        // La credencial del endpoint de cotización es customer-key (NO la ApiKey/JWT):
+        // sin ella la llamada sería un 401 seguro, así que ni se intenta.
+        if (string.IsNullOrWhiteSpace(mipaquete.CustomerKey))
         {
-            _logger.LogError(
-                "Shipping:Mipaquete:ApiKey no está configurada (Provider = Mipaquete). " +
+            _logger.LogWarning(
+                "Shipping:Mipaquete:CustomerKey no está configurada (Provider = Mipaquete). " +
                 "Se aplica la tarifa de respaldo hasta que se cargue la credencial en el host.");
             return BuildFallback();
         }
@@ -155,14 +165,18 @@ public sealed class MipaqueteShippingQuoteService : IShippingQuoteService
         // request armado a mano y de que la API rechace un 0.
         var payload = new MipaqueteQuoteRequestDto
         {
+            OriginCountryCode = CountryCodeOrDefault(mipaquete.OriginCountryCode),
             OriginLocationCode = origin,
+            DestinyCountryCode = CountryCodeOrDefault(mipaquete.DestinyCountryCode),
             DestinyLocationCode = destination,
             Weight = ToPositiveInt(request.WeightKg),
             Length = ToPositiveInt(request.LengthCm),
             Width = ToPositiveInt(request.WidthCm),
             Height = ToPositiveInt(request.HeightCm),
             Quantity = 1,
-            DeclaredValue = ToNonNegativeLong(request.DeclaredValue)
+            DeclaredValue = ToNonNegativeLong(request.DeclaredValue),
+            // 0 = sin pago contraentrega. El campo queda cableado para cuando se habilite.
+            SaleValue = 0L
         };
 
         // ---------- 4. Caché ----------
@@ -231,9 +245,10 @@ public sealed class MipaqueteShippingQuoteService : IShippingQuoteService
             timeoutCts.CancelAfter(TimeSpan.FromSeconds(TimeoutSeconds));
 
             using var message = new HttpRequestMessage(HttpMethod.Post, BuildQuoteUrl());
-            // Autenticación: dos headers de texto plano (confirmado en la doc oficial).
+            // Autenticación: dos headers de texto plano (contrato REAL, validado en vivo).
+            // ⚠️ Aquí NO va el header "apikey": el endpoint de cotización usa "customer-key".
             // TryAddWithoutValidation evita que un valor con caracteres raros tire una excepción.
-            message.Headers.TryAddWithoutValidation("apikey", _options.Mipaquete.ApiKey);
+            message.Headers.TryAddWithoutValidation("customer-key", _options.Mipaquete.CustomerKey.Trim());
             message.Headers.TryAddWithoutValidation("session-tracker", SessionTracker);
             message.Headers.Accept.ParseAdd("application/json");
             message.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
@@ -294,8 +309,9 @@ public sealed class MipaqueteShippingQuoteService : IShippingQuoteService
             {
                 // Falla de configuración, no del cliente. Nivel Error para que se vea en el host.
                 _logger.LogError(
-                    "mipaquete rechazó las credenciales (HTTP {StatusCode}). Verifica la API key y que el " +
-                    "perfil de la cuenta esté completo; sin eso la integración no responde.",
+                    "mipaquete rechazó las credenciales (HTTP {StatusCode}). Verifica Shipping:Mipaquete:CustomerKey " +
+                    "(el UUID del comercio, NO el JWT) y que el perfil de la cuenta esté completo; sin eso la " +
+                    "integración no responde.",
                     statusCode);
                 return BuildFallback();
             }
@@ -446,6 +462,13 @@ public sealed class MipaqueteShippingQuoteService : IShippingQuoteService
         return rounded > int.MaxValue ? int.MaxValue : (int)rounded;
     }
 
+    /// <summary>
+    /// Código de país del payload. Si la configuración viene vacía se usa Colombia ("170"):
+    /// mandar una cadena vacía haría que la API rechace la cotización.
+    /// </summary>
+    internal static string CountryCodeOrDefault(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? MipaqueteOptions.ColombiaCountryCode : value.Trim();
+
     /// <summary>Valor declarado en COP, entero y nunca negativo.</summary>
     internal static long ToNonNegativeLong(decimal value)
     {
@@ -518,7 +541,8 @@ public sealed class MipaqueteShippingQuoteService : IShippingQuoteService
             Price = RoundUpToStep(price.Value),
             EstimatedDays = ToBusinessDays(dto.ShippingTime),
             Rating = NormalizeScore(dto.Score),
-            CarrierExternalId = externalId
+            CarrierExternalId = externalId,
+            LogoUrl = SafeLogoUrl(dto.DeliveryCompanyImgUrl)
         };
     }
 
@@ -543,6 +567,22 @@ public sealed class MipaqueteShippingQuoteService : IShippingQuoteService
 
     private int ToBusinessDays(decimal? minutes) =>
         ToBusinessDays(minutes, _options.FallbackDays);
+
+    /// <summary>
+    /// Logo de la transportadora ("deliveryCompanyImgUrl"). Se acepta SOLO si es una URL
+    /// absoluta https: cualquier otra cosa se descarta para no inyectar en la vista un
+    /// src arbitrario venido de un tercero (ni romper la página por contenido mixto).
+    /// </summary>
+    internal static string? SafeLogoUrl(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+
+        var text = value.Trim();
+
+        return Uri.TryCreate(text, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps
+            ? uri.AbsoluteUri
+            : null;
+    }
 
     /// <summary>"score" es una calificación de 0 a 5; fuera de rango se descarta o se topa.</summary>
     private static decimal? NormalizeScore(decimal? score)
@@ -579,8 +619,16 @@ public sealed class MipaqueteShippingQuoteService : IShippingQuoteService
     // ---------------------------------------------------------------------
     private sealed class MipaqueteQuoteRequestDto
     {
+        /// <summary>"170" = Colombia.</summary>
+        [JsonPropertyName("originCountryCode")]
+        public string OriginCountryCode { get; set; } = MipaqueteOptions.ColombiaCountryCode;
+
         [JsonPropertyName("originLocationCode")]
         public string OriginLocationCode { get; set; } = string.Empty;
+
+        /// <summary>País de destino ("170" = Colombia). Ojo: "destiny", no "destination".</summary>
+        [JsonPropertyName("destinyCountryCode")]
+        public string DestinyCountryCode { get; set; } = MipaqueteOptions.ColombiaCountryCode;
 
         /// <summary>⚠️ El contrato dice "destiny", no "destination".</summary>
         [JsonPropertyName("destinyLocationCode")]
@@ -611,12 +659,12 @@ public sealed class MipaqueteShippingQuoteService : IShippingQuoteService
         public long DeclaredValue { get; set; }
 
         /// <summary>
-        /// Solo aplica a pago contraentrega, que está fuera del alcance del MVP:
-        /// se deja en null y NO se serializa. Queda declarado para cuando se habilite.
+        /// Valor a recaudar en pago contraentrega. El panel real SIEMPRE lo envía, con 0
+        /// cuando no hay recaudo — que es el caso del MVP. Queda cableado para cuando se
+        /// habilite la contraentrega.
         /// </summary>
         [JsonPropertyName("saleValue")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public long? SaleValue { get; set; }
+        public long SaleValue { get; set; }
     }
 
     // ---------------------------------------------------------------------
@@ -634,6 +682,10 @@ public sealed class MipaqueteShippingQuoteService : IShippingQuoteService
         /// <summary>Id de la transportadora: necesario para generar la guía más adelante.</summary>
         [JsonPropertyName("deliveryCompanyId")]
         public string? DeliveryCompanyId { get; set; }
+
+        /// <summary>Logo de la transportadora (URL absoluta). Se muestra en el checkout.</summary>
+        [JsonPropertyName("deliveryCompanyImgUrl")]
+        public string? DeliveryCompanyImgUrl { get; set; }
 
         /// <summary>Costo del envío en COP.</summary>
         [JsonPropertyName("shippingCost")]

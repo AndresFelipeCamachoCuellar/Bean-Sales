@@ -39,9 +39,11 @@ var mipaqueteRequested = string.Equals(shippingProvider, "Mipaquete", StringComp
 // Sin credencial no tiene sentido levantar el cotizador real: cotizaría, fallaría y
 // degradaría en CADA checkout (una llamada HTTP perdida por pedido). Se decide una vez
 // aquí y se deja rastro explícito en el log del host.
-var mipaqueteApiKey = builder.Configuration["Shipping:Mipaquete:ApiKey"];
-var mipaqueteHasApiKey = !string.IsNullOrWhiteSpace(mipaqueteApiKey);
-var useMipaquete = mipaqueteRequested && mipaqueteHasApiKey;
+// ⚠️ La credencial del endpoint de cotización es la CUSTOMER KEY (header "customer-key",
+// el UUID del comercio), NO el JWT: contrato real validado en vivo (jul-2026).
+var mipaqueteCustomerKey = builder.Configuration["Shipping:Mipaquete:CustomerKey"];
+var mipaqueteHasCustomerKey = !string.IsNullOrWhiteSpace(mipaqueteCustomerKey);
+var useMipaquete = mipaqueteRequested && mipaqueteHasCustomerKey;
 
 if (useMipaquete)
 {
@@ -143,14 +145,14 @@ var app = builder.Build();
 // ---------- Diagnóstico del proveedor de envío (una sola vez, al arrancar) ----------
 if (useMipaquete)
 {
-    app.Logger.LogInformation("Cotización de envío: mipaquete.com (API v2). Respaldo: tarifa fija.");
+    app.Logger.LogInformation("Cotización de envío: mipaquete.com. Respaldo: tarifa fija.");
 }
 else if (mipaqueteRequested)
 {
-    // Provider = Mipaquete pero sin API key: falta cargar el secreto en el host.
+    // Provider = Mipaquete pero sin customer key: falta cargar la credencial en el host.
     app.Logger.LogWarning(
-        "Shipping:Provider = 'Mipaquete' pero Shipping:Mipaquete:ApiKey está vacía: se cotiza con la " +
-        "tarifa fija. Carga la credencial (secret MIPAQUETE_API_KEY) en el host y reinicia la app.");
+        "Shipping:Provider = 'Mipaquete' pero Shipping:Mipaquete:CustomerKey está vacía: se cotiza con la " +
+        "tarifa fija. Carga la credencial (secret MIPAQUETE_CUSTOMER_KEY) en el host y reinicia la app.");
 }
 else if (!string.Equals(shippingProvider, "Fixed", StringComparison.OrdinalIgnoreCase)
          && !string.IsNullOrWhiteSpace(shippingProvider))
