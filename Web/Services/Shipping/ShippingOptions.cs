@@ -65,30 +65,67 @@ public class ShippingDefaultsOptions
 }
 
 /// <summary>
-/// Integración con la API v2 de mipaquete.com.
-/// Autenticación por dos headers de texto plano: "apikey" y "session-tracker".
+/// Integración con la API de mipaquete.com.
+///
+/// ⚠️ AUTENTICACIÓN (contrato REAL, validado en vivo jul-2026 contra
+/// POST https://core.mipaquete.com/routes/quoteShipping):
+/// el endpoint de COTIZACIÓN se autentica con los headers
+/// <c>customer-key</c> (el UUID del comercio, ver <see cref="CustomerKey"/>) y
+/// <c>session-tracker</c>. NO se envía el header <c>apikey</c>.
+///
+/// La documentación pública describía otro esquema ("apikey" con el JWT de la
+/// cuenta) que corresponde al entorno DEV y NO funciona contra core.mipaquete.com.
+/// <see cref="ApiKey"/> se conserva por compatibilidad y para los endpoints que sí
+/// la exigen (generación de guía/tracking, pendientes de v1.1).
 /// </summary>
 public class MipaqueteOptions
 {
     /// <summary>
-    /// Host de la API. Por defecto, producción. Para probar contra el entorno de
-    /// pruebas de mipaquete basta cambiar este valor en el host (sin recompilar) a
-    /// "https://api-v2.dev.mpr.mipaquete.com".
+    /// Host de la API. Por defecto, el confirmado en vivo (core.mipaquete.com).
+    /// Es configurable para poder apuntar al entorno de pruebas
+    /// ("https://api-v2.dev.mpr.mipaquete.com") desde el panel del host sin recompilar.
     /// </summary>
-    public string BaseUrl { get; set; } = "https://api-v2.mipaquete.com";
+    public string BaseUrl { get; set; } = "https://core.mipaquete.com";
 
     /// <summary>
     /// Ruta del endpoint de cotización, relativa a <see cref="BaseUrl"/>.
-    /// "quoteShipping" está CONFIRMADO contra la documentación oficial; se deja como
-    /// configuración por si la API versiona la ruta, para corregirla desde el panel
-    /// del host sin recompilar (un 404 degrada a la tarifa de respaldo, no rompe la venta).
+    /// "routes/quoteShipping" está CONFIRMADO en vivo contra core.mipaquete.com;
+    /// se deja como configuración por si la API versiona la ruta, para corregirla
+    /// desde el panel del host sin recompilar (un 404 degrada a la tarifa de respaldo,
+    /// no rompe la venta).
     /// </summary>
-    public string QuotePath { get; set; } = "quoteShipping";
+    public string QuotePath { get; set; } = "routes/quoteShipping";
 
     /// <summary>Timeout duro por intento. Por encima de ~5 s el usuario abandona el checkout.</summary>
     public int TimeoutSeconds { get; set; } = 4;
 
-    /// <summary>SECRETO. Nunca en appsettings.json commiteado ni en logs.</summary>
+    /// <summary>
+    /// Identificador del comercio (UUID) que viaja en el header <c>customer-key</c>.
+    /// Es LA credencial que exige /routes/quoteShipping. Sin este valor no se llama a
+    /// la API: se degrada a la tarifa de respaldo.
+    /// No es un secreto criptográfico, pero identifica la cuenta ⇒ se trata como tal:
+    /// nunca en appsettings.json commiteado ni en logs (va en
+    /// appsettings.Development.json y en el secret MIPAQUETE_CUSTOMER_KEY).
+    /// </summary>
+    public string CustomerKey { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Código de país del ORIGEN en el payload de cotización. "170" = Colombia
+    /// (confirmado en el tráfico real del panel de mipaquete).
+    /// </summary>
+    public string OriginCountryCode { get; set; } = ColombiaCountryCode;
+
+    /// <summary>Código de país del DESTINO. "170" = Colombia (todo el MVP es nacional).</summary>
+    public string DestinyCountryCode { get; set; } = ColombiaCountryCode;
+
+    /// <summary>Código de país de Colombia tal como lo espera mipaquete en el payload.</summary>
+    public const string ColombiaCountryCode = "170";
+
+    /// <summary>
+    /// JWT de la cuenta. NO se usa al cotizar (ver la nota de la clase); queda
+    /// disponible para los endpoints que sí lo exigen. SECRETO: nunca en
+    /// appsettings.json commiteado ni en logs.
+    /// </summary>
     public string ApiKey { get; set; } = string.Empty;
 
     /// <summary>

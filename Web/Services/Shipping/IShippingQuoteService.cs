@@ -35,6 +35,12 @@ public sealed record ShippingOption
 
     /// <summary>Id externo de la transportadora, necesario para generar la guía más adelante.</summary>
     public string? CarrierExternalId { get; init; }
+
+    /// <summary>
+    /// Logo de la transportadora (URL absoluta https), si el proveedor lo expone.
+    /// Opcional: la tarifa fija no tiene logo y las vistas deben tolerar null.
+    /// </summary>
+    public string? LogoUrl { get; init; }
 }
 
 public enum ShippingQuoteStatus
