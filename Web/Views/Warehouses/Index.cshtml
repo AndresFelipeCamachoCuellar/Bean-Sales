@@ -1,0 +1,146 @@
+@model Web.Models.ViewModels.WarehouseIndexViewModel
+
+@{
+    ViewData["Title"] = "Bodegas";
+    Layout = "_Layout";
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Bodegas</h1>
+        <p class="bean-panel-sub">
+            Ubicaciones físicas donde vive el café. Cada país tiene una bodega por defecto:
+            es la que despacha y la que fija el <strong>origen</strong> de la cotización de envío.
+        </p>
+    </div>
+
+    @if (Model.CanCreate)
+    {
+        <a asp-action="Create" class="bean-prov-newlot"><i class="fas fa-plus"></i> Nueva bodega</a>
+    }
+</div>
+
+@if (TempData["InventoryOk"] != null)
+{
+    <div class="bean-panel-note" style="margin-top:16px;">
+        <i class="fas fa-check-circle"></i>
+        <div>@TempData["InventoryOk"]</div>
+    </div>
+}
+@if (TempData["InventoryError"] != null)
+{
+    <div class="bean-panel-note danger" style="margin-top:16px;">
+        <i class="fas fa-exclamation-triangle"></i>
+        <div>@TempData["InventoryError"]</div>
+    </div>
+}
+
+@if (Model.Rows.Count == 0)
+{
+    <div class="bean-appr-empty" style="margin-top:22px;">
+        <div class="ico"><i class="fas fa-warehouse"></i></div>
+        <h3>Todavía no hay bodegas</h3>
+        <p>Crea la primera para poder recibir lotes y llevar inventario por ubicación.</p>
+        @if (Model.CanCreate)
+        {
+            <div style="margin-top:16px;">
+                <a asp-action="Create" class="bean-btn-pill primary"><i class="fas fa-plus"></i> Crear bodega</a>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="bean-panel-tablewrap bean-inv-scroll">
+        <table class="bean-panel-table">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Ubicación</th>
+                    <th>DANE</th>
+                    <th>Lotes</th>
+                    <th>En mano</th>
+                    <th>Disponible</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var w in Model.Rows)
+                {
+                    <tr>
+                        <td class="bean-td-name">
+                            @w.Code
+                            @if (w.IsDefault)
+                            {
+                                <span class="bean-role-chip" title="Despacha por defecto en su país">Por defecto</span>
+                            }
+                        </td>
+                        <td>@w.Name</td>
+                        <td>
+                            @w.City
+                            <div class="bean-inv-lotmeta">@w.CountryName</div>
+                        </td>
+                        <td>
+                            @if (string.IsNullOrWhiteSpace(w.DaneCode))
+                            {
+                                <span title="Sin DANE se cotiza el envío desde el origen de appsettings">—</span>
+                            }
+                            else
+                            {
+                                <text>@w.DaneCode</text>
+                            }
+                        </td>
+                        <td>@w.ProductCount</td>
+                        <td>@w.UnitsOnHand</td>
+                        <td><strong>@w.UnitsAvailable</strong></td>
+                        <td>
+                            @if (w.IsActive)
+                            {
+                                <span class="bean-status active"><span class="dot"></span>Operativa</span>
+                            }
+                            else
+                            {
+                                <span class="bean-status draft"><span class="dot"></span>Inactiva</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="bean-td-actions">
+                                @if (Model.CanUpdate)
+                                {
+                                    <a asp-action="Edit" asp-route-id="@w.WarehouseID" class="bean-btn-pill outline icon" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                }
+                                @if (Model.CanDelete && w.CanDeactivate)
+                                {
+                                    <form asp-action="Delete" asp-route-id="@w.WarehouseID" method="post" style="display:inline;"
+                                          onsubmit="return confirm('¿Dar de baja la bodega @w.Code? El historial de movimientos se conserva.');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="bean-btn-pill danger icon" title="Dar de baja">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                }
+                                else if (Model.CanDelete)
+                                {
+                                    <span class="bean-role-chip" title="Una bodega con stock físico no se puede dar de baja">
+                                        Con stock
+                                    </span>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="5">@Model.ActiveCount de @Model.Rows.Count operativas</th>
+                    <th>@Model.TotalUnits</th>
+                    <th colspan="3"></th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+}

@@ -2,6 +2,7 @@
 @using Web.Models.Enums
 @using Web.Constants
 @using Web.Models
+@using Web.Models.ViewModels
 @using Web.Services
 @using Web.Services.Pricing
 @using Microsoft.AspNetCore.Identity
@@ -12,6 +13,20 @@
     ViewData["Title"] = "Recibir Producto";
     Layout = "_Layout";
     var isActive = Model.ProductStatus == ProductStatus.Active;
+
+    // E1: bodegas operativas y saldo actual del lote (los llena ProductApprovalController).
+    var receiveWarehouses = ViewBag.ReceiveWarehouses as List<InventoryFilterOption> ?? new List<InventoryFilterOption>();
+    var receiveBalances = ViewBag.ReceiveBalances as List<InventoryBalanceRowViewModel> ?? new List<InventoryBalanceRowViewModel>();
+    var sinBodegas = receiveWarehouses.Count == 0;
+
+    // ⚠️ TRAMPA DE DOBLE CONTEO: la migración AddWarehouseInventory ya creó StockItems con el
+    //    stock DECLARADO por el proveedor. Si además se prellena la cantidad a recibir con
+    //    Model.Stock, confirmar la recepción sumaría el lote dos veces. Por eso solo se
+    //    sugiere la cantidad cuando el lote todavía NO tiene saldo en ninguna bodega.
+    var yaTieneSaldo = receiveBalances.Any(b => b.QuantityOnHand != 0);
+    var cantidadSugerida = (!isActive && !yaTieneSaldo && Model.Stock > 0)
+        ? Model.Stock.ToString()
+        : string.Empty;
 
     var co = System.Globalization.CultureInfo.GetCultureInfo("es-CO");
 
@@ -84,6 +99,20 @@
     <div class="bean-panel-note">
         <i class="fas fa-check-circle"></i>
         <div>@TempData["PricingOk"]</div>
+    </div>
+}
+@if (TempData["ReceiveError"] != null)
+{
+    <div class="bean-panel-note danger">
+        <i class="fas fa-exclamation-triangle"></i>
+        <div>@TempData["ReceiveError"]</div>
+    </div>
+}
+@if (TempData["ReceiveOk"] != null)
+{
+    <div class="bean-panel-note">
+        <i class="fas fa-check-circle"></i>
+        <div>@TempData["ReceiveOk"]</div>
     </div>
 }
 
@@ -161,7 +190,101 @@
 <form asp-action="Receive" method="post" class="bean-panel-card">
     <input type="hidden" name="id" value="@Model.ProductID" />
 
-    <h2 class="bean-panel-title" style="font-size:19px; margin:0 0 6px;">Disponibilidad por país</h2>
+    @* ---------------- E1: entrada física a bodega ---------------- *@
+    <h2 class="bean-panel-title" style="font-size:19px; margin:0 0 6px;">Entrada a bodega</h2>
+    <p class="bean-panel-sub" style="margin:0 0 16px;">
+        @if (isActive)
+        {
+            <text>
+                Este lote ya está activo. Si estás registrando una <strong>reposición</strong>, indica bodega y
+                cantidad; si solo vienes a ajustar países, deja la cantidad vacía.
+            </text>
+        }
+        else
+        {
+            <text>
+                Indica en qué bodega entra el lote, cuántas unidades llegaron y a qué costo unitario.
+                <strong>Sin bodega no se puede recibir</strong>: el inventario se lleva por ubicación.
+            </text>
+        }
+    </p>
+
+    @if (sinBodegas)
+    {
+        <div class="bean-panel-note danger">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div>
+                No hay bodegas operativas. Crea una en <strong>Bodegas</strong> antes de poder recibir este lote.
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="bean-form-grid cols-3">
+            <div class="bean-field">
+                <label class="bean-label" for="rcv-wh">Bodega @(isActive ? "" : "(obligatoria)")</label>
+                <select id="rcv-wh" name="warehouseId" class="bean-select">
+                    @if (isActive)
+                    {
+                        <option value="">— Sin entrada de inventario —</option>
+                    }
+                    @foreach (var w in receiveWarehouses)
+                    {
+                        <option value="@w.Id">@w.Label</option>
+                    }
+                </select>
+            </div>
+
+            <div class="bean-field">
+                <label class="bean-label" for="rcv-qty">Cantidad recibida</label>
+                <input id="rcv-qty" type="number" name="receiveQuantity" min="0" step="1" class="bean-input"
+                       value="@cantidadSugerida" placeholder="ej. 120" />
+                <span class="bean-field-hint">
+                    Unidades físicas que entraron a esa bodega. <strong>Se SUMAN</strong> al saldo actual.
+                </span>
+            </div>
+
+            <div class="bean-field">
+                <label class="bean-label" for="rcv-cost">Costo unitario (COP)</label>
+                <div class="bean-input-affix">
+                    <span class="affix">$</span>
+                    <input id="rcv-cost" type="number" name="receiveUnitCost" min="0" step="0.01" class="bean-input"
+                           value="@(Model.SupplierPrice > 0m ? Model.SupplierPrice.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : string.Empty)" />
+                </div>
+                <span class="bean-field-hint">Si lo dejas vacío se usa el costo del proveedor. Alimenta la liquidación.</span>
+            </div>
+        </div>
+
+        <div class="bean-panel-note">
+            <i class="fas fa-info-circle"></i>
+            <div>
+                Al confirmar, el stock que publica el catálogo pasa a ser el <strong>inventario real de bodega</strong>
+                (disponible = en mano − reservado), no la cantidad declarada por el proveedor.
+            </div>
+        </div>
+    }
+
+    @if (receiveBalances.Count > 0)
+    {
+        <div class="bean-panel-note" style="margin-top:14px;">
+            <i class="fas fa-info-circle"></i>
+            <div>
+                <strong>Este lote ya tiene saldo en bodega.</strong> Lo que escribas se <strong>suma</strong>
+                a lo que ya hay: si el stock que ves abajo ya corresponde a este lote, deja la cantidad vacía
+                para no contarlo dos veces.
+            </div>
+        </div>
+
+        <div class="bean-panel-datagrid" style="margin-top:14px;">
+            @foreach (var b in receiveBalances)
+            {
+                <div class="k">@b.Code · @b.City</div>
+                <div class="v">@b.QuantityAvailable disponibles (@b.QuantityOnHand en mano)</div>
+            }
+        </div>
+    }
+
+    <h2 class="bean-panel-title" style="font-size:19px; margin:26px 0 6px;">Disponibilidad por país</h2>
     <p class="bean-panel-sub" style="margin:0 0 16px;">Selecciona los países donde este producto estará visible para la venta. Por defecto se marcan los solicitados por el proveedor.</p>
 
     <div class="bean-panel-checkgrid">
@@ -196,8 +319,10 @@
     </div>
 
     <div style="display:flex; gap:12px; align-items:center; margin-top:22px;">
+        @* Sin PVP (candado E2) o sin bodegas (candado E1) la recepción inicial no puede cerrarse.
+           El botón deshabilitado es cortesía: los dos candados se validan en el POST. *@
         <button type="submit" class="bean-btn-approve" style="padding:12px 22px; font-size:14px;"
-                @(priceMissing && !isActive ? "disabled" : "")>
+                @((priceMissing || sinBodegas) && !isActive ? "disabled" : "")>
             <i class="fas fa-check-circle"></i> Confirmar recepción
         </button>
         <a asp-action="Index" class="bean-btn-receive manage">Cancelar</a>

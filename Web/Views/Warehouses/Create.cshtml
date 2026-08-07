@@ -1,0 +1,30 @@
+@model Web.Models.ViewModels.WarehouseViewModel
+
+@{
+    ViewData["Title"] = "Nueva bodega";
+    Layout = "_Layout";
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Nueva bodega</h1>
+        <p class="bean-panel-sub">Abre una ubicación nueva. El inventario se lleva por bodega desde el primer lote que entre.</p>
+    </div>
+    <a asp-action="Index" class="bean-btn-pill outline"><i class="fas fa-arrow-left"></i> Volver</a>
+</div>
+
+<div class="bean-form-card">
+    <form asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+        <partial name="_WarehouseForm" model="Model" />
+
+        <div class="bean-form-actions">
+            <a asp-action="Index" class="bean-btn-pill outline">Cancelar</a>
+            <button type="submit" class="bean-btn-pill primary"><i class="fas fa-warehouse"></i> Crear bodega</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

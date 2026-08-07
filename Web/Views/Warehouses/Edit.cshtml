@@ -1,0 +1,44 @@
+@model Web.Models.ViewModels.WarehouseViewModel
+
+@{
+    ViewData["Title"] = "Editar bodega";
+    Layout = "_Layout";
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Editar @Model.Code</h1>
+        <p class="bean-panel-sub">@Model.Name</p>
+    </div>
+    <a asp-action="Index" class="bean-btn-pill outline"><i class="fas fa-arrow-left"></i> Volver</a>
+</div>
+
+@if (Model.UnitsOnHand > 0)
+{
+    <div class="bean-panel-note">
+        <i class="fas fa-info-circle"></i>
+        <div>
+            Esta bodega tiene <strong>@Model.UnitsOnHand unidades físicas</strong>.
+            Mientras haya stock no se puede desactivar ni dar de baja.
+        </div>
+    </div>
+}
+
+<div class="bean-form-card">
+    <form asp-action="Edit" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="WarehouseID" />
+        <input type="hidden" asp-for="UnitsOnHand" />
+
+        <partial name="_WarehouseForm" model="Model" />
+
+        <div class="bean-form-actions">
+            <a asp-action="Index" class="bean-btn-pill outline">Cancelar</a>
+            <button type="submit" class="bean-btn-pill primary"><i class="fas fa-save"></i> Guardar cambios</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
