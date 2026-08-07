@@ -65,7 +65,13 @@ public class SupplierOrdersController : Controller
             {
                 Order = o,
                 ProviderItems = providerItems,
-                Payout = providerItems.Sum(i => i.SubTotal),
+                // ⚠️ E2 (ago-2026): "Tu pago" NO es el subtotal de la venta. Desde que se
+                // separó el costo del PVP, lo que Bean le debe al proveedor es su COSTO
+                // congelado en el momento de la compra (SupplierPriceSnapshot × cantidad).
+                // Usar SubTotal aquí le mostraría al proveedor el precio de venta de Bean,
+                // que además incluye el margen. Los pedidos anteriores a la migración
+                // tienen SupplierPriceSnapshot = UnitPrice, así que su cifra no cambia.
+                Payout = providerItems.Sum(i => i.SupplierPriceSnapshot * i.Quantity),
                 Group = GroupOf(o.OrderStatus)
             };
         }).ToList();

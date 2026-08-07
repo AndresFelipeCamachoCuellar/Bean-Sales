@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Web.Data;
 
@@ -11,9 +12,11 @@ using Web.Data;
 namespace Web.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260807120000_AddPricing")]
+    partial class AddPricing
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -397,9 +400,6 @@ namespace Web.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid?>("FulfillmentWarehouseID")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -530,9 +530,6 @@ namespace Web.Migrations
 
                     b.Property<decimal>("UnitPrice")
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<Guid?>("WarehouseID")
-                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("OrderItemID");
 
@@ -1085,172 +1082,6 @@ namespace Web.Migrations
                     b.ToTable("ShoppingCartItems");
                 });
 
-            modelBuilder.Entity("Web.Models.StockItem", b =>
-                {
-                    b.Property<Guid>("ProductID")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("WarehouseID")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ModifiedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("ModifiedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Ownership")
-                        .HasColumnType("int");
-
-                    b.Property<int>("QuantityOnHand")
-                        .HasColumnType("int");
-
-                    b.Property<int>("QuantityReserved")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ReorderPoint")
-                        .HasColumnType("int");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
-
-                    b.Property<bool>("Status")
-                        .HasColumnType("bit");
-
-                    b.HasKey("ProductID", "WarehouseID");
-
-                    b.HasIndex("WarehouseID");
-
-                    b.ToTable("StockItems");
-                });
-
-            modelBuilder.Entity("Web.Models.StockMovement", b =>
-                {
-                    b.Property<Guid>("StockMovementID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("MovementType")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("ProductID")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Reason")
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.Property<Guid?>("ReferenceID")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ReferenceType")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<decimal?>("UnitCost")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<Guid>("WarehouseID")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("StockMovementID");
-
-                    b.HasIndex("WarehouseID");
-
-                    b.HasIndex("ProductID", "WarehouseID", "CreatedOn");
-
-                    b.HasIndex("ReferenceType", "ReferenceID");
-
-                    b.ToTable("StockMovements");
-                });
-
-            modelBuilder.Entity("Web.Models.Warehouse", b =>
-                {
-                    b.Property<Guid>("WarehouseID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Address")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("City")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<Guid>("CountryID")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DaneCode")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsDefault")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("ModifiedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("ModifiedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<bool>("Status")
-                        .HasColumnType("bit");
-
-                    b.HasKey("WarehouseID");
-
-                    b.HasIndex("Code")
-                        .IsUnique();
-
-                    b.HasIndex("CountryID");
-
-                    b.HasIndex("DaneCode");
-
-                    b.ToTable("Warehouses");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
                     b.HasOne("Web.Models.ApplicationRole", null)
@@ -1465,55 +1296,6 @@ namespace Web.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Web.Models.StockItem", b =>
-                {
-                    b.HasOne("Web.Models.Product", "Product")
-                        .WithMany("StockItems")
-                        .HasForeignKey("ProductID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Web.Models.Warehouse", "Warehouse")
-                        .WithMany("StockItems")
-                        .HasForeignKey("WarehouseID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Product");
-
-                    b.Navigation("Warehouse");
-                });
-
-            modelBuilder.Entity("Web.Models.StockMovement", b =>
-                {
-                    b.HasOne("Web.Models.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Web.Models.Warehouse", "Warehouse")
-                        .WithMany()
-                        .HasForeignKey("WarehouseID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Product");
-
-                    b.Navigation("Warehouse");
-                });
-
-            modelBuilder.Entity("Web.Models.Warehouse", b =>
-                {
-                    b.HasOne("Web.Models.Country", "Country")
-                        .WithMany()
-                        .HasForeignKey("CountryID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Country");
-                });
-
             modelBuilder.Entity("Web.Models.Country", b =>
                 {
                     b.Navigation("ProductCountries");
@@ -1536,8 +1318,6 @@ namespace Web.Migrations
                     b.Navigation("PriceChanges");
 
                     b.Navigation("ProductCountries");
-
-                    b.Navigation("StockItems");
                 });
 
             modelBuilder.Entity("Web.Models.Provider", b =>
@@ -1545,11 +1325,6 @@ namespace Web.Migrations
                     b.Navigation("Roles");
 
                     b.Navigation("Users");
-                });
-
-            modelBuilder.Entity("Web.Models.Warehouse", b =>
-                {
-                    b.Navigation("StockItems");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,0 +1,137 @@
+@model Web.Models.ViewModels.PricingHistoryViewModel
+@using Web.Constants
+@using Web.Models.Enums
+@using Microsoft.AspNetCore.Identity
+@using Web.Models
+@using Web.Services
+@inject IPermissionService PermissionService
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+    ViewData["Title"] = "Histórico de precios";
+    Layout = "_Layout";
+
+    var co = System.Globalization.CultureInfo.GetCultureInfo("es-CO");
+
+    var currentUser = await UserManager.GetUserAsync(User);
+    var canUpdate = currentUser != null
+        && await PermissionService.HasPermissionAsync(currentUser, Modules.Pricing, Permissions.Update);
+
+    var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+    var margin = Model.Margin;
+
+    // Se precalcula el texto: interpolaciones con comillas anidadas dentro de Razor son
+    // frágiles de parsear, y aquí no aportan nada.
+    var marginText = margin.IsCalculable
+        ? margin.Percent.ToString("N2") + " % (" + margin.Amount.ToString("C0", co) + ")"
+        : "—";
+    var priceText = Model.Price > 0 ? Model.Price.ToString("C0", co) : "sin fijar";
+    var suggestedText = Model.Suggested > 0 ? Model.Suggested.ToString("C0", co) : "—";
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">@Model.ProductName</h1>
+        <p class="bean-panel-sub">
+            @(Model.ProviderName ?? "Sin proveedor") · histórico de costo y precio de venta.
+        </p>
+    </div>
+    <a asp-action="Index" class="bean-btn-pill outline"><i class="fas fa-arrow-left"></i> Volver</a>
+</div>
+
+@if (TempData["PricingOk"] != null)
+{
+    <div class="bean-panel-note" style="margin-top:16px;">
+        <i class="fas fa-check-circle"></i>
+        <div>@TempData["PricingOk"]</div>
+    </div>
+}
+@if (TempData["PricingError"] != null)
+{
+    <div class="bean-panel-note danger" style="margin-top:16px;">
+        <i class="fas fa-exclamation-triangle"></i>
+        <div>@TempData["PricingError"]</div>
+    </div>
+}
+
+<div class="bean-form-card" style="margin-top:16px;">
+    <h2 class="bean-form-section-title">Situación actual</h2>
+    <div class="bean-panel-note @(Model.MarginAlert ? "danger" : "")">
+        <i class="fas fa-percentage"></i>
+        <div>
+            <strong>Costo:</strong> @Model.SupplierPrice.ToString("C0", co) &nbsp;·&nbsp;
+            <strong>PVP:</strong> @priceText &nbsp;·&nbsp;
+            <strong>Margen:</strong> @marginText
+            <br />
+            Objetivo @Model.TargetMarginPercent.ToString("N0") % · mínimo @Model.MinimumMarginPercent.ToString("N0") % ·
+            precio sugerido @suggestedText
+        </div>
+    </div>
+
+    @if (canUpdate)
+    {
+        <form asp-action="SetPrice" method="post" class="bean-form-grid" style="margin-top:14px;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.ProductID" />
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+            <div class="bean-field">
+                <label class="bean-label">Nuevo precio de venta (COP)</label>
+                <input type="number" name="price" step="0.01" min="0" class="bean-input"
+                       value="@(Model.Price > 0 ? Model.Price : Model.Suggested)" />
+            </div>
+            <div class="bean-field">
+                <label class="bean-label">Motivo (obligatorio si baja del mínimo)</label>
+                <input type="text" name="reason" class="bean-input" maxlength="300"
+                       placeholder="Ej: promoción de lanzamiento" />
+            </div>
+            <div class="bean-form-actions col-span-2">
+                <button type="submit" class="bean-btn-pill primary"><i class="fas fa-save"></i> Fijar precio</button>
+            </div>
+        </form>
+    }
+</div>
+
+<div class="bean-panel-tablewrap" style="margin-top:16px;">
+    <table class="bean-panel-table">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Qué cambió</th>
+                <th>Antes</th>
+                <th>Después</th>
+                <th>Margen</th>
+                <th>Quién</th>
+                <th>Motivo</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Changes.Count == 0)
+            {
+                <tr>
+                    <td colspan="7" style="color:var(--bean-muted);">Todavía no hay cambios registrados para este lote.</td>
+                </tr>
+            }
+            else
+            {
+                @* Ya estamos en contexto C# dentro del else: el foreach NO lleva "@". *@
+                foreach (var change in Model.Changes)
+                {
+                    var etiqueta = change.ChangeType == PriceChangeType.SupplierPrice
+                        ? "Costo del proveedor"
+                        : "Precio de venta";
+
+                    <tr>
+                        <td>@change.ChangedOn.ToString("d MMM yyyy '·' HH:mm", co)</td>
+                        <td>@etiqueta</td>
+                        <td>@change.OldValue.ToString("C0", co)</td>
+                        <td style="font-weight:700; color:var(--bean-ink);">@change.NewValue.ToString("C0", co)</td>
+                        <td>@change.MarginBefore.ToString("N2") % &rarr; @change.MarginAfter.ToString("N2") %</td>
+                        <td>@change.ChangedBy</td>
+                        <td>@(string.IsNullOrWhiteSpace(change.Reason) ? "—" : change.Reason)</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>

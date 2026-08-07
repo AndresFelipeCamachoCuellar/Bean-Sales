@@ -124,6 +124,64 @@ public static class ContextSeed
         await context.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Configuración de márgenes (E2). RED DE SEGURIDAD: la migración <c>AddPricing</c> ya
+    /// inserta la fila única, pero en una base creada desde cero por otra vía haría falta.
+    /// Idempotente: si ya hay una fila, no toca nada.
+    /// </summary>
+    public static async Task SeedPricingSettingsAsync(ApplicationDbContext context)
+    {
+        if (await context.PricingSettings.AnyAsync()) return;
+
+        // Valores del PO (07-ago-2026): objetivo 30 %, mínimo 15 %, redondeo 50 COP.
+        context.PricingSettings.Add(new PricingSettings
+        {
+            PricingSettingsID = PricingSettings.SingletonId,
+            TargetMarginPercent = 30m,
+            MinimumMarginPercent = 15m,
+            RoundingStep = 50m,
+            Status = true,
+            CreatedBy = "SYSTEM",
+            CreatedOn = DateTime.Now
+        });
+
+        await context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Bodega inicial CAL-01 (E1). RED DE SEGURIDAD para bases NUEVAS: las migraciones
+    /// corren antes que este seed, así que cuando <c>AddWarehouseInventory</c> se aplica
+    /// todavía no existe el país "Colombia" y su bloque de seed no puede crearla.
+    /// Usa el MISMO GUID que la migración, así que las dos rutas convergen.
+    ///
+    /// ⚠️ DANE de Cali = 76001 (760001 es el código POSTAL).
+    /// </summary>
+    public static async Task SeedDefaultWarehouseAsync(ApplicationDbContext context)
+    {
+        if (await context.Warehouses.AnyAsync()) return;
+
+        var colombia = await context.Countries.FirstOrDefaultAsync(c => c.Name == "Colombia");
+        if (colombia == null) return; // Degradación segura: sin país no se puede crear.
+
+        context.Warehouses.Add(new Warehouse
+        {
+            WarehouseID = Warehouse.DefaultWarehouseId,
+            Code = Warehouse.DefaultWarehouseCode,
+            Name = "Bodega Principal Cali",
+            CountryID = colombia.CountryID,
+            City = "Cali",
+            DaneCode = "76001",
+            Address = "Por definir",
+            IsDefault = true,
+            IsActive = true,
+            Status = true,
+            CreatedBy = "SYSTEM",
+            CreatedOn = DateTime.Now
+        });
+
+        await context.SaveChangesAsync();
+    }
+
     /// <summary>Fila del JSON de municipios (daneCode / name / department).</summary>
     private sealed class ShippingCitySeedRow
     {
@@ -224,7 +282,26 @@ public static class ContextSeed
     public static async Task SeedPermissionsAsync(ApplicationDbContext context, RoleManager<ApplicationRole> roleManager)
     {
         // 1. Seed Modules
-        var modules = new[] { Modules.Users, Modules.Roles, Modules.CompanyProfile, Modules.CompanyUsers, Modules.CompanyRoles, Modules.Products, Modules.ProductApprovals, Modules.Orders };
+        var modules = new[]
+        {
+            Modules.Users,
+            Modules.Roles,
+            Modules.CompanyProfile,
+            Modules.CompanyUsers,
+            Modules.CompanyRoles,
+            Modules.Products,
+            Modules.ProductApprovals,
+            Modules.Orders,
+            // Ciclo BETA (ago 2026). Al agregar módulos aquí basta reiniciar la app:
+            // el bloque 3 asigna automáticamente TODOS los permisos al SuperAdmin.
+            // Ojo: NO se asignan al ProviderAdmin (bloques 4-7 son explícitos por módulo).
+            Modules.Inventory,
+            Modules.Warehouses,
+            Modules.Pricing,
+            Modules.Agreements,
+            Modules.Settlements,
+            Modules.Notifications
+        };
         foreach (var moduleCode in modules)
         {
             if (!await context.ParametricModules.AnyAsync(m => m.Code == moduleCode))
@@ -239,6 +316,12 @@ public static class ContextSeed
                     Modules.Products => "Productos (Gestión)",
                     Modules.ProductApprovals => "Aprobación de Productos",
                     Modules.Orders => "Pedidos",
+                    Modules.Inventory => "Inventario",
+                    Modules.Warehouses => "Bodegas",
+                    Modules.Pricing => "Precios",
+                    Modules.Agreements => "Acuerdos con proveedor",
+                    Modules.Settlements => "Liquidaciones",
+                    Modules.Notifications => "Notificaciones",
                     _ => moduleCode
                 };
 

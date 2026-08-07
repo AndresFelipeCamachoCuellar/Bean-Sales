@@ -1,10 +1,42 @@
 @model Web.Models.Product
 @using Web.Models.Enums
+@using Web.Constants
+@using Web.Models
+@using Web.Services
+@using Web.Services.Pricing
+@using Microsoft.AspNetCore.Identity
+@inject IPermissionService PermissionService
+@inject UserManager<ApplicationUser> UserManager
 
 @{
     ViewData["Title"] = "Recibir Producto";
     Layout = "_Layout";
     var isActive = Model.ProductStatus == ProductStatus.Active;
+
+    var co = System.Globalization.CultureInfo.GetCultureInfo("es-CO");
+
+    var pricingUser = await UserManager.GetUserAsync(User);
+    var canReadPricing = pricingUser != null
+        && await PermissionService.HasPermissionAsync(pricingUser, Modules.Pricing, Permissions.Read);
+    var canSetPrice = pricingUser != null
+        && await PermissionService.HasPermissionAsync(pricingUser, Modules.Pricing, Permissions.Update);
+
+    // Valores de márgenes para el panel. ViewBag los llena ProductApprovalController.
+    var targetMargin = ViewBag.TargetMarginPercent is decimal t ? t : 30m;
+    var minimumMargin = ViewBag.MinimumMarginPercent is decimal m ? m : 15m;
+    var roundingStep = ViewBag.RoundingStep is decimal r ? r : 50m;
+
+    var receiveMargin = PricingCalculator.CalculateMargin(Model.Price, Model.SupplierPrice);
+    var receiveSuggested = PricingCalculator.SuggestPrice(Model.SupplierPrice, targetMargin, roundingStep);
+    var priceMissing = Model.Price <= 0m;
+    var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+
+    // Textos precalculados: evita interpolaciones con comillas anidadas dentro de Razor.
+    var receivePriceText = priceMissing ? "sin fijar" : Model.Price.ToString("C0", co);
+    var receiveMarginText = receiveMargin.IsCalculable
+        ? receiveMargin.Percent.ToString("N2") + " % · " + receiveMargin.Amount.ToString("C0", co)
+        : "—";
+    var receiveSuggestedText = receiveSuggested > 0 ? receiveSuggested.ToString("C0", co) : "—";
 }
 
 <div class="bean-panel-head">
@@ -35,9 +67,84 @@
             }
         </div>
         <div class="k">Stock declarado</div><div class="v">@Model.Stock unidades</div>
-        <div class="k">Precio base</div><div class="v">@Model.Price.ToString("C")</div>
+        <div class="k">Precio de venta</div>
+        <div class="v">@receivePriceText</div>
     </div>
 </div>
+
+@if (TempData["PricingError"] != null)
+{
+    <div class="bean-panel-note danger">
+        <i class="fas fa-exclamation-triangle"></i>
+        <div>@TempData["PricingError"]</div>
+    </div>
+}
+@if (TempData["PricingOk"] != null)
+{
+    <div class="bean-panel-note">
+        <i class="fas fa-check-circle"></i>
+        <div>@TempData["PricingOk"]</div>
+    </div>
+}
+
+@*
+    Panel de pricing (E2). El costo y el margen son información INTERNA: solo se pintan
+    con Pricing/Read, y el formulario para fijar el PVP solo con Pricing/Update.
+    🔒 Candado: sin PVP fijado el lote no puede pasar a ACTIVO (lo bloquea el POST de
+    Receive, no solo esta vista).
+*@
+@if (canReadPricing)
+{
+    <div class="bean-panel-card">
+        <h2 class="bean-panel-title" style="font-size:19px; margin:0 0 6px;">Precio y margen</h2>
+
+        <div class="bean-panel-datagrid">
+            <div class="k">Costo del proveedor</div>
+            <div class="v">@Model.SupplierPrice.ToString("C0", co)</div>
+            <div class="k">Precio de venta (PVP)</div>
+            <div class="v">@receivePriceText</div>
+            <div class="k">Margen</div>
+            <div class="v">@receiveMarginText</div>
+            <div class="k">Precio sugerido (@targetMargin.ToString("N0") %)</div>
+            <div class="v">@receiveSuggestedText</div>
+        </div>
+
+        @if (priceMissing)
+        {
+            <div class="bean-panel-note danger">
+                <i class="fas fa-lock"></i>
+                <div>
+                    Este lote todavía no tiene precio de venta. <strong>No se puede activar sin PVP</strong>:
+                    es la garantía de que Bean nunca venda al costo.
+                </div>
+            </div>
+        }
+
+        @if (canSetPrice)
+        {
+            @* Fuera del form de países: no se anidan formularios. *@
+            <form asp-controller="Pricing" asp-action="SetPrice" method="post"
+                  style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-top:14px;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.ProductID" />
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+                <div class="bean-field" style="margin:0;">
+                    <label class="bean-label">Precio de venta (COP)</label>
+                    <input type="number" name="price" step="0.01" min="0" class="bean-input" style="width:170px;"
+                           value="@(Model.Price > 0 ? Model.Price : receiveSuggested)" />
+                </div>
+                <div class="bean-field" style="margin:0;">
+                    <label class="bean-label">Motivo (si baja del mínimo @minimumMargin.ToString("N0") %)</label>
+                    <input type="text" name="reason" class="bean-input" style="width:280px;" maxlength="300" />
+                </div>
+                <button type="submit" class="bean-btn-approve" style="padding:12px 20px;">
+                    <i class="fas fa-tag"></i> Fijar precio
+                </button>
+            </form>
+        }
+    </div>
+}
 
 @*
     Gestor de fotos ANTES del formulario de países (y fuera de él: no se anidan forms).
@@ -89,7 +196,8 @@
     </div>
 
     <div style="display:flex; gap:12px; align-items:center; margin-top:22px;">
-        <button type="submit" class="bean-btn-approve" style="padding:12px 22px; font-size:14px;">
+        <button type="submit" class="bean-btn-approve" style="padding:12px 22px; font-size:14px;"
+                @(priceMissing && !isActive ? "disabled" : "")>
             <i class="fas fa-check-circle"></i> Confirmar recepción
         </button>
         <a asp-action="Index" class="bean-btn-receive manage">Cancelar</a>

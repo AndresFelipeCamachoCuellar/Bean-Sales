@@ -9,7 +9,9 @@ using Web.Data;
 using Web.Models;
 using Web.Models.Enums;
 using Web.Models.ViewModels;
+using Web.Services;
 using Web.Services.Media;
+using Web.Services.Pricing;
 
 namespace Web.Controllers;
 
@@ -19,15 +21,21 @@ public class ProductsController : Controller
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ProductImageService _images;
+    private readonly PricingService _pricing;
+    private readonly IPermissionService _permissions;
 
     public ProductsController(
         ApplicationDbContext context,
         UserManager<ApplicationUser> userManager,
-        ProductImageService images)
+        ProductImageService images,
+        PricingService pricing,
+        IPermissionService permissions)
     {
         _context = context;
         _userManager = userManager;
         _images = images;
+        _pricing = pricing;
+        _permissions = permissions;
     }
 
     [HasPermission(Modules.Products, Permissions.Read)]
@@ -51,6 +59,7 @@ public class ProductsController : Controller
     public async Task<IActionResult> Create()
     {
         var model = new ProductViewModel();
+        await LoadPricingContextAsync(model);
         await LoadCountries(model);
         return View(model);
     }
@@ -63,6 +72,11 @@ public class ProductsController : Controller
         var currentUser = await _userManager.GetUserAsync(User);
         if (currentUser?.ProviderID == null) return Forbid();
 
+        // 🔒 El permiso se resuelve SIEMPRE en el servidor: el valor que venga en el
+        // formulario se descarta (se puede forjar desde DevTools).
+        var canEditSalePrice = await CanEditSalePriceAsync(currentUser);
+        model.CanEditSalePrice = canEditSalePrice;
+
         if (ModelState.IsValid)
         {
             var product = new Product
@@ -71,7 +85,10 @@ public class ProductsController : Controller
                 ProviderID = currentUser.ProviderID.Value,
                 Name = model.Name,
                 Description = model.Description,
-                Price = model.Price,
+                // Costo del proveedor. El PVP lo fija Bean después (candado de E2): un
+                // borrador nace sin PVP y no puede llegar a Active sin él.
+                SupplierPrice = model.SupplierPrice,
+                Price = canEditSalePrice ? model.Price : 0m,
                 Stock = model.Stock,
                 // Portada denormalizada. La escribe ProductImageService cuando se sube la
                 // primera foto; aquí solo se respeta lo que venga del formulario (una URL
@@ -110,6 +127,11 @@ public class ProductsController : Controller
             }
 
             _context.Products.Add(product);
+
+            // Deja la alerta de margen coherente desde el minuto cero (un borrador sin PVP
+            // siempre queda marcado: es justo lo que tiene que ver la bandeja de Bean).
+            await _pricing.RefreshMarginAlertAsync(product);
+
             await _context.SaveChangesAsync();
 
             // Las fotos necesitan un producto que exista (el public_id se firma con su
@@ -119,6 +141,7 @@ public class ProductsController : Controller
             return RedirectToAction(nameof(Edit), new { id = product.ProductID });
         }
 
+        await LoadPricingContextAsync(model);
         await LoadCountries(model);
         return View(model);
     }
@@ -148,6 +171,10 @@ public class ProductsController : Controller
             Name = product.Name,
             Description = product.Description,
             Price = product.Price,
+            SupplierPrice = product.SupplierPrice,
+            MarginAlert = product.MarginAlert,
+            PriceSetAt = product.PriceSetAt,
+            PriceSetBy = product.PriceSetBy,
             Stock = product.Stock,
             ImageUrl = product.ImageUrl,
             Origin = product.Origin,
@@ -173,6 +200,7 @@ public class ProductsController : Controller
         // en Borrador o Rechazado (ya validado arriba). Después las gestiona Bean.
         model.ImageManager = await _images.BuildManagerAsync(product, canEdit: true, role: ImageUploader.Provider);
 
+        await LoadPricingContextAsync(model);
         await LoadCountries(model);
         return View(model);
     }
@@ -184,6 +212,10 @@ public class ProductsController : Controller
     {
         var currentUser = await _userManager.GetUserAsync(User);
         if (currentUser?.ProviderID == null) return Forbid();
+
+        // 🔒 Igual que en Create: el permiso se resuelve en el servidor, nunca desde el POST.
+        var canEditSalePrice = await CanEditSalePriceAsync(currentUser);
+        model.CanEditSalePrice = canEditSalePrice;
 
         if (ModelState.IsValid)
         {
@@ -197,14 +229,28 @@ public class ProductsController : Controller
             {
                  ModelState.AddModelError("", "No se puede editar un producto que está en proceso de aprobación o ya aprobado.");
                  model.ImageManager = await _images.BuildManagerAsync(product, canEdit: false, role: ImageUploader.Provider);
+                 await LoadPricingContextAsync(model);
                  await LoadCountries(model);
                  return View(model);
             }
 
             product.Name = model.Name;
             product.Description = model.Description;
-            product.Price = model.Price;
             product.Stock = model.Stock;
+
+            // --- Precios ------------------------------------------------------------
+            // El COSTO lo mueve el proveedor: el PVP NO se toca y, si el margen cae bajo
+            // el mínimo, se enciende MarginAlert (el producto SIGUE vendiéndose).
+            await _pricing.ApplySupplierPriceAsync(
+                product, model.SupplierPrice, User.Identity?.Name ?? "SYSTEM");
+
+            // El PVP solo se acepta de quien tiene Pricing/Update. Sin el permiso, el valor
+            // que llegue en el POST se ignora por completo (no basta con no renderizarlo).
+            if (canEditSalePrice && product.Price != model.Price)
+            {
+                await _pricing.ApplySalePriceAsync(
+                    product, model.Price, User.Identity?.Name ?? "SYSTEM", model.SalePriceReason);
+            }
 
             // ⚠️ ImageUrl es la PORTADA denormalizada que mantiene ProductImageService.
             // El formulario del producto no la expone, así que model.ImageUrl llega null:
@@ -275,6 +321,7 @@ public class ProductsController : Controller
             }
         }
 
+        await LoadPricingContextAsync(model);
         await LoadCountries(model);
         return View(model);
     }
@@ -325,7 +372,30 @@ public class ProductsController : Controller
         return RedirectToAction(nameof(Index));
     }
     
-    // Helper
+    // ------------------------------------------------------------------ Helpers
+
+    /// <summary>
+    /// ¿Este usuario puede fijar el PVP? Es la única fuente de verdad: ni la vista ni el
+    /// formulario deciden esto.
+    /// </summary>
+    private Task<bool> CanEditSalePriceAsync(ApplicationUser user) =>
+        _permissions.HasPermissionAsync(user, Modules.Pricing, Permissions.Update);
+
+    /// <summary>
+    /// Carga en el ViewModel lo que la vista necesita para pintar (o esconder) el bloque de
+    /// PVP y el panel de margen.
+    /// </summary>
+    private async Task LoadPricingContextAsync(ProductViewModel model)
+    {
+        var user = await _userManager.GetUserAsync(User);
+        model.CanEditSalePrice = user != null && await CanEditSalePriceAsync(user);
+
+        var settings = await _pricing.GetSettingsAsync();
+        model.TargetMarginPercent = settings.TargetMarginPercent;
+        model.MinimumMarginPercent = settings.MinimumMarginPercent;
+        model.RoundingStep = settings.RoundingStep;
+    }
+
     private async Task LoadCountries(ProductViewModel model)
     {
         var countries = await _context.Countries.Where(c => c.Status).ToListAsync();

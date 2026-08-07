@@ -43,6 +43,15 @@ public class ApplicationDbContext : IdentityDbContext<
     // Shipping
     public DbSet<ShippingCity> ShippingCities { get; set; }
 
+    // Pricing (E2 · ciclo BETA ago-2026)
+    public DbSet<PricingSettings> PricingSettings { get; set; }
+    public DbSet<PriceChangeLog> PriceChangeLogs { get; set; }
+
+    // Inventario multi-bodega (E1 · ciclo BETA ago-2026)
+    public DbSet<Warehouse> Warehouses { get; set; }
+    public DbSet<StockItem> StockItems { get; set; }
+    public DbSet<StockMovement> StockMovements { get; set; }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -146,5 +155,89 @@ public class ApplicationDbContext : IdentityDbContext<
         builder.Entity<ShippingCity>()
             .HasIndex(c => c.DaneCode)
             .IsUnique();
+
+        // ---------------------------------------------------------------------
+        //  Pricing (E2 · ciclo BETA ago-2026)
+        // ---------------------------------------------------------------------
+
+        // Histórico de precios de un lote. Cascade: si algún día se borra DURO un
+        // producto, su histórico se va con él (no tiene otra FK, así que no introduce
+        // "multiple cascade paths").
+        builder.Entity<PriceChangeLog>()
+            .HasOne(l => l.Product)
+            .WithMany(p => p.PriceChanges)
+            .HasForeignKey(l => l.ProductID)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // La consulta es SIEMPRE "histórico de este producto, del más reciente al más viejo".
+        builder.Entity<PriceChangeLog>()
+            .HasIndex(l => new { l.ProductID, l.ChangedOn });
+
+        // Bandeja "Márgenes por revisar": se filtra por la bandera, no se escanea la tabla.
+        builder.Entity<Product>()
+            .HasIndex(p => p.MarginAlert);
+
+        // ---------------------------------------------------------------------
+        //  Inventario multi-bodega (E1 · ciclo BETA ago-2026)
+        // ---------------------------------------------------------------------
+
+        // El código de bodega es su identidad operativa: no se puede repetir.
+        builder.Entity<Warehouse>()
+            .HasIndex(w => w.Code)
+            .IsUnique();
+
+        // Cotizar el envío DESDE la bodega necesita resolver su DANE con frecuencia.
+        builder.Entity<Warehouse>()
+            .HasIndex(w => w.DaneCode);
+
+        // Warehouse -> Country en Restrict: un país con bodegas no se borra en silencio.
+        builder.Entity<Warehouse>()
+            .HasOne(w => w.Country)
+            .WithMany()
+            .HasForeignKey(w => w.CountryID)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // StockItem: saldo por producto × bodega.
+        builder.Entity<StockItem>()
+            .HasKey(s => new { s.ProductID, s.WarehouseID });
+
+        // ⚠️ "Multiple cascade paths": Product y Warehouse llegan ambos a StockItem, y
+        // Warehouse llega además por Country. Se usa Restrict en las dos ramas, el mismo
+        // criterio que ya resolvió esto en Order→User y OrderItem→Product.
+        builder.Entity<StockItem>()
+            .HasOne(s => s.Product)
+            .WithMany(p => p.StockItems)
+            .HasForeignKey(s => s.ProductID)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<StockItem>()
+            .HasOne(s => s.Warehouse)
+            .WithMany(w => w.StockItems)
+            .HasForeignKey(s => s.WarehouseID)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Libro mayor. Restrict en ambas FK: un asiento contable NO se borra en cascada,
+        // nunca, por definición.
+        builder.Entity<StockMovement>()
+            .HasOne(m => m.Product)
+            .WithMany()
+            .HasForeignKey(m => m.ProductID)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<StockMovement>()
+            .HasOne(m => m.Warehouse)
+            .WithMany()
+            .HasForeignKey(m => m.WarehouseID)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // La consulta es SIEMPRE "movimientos de este producto en esta bodega, por fecha".
+        // El hosting tiene 256 MB y esta tabla crece sin techo: sin este índice, el
+        // historial haría table scan a los pocos meses.
+        builder.Entity<StockMovement>()
+            .HasIndex(m => new { m.ProductID, m.WarehouseID, m.CreatedOn });
+
+        // Trazabilidad inversa: "qué movió este pedido / esta recepción".
+        builder.Entity<StockMovement>()
+            .HasIndex(m => new { m.ReferenceType, m.ReferenceID });
     }
 }

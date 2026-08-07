@@ -1,0 +1,156 @@
+@model Web.Models.ViewModels.ProductViewModel
+@using Web.Services.Pricing
+
+@*
+    Bloque de precios compartido por Products/Create y Products/Edit.
+
+    Regla de E2: el PROVEEDOR edita su COSTO (SupplierPrice). El PVP (Price) solo se
+    RENDERIZA para quien tiene Pricing/Update — y además el POST lo vuelve a validar en
+    ProductsController, porque esconder un input no es una medida de seguridad.
+*@
+
+<div class="bean-field">
+    <label asp-for="SupplierPrice" class="bean-label"></label>
+    <div class="bean-input-affix">
+        <span class="affix">$</span>
+        <input asp-for="SupplierPrice" id="beanSupplierPrice" class="bean-input" type="number" step="0.01" min="0" />
+    </div>
+    <span asp-validation-for="SupplierPrice" class="bean-form-error"></span>
+    <span class="bean-field-hint">
+        Lo que Bean te paga por unidad, en pesos colombianos (COP).
+        El precio al que se vende en la tienda lo fija Bean.
+    </span>
+</div>
+
+@if (Model.CanEditSalePrice)
+{
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+
+    var margin = PricingCalculator.CalculateMargin(Model.Price, Model.SupplierPrice);
+    var suggested = PricingCalculator.SuggestPrice(Model.SupplierPrice, Model.TargetMarginPercent, Model.RoundingStep);
+    var below = PricingCalculator.IsBelowMinimum(Model.Price, Model.SupplierPrice, Model.MinimumMarginPercent);
+
+    // Literales para el JS: SIEMPRE en cultura invariante. Con es-CO el separador decimal
+    // es la coma y "30,00" rompería el script.
+    var jsTarget = Model.TargetMarginPercent.ToString(inv);
+    var jsMinimum = Model.MinimumMarginPercent.ToString(inv);
+    var jsStep = Model.RoundingStep.ToString(inv);
+
+    var marginAmountText = margin.IsCalculable ? margin.Amount.ToString("N0") : "—";
+    var marginPercentText = margin.IsCalculable ? margin.Percent.ToString("N2") + " %" : "—";
+
+    <div class="bean-field">
+        <label asp-for="Price" class="bean-label"></label>
+        <div class="bean-input-affix">
+            <span class="affix">$</span>
+            <input asp-for="Price" id="beanSalePrice" class="bean-input" type="number" step="0.01" min="0" />
+        </div>
+        <span asp-validation-for="Price" class="bean-form-error"></span>
+        <span class="bean-field-hint">
+            Precio de venta al público. Un lote no puede activarse sin PVP fijado.
+        </span>
+    </div>
+
+    <div class="bean-field col-span-2">
+        <div class="bean-panel-note" id="beanMarginPanel">
+            <i class="fas fa-percentage"></i>
+            <div>
+                <strong>Margen:</strong>
+                <span id="beanMarginAmount">@marginAmountText</span>
+                (<span id="beanMarginPercent">@marginPercentText</span>)
+                &nbsp;·&nbsp;
+                Objetivo @Model.TargetMarginPercent.ToString("N0") % · Mínimo @Model.MinimumMarginPercent.ToString("N0") %
+                <br />
+                <span id="beanSuggestedWrap">
+                    Precio sugerido: <strong id="beanSuggestedValue">@suggested.ToString("N0")</strong>
+                    <button type="button" class="bean-btn-pill outline" id="beanUseSuggested">Usar este precio</button>
+                </span>
+                <span id="beanBelowWarning" class="bean-form-error" style="@(below ? "" : "display:none;")">
+                    <br />Este precio queda por debajo del margen mínimo. Escribe el motivo para poder guardarlo.
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="bean-field col-span-2" id="beanReasonField" style="@(below ? "" : "display:none;")">
+        <label asp-for="SalePriceReason" class="bean-label">Motivo del precio bajo el mínimo</label>
+        <input asp-for="SalePriceReason" class="bean-input" placeholder="Ej: promoción de lanzamiento, liquidación de lote" />
+        <span asp-validation-for="SalePriceReason" class="bean-form-error"></span>
+    </div>
+
+    @* Recálculo en vivo. Vanilla JS y sin dependencias: el script va DESPUÉS de los
+       campos, así que el DOM ya existe cuando corre. El precio sugerido NUNCA se aplica
+       solo: hace falta pulsar el botón. *@
+    <script>
+        (function () {
+            var cost = document.getElementById('beanSupplierPrice');
+            var price = document.getElementById('beanSalePrice');
+            if (!cost || !price) return;
+
+            var target = @jsTarget;
+            var minimum = @jsMinimum;
+            var step = @jsStep;
+
+            var amountEl = document.getElementById('beanMarginAmount');
+            var percentEl = document.getElementById('beanMarginPercent');
+            var suggestedEl = document.getElementById('beanSuggestedValue');
+            var warnEl = document.getElementById('beanBelowWarning');
+            var reasonEl = document.getElementById('beanReasonField');
+            var useBtn = document.getElementById('beanUseSuggested');
+
+            function money(n) {
+                return n.toLocaleString('es-CO', { maximumFractionDigits: 0 });
+            }
+
+            function suggest(c) {
+                if (!(c > 0) || target < 0 || target >= 100) return 0;
+                var s = step > 0 ? step : 50;
+                return Math.ceil((c / (1 - target / 100)) / s) * s;
+            }
+
+            function refresh() {
+                var c = parseFloat(cost.value) || 0;
+                var p = parseFloat(price.value) || 0;
+
+                var amount = p - c;
+                var calculable = p > 0;
+                var percent = calculable ? (amount / p) * 100 : 0;
+
+                amountEl.textContent = calculable ? money(amount) : '—';
+                percentEl.textContent = calculable ? percent.toFixed(2) + ' %' : '—';
+
+                var sug = suggest(c);
+                suggestedEl.textContent = sug > 0 ? money(sug) : '—';
+
+                var below = !calculable || percent < minimum;
+                warnEl.style.display = below ? '' : 'none';
+                if (reasonEl) reasonEl.style.display = below ? '' : 'none';
+            }
+
+            cost.addEventListener('input', refresh);
+            price.addEventListener('input', refresh);
+
+            if (useBtn) {
+                useBtn.addEventListener('click', function () {
+                    var sug = suggest(parseFloat(cost.value) || 0);
+                    if (sug > 0) {
+                        price.value = sug;
+                        refresh();
+                    }
+                });
+            }
+
+            refresh();
+        })();
+    </script>
+}
+else
+{
+    @* Sin Pricing/Update el PVP ni se renderiza. Tampoco se manda un hidden: el POST lo
+       ignoraría igual, y un hidden solo invitaría a manipularlo. *@
+    <div class="bean-field">
+        <div class="bean-field-hint">
+            El precio de venta al público lo fija el equipo de Bean al aprobar el lote.
+        </div>
+    </div>
+}

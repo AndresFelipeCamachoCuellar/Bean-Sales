@@ -88,6 +88,14 @@ public class Order
     [StringLength(20)]
     public string? ShippingQuoteSource { get; set; }
 
+    /// <summary>
+    /// Bodega que despacha el pedido. Nullable (los pedidos anteriores al inventario
+    /// multi-bodega no la tienen). Su <c>DaneCode</c> es el origen de la cotización de
+    /// envío; si falta, se cae al origen configurado en <c>appsettings</c>.
+    /// Sin FK a propósito: es traza histórica, no una relación viva.
+    /// </summary>
+    public Guid? FulfillmentWarehouseID { get; set; }
+
     // --- Pago (Wompi) -------------------------------------------------------
     // Dimensión ORTOGONAL a OrderStatus: aquél es la logística, esto es el dinero.
     // ⚠️ Los pedidos anteriores a esta migración quedan con PaymentStatus = Pending (0);

@@ -7,6 +7,7 @@ using Web.Data;
 using Web.Models.Enums;
 using Web.Models.ViewModels;
 using Web.Services;
+using Web.Services.Inventory;
 
 namespace Web.Controllers;
 
@@ -20,10 +21,17 @@ public class OrderManagementController : Controller
     private const int PageSize = 25;
 
     private readonly ApplicationDbContext _context;
+    private readonly InventoryService _inventory;
+    private readonly ILogger<OrderManagementController> _logger;
 
-    public OrderManagementController(ApplicationDbContext context)
+    public OrderManagementController(
+        ApplicationDbContext context,
+        InventoryService inventory,
+        ILogger<OrderManagementController> logger)
     {
         _context = context;
+        _inventory = inventory;
+        _logger = logger;
     }
 
     // ---------------------------------------------------------------- Index
@@ -210,20 +218,42 @@ public class OrderManagementController : Controller
                 return RedirectToAction(nameof(Details), new { id });
             }
 
+            // Regla de negocio vigente: si el pedido ya salió de bodega (Shipped/Delivered)
+            // NO se reintegra; el admin ajusta a mano cuando reciba la devolución.
             var restock = OrderWorkflow.ShouldRestock(order.OrderStatus);
             var units = 0;
 
             if (restock)
             {
-                foreach (var item in order.Items)
+                // Un pedido en Pending solo tenía RESERVA (nunca salió del disponible como
+                // venta): se libera. Ya confirmado / en preparación → asiento SaleCancelled.
+                var soloReservado = order.OrderStatus == OrderStatus.Pending;
+                var usuario = User.Identity?.Name ?? "SYSTEM";
+
+                if (order.Items.Any(i => i.WarehouseID.HasValue))
                 {
-                    var p = await _context.Products.FindAsync(item.ProductID);
-                    if (p != null)
+                    // El servicio es idempotente: dos cancelaciones simultáneas del mismo
+                    // pedido no reintegran dos veces (RowVersion + chequeo del asiento).
+                    await _inventory.ReleaseOrderStockAsync(order, soloReservado, usuario);
+                }
+                else
+                {
+                    // Pedidos anteriores al inventario multi-bodega.
+                    _logger.LogWarning(
+                        "El pedido {OrderId} no tiene bodega en sus líneas: se reintegra sobre " +
+                        "Product.Stock sin asiento en el libro mayor.", order.OrderID);
+
+                    foreach (var item in order.Items)
                     {
-                        p.Stock += item.Quantity;
-                        units += item.Quantity;
+                        var p = await _context.Products.FindAsync(item.ProductID);
+                        if (p != null)
+                        {
+                            p.Stock += item.Quantity;
+                        }
                     }
                 }
+
+                units = order.Items.Sum(i => i.Quantity);
             }
 
             order.OrderStatus = OrderStatus.Cancelled;

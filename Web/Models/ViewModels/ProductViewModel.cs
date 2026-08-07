@@ -15,10 +15,42 @@ public class ProductViewModel
     [Display(Name = "Descripción")]
     public string Description { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "El precio es obligatorio")]
-    [Display(Name = "Precio (COP)")]
-    [Range(0.01, double.MaxValue, ErrorMessage = "El precio debe ser mayor a 0")]
+    /// <summary>
+    /// COSTO del proveedor. Es lo que edita el proveedor en su formulario.
+    /// </summary>
+    [Required(ErrorMessage = "Tu precio es obligatorio")]
+    [Display(Name = "Tu precio (COP)")]
+    [Range(0.01, double.MaxValue, ErrorMessage = "Tu precio debe ser mayor a 0")]
+    public decimal SupplierPrice { get; set; }
+
+    /// <summary>
+    /// PVP (precio de venta al público). Solo lo edita quien tenga <c>Pricing/Update</c>.
+    /// ⚠️ SIN <c>[Range]</c> a propósito: cuando el campo no se renderiza llega 0 y una
+    /// validación de rango bloquearía el formulario del proveedor. La validación real es
+    /// condicional y vive en <c>ProductsController</c>.
+    /// </summary>
+    [Display(Name = "Precio de venta al público (COP)")]
     public decimal Price { get; set; }
+
+    /// <summary>
+    /// ⚠️ NO confiar en el valor posteado: el controlador lo RECALCULA siempre desde el
+    /// permiso real del usuario antes de decidir nada. Existe solo para que la vista sepa
+    /// si debe renderizar el bloque de PVP.
+    /// </summary>
+    public bool CanEditSalePrice { get; set; }
+
+    /// <summary>Motivo obligatorio cuando el PVP queda bajo el margen mínimo.</summary>
+    [Display(Name = "Motivo")]
+    [StringLength(300)]
+    public string? SalePriceReason { get; set; }
+
+    // --- Solo lectura: los llena el controlador para pintar el panel de margen ---
+    public decimal TargetMarginPercent { get; set; }
+    public decimal MinimumMarginPercent { get; set; }
+    public decimal RoundingStep { get; set; }
+    public bool MarginAlert { get; set; }
+    public DateTime? PriceSetAt { get; set; }
+    public string? PriceSetBy { get; set; }
 
     [Required(ErrorMessage = "El stock inicial es obligatorio")]
     [Display(Name = "Unidades Disponibles")]
