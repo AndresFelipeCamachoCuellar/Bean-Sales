@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Web.Data;
 using Web.Models;
 using Web.Models.Enums;
+using Web.Services.Inventory;
 
 namespace Web.Services.Payments;
 
@@ -24,15 +25,18 @@ public sealed class PaymentApplicationService
 {
     private readonly ApplicationDbContext _context;
     private readonly IPaymentGateway _gateway;
+    private readonly InventoryService _inventory;
     private readonly ILogger<PaymentApplicationService> _logger;
 
     public PaymentApplicationService(
         ApplicationDbContext context,
         IPaymentGateway gateway,
+        InventoryService inventory,
         ILogger<PaymentApplicationService> logger)
     {
         _context = context;
         _gateway = gateway;
+        _inventory = inventory;
         _logger = logger;
     }
 
@@ -124,6 +128,12 @@ public sealed class PaymentApplicationService
                     if (order.OrderStatus == OrderStatus.Pending)
                     {
                         order.OrderStatus = OrderStatus.Confirmed;
+
+                        // El pago entró: la RESERVA se convierte en salida real de bodega.
+                        // Es idempotente, así que da igual si esto lo dispara el webhook o
+                        // el retorno del cliente (o los dos).
+                        await EnsureItemsLoadedAsync(order, ct);
+                        await _inventory.ConfirmOrderSaleAsync(order, "PAGO", ct);
                     }
                     else if (order.OrderStatus == OrderStatus.Cancelled)
                     {
@@ -295,22 +305,42 @@ public sealed class PaymentApplicationService
 
         if (OrderWorkflow.ShouldRestock(order.OrderStatus))
         {
-            if (!_context.Entry(order).Collection(o => o.Items).IsLoaded)
-            {
-                await _context.Entry(order).Collection(o => o.Items).LoadAsync(ct);
-            }
+            await EnsureItemsLoadedAsync(order, ct);
 
-            foreach (var item in order.Items)
+            // Un pedido en Pending nunca llegó a salir de bodega: solo estaba APARTADO, así
+            // que se libera la reserva y no se escribe asiento (no hubo movimiento físico).
+            // Ya confirmado / en preparación sí hubo venta → asiento SaleCancelled.
+            var soloReservado = order.OrderStatus == OrderStatus.Pending;
+
+            var tieneBodega = order.Items.Any(i => i.WarehouseID.HasValue);
+            if (tieneBodega)
             {
-                var product = await _context.Products.FindAsync(new object?[] { item.ProductID }, ct);
-                if (product != null)
+                await _inventory.ReleaseOrderStockAsync(order, soloReservado, "PAGO", ct);
+            }
+            else
+            {
+                // Pedidos anteriores al inventario multi-bodega: se conserva el reintegro
+                // directo sobre el total denormalizado.
+                foreach (var item in order.Items)
                 {
-                    product.Stock += item.Quantity;
+                    var product = await _context.Products.FindAsync(new object?[] { item.ProductID }, ct);
+                    if (product != null)
+                    {
+                        product.Stock += item.Quantity;
+                    }
                 }
             }
         }
 
         order.OrderStatus = OrderStatus.Cancelled;
+    }
+
+    private async Task EnsureItemsLoadedAsync(Order order, CancellationToken ct)
+    {
+        if (!_context.Entry(order).Collection(o => o.Items).IsLoaded)
+        {
+            await _context.Entry(order).Collection(o => o.Items).LoadAsync(ct);
+        }
     }
 }
 

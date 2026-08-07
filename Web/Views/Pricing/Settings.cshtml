@@ -1,0 +1,73 @@
+@model Web.Models.ViewModels.PricingSettingsViewModel
+
+@{
+    ViewData["Title"] = "Configuración de márgenes";
+    Layout = "_Layout";
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Configuración de márgenes</h1>
+        <p class="bean-panel-sub">
+            Estos tres valores gobiernan el precio sugerido y la bandeja "Márgenes por revisar".
+            Guardar recalcula la alerta de todo el catálogo.
+        </p>
+    </div>
+    <a asp-action="Index" class="bean-btn-pill outline"><i class="fas fa-arrow-left"></i> Volver</a>
+</div>
+
+@if (TempData["PricingOk"] != null)
+{
+    <div class="bean-panel-note" style="margin-top:16px;">
+        <i class="fas fa-check-circle"></i>
+        <div>@TempData["PricingOk"]</div>
+    </div>
+}
+
+<div class="bean-form-card">
+    <form asp-action="Settings" method="post">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="bean-form-summary"></div>
+
+        <div class="bean-form-grid cols-3">
+            <div class="bean-field">
+                <label asp-for="TargetMarginPercent" class="bean-label"></label>
+                <input asp-for="TargetMarginPercent" class="bean-input" type="number" step="0.01" min="0" max="99.99" />
+                <span asp-validation-for="TargetMarginPercent" class="bean-form-error"></span>
+                <span class="bean-field-hint">Alimenta el precio sugerido. Es la META.</span>
+            </div>
+
+            <div class="bean-field">
+                <label asp-for="MinimumMarginPercent" class="bean-label"></label>
+                <input asp-for="MinimumMarginPercent" class="bean-input" type="number" step="0.01" min="0" max="99.99" />
+                <span asp-validation-for="MinimumMarginPercent" class="bean-form-error"></span>
+                <span class="bean-field-hint">Umbral de la alerta. Es el PISO, no la meta.</span>
+            </div>
+
+            <div class="bean-field">
+                <label asp-for="RoundingStep" class="bean-label"></label>
+                <input asp-for="RoundingStep" class="bean-input" type="number" step="1" min="1" />
+                <span asp-validation-for="RoundingStep" class="bean-form-error"></span>
+                <span class="bean-field-hint">El sugerido se redondea HACIA ARRIBA a este múltiplo.</span>
+            </div>
+        </div>
+
+        <div class="bean-panel-note">
+            <i class="fas fa-circle-info"></i>
+            <div>
+                Con un margen del 15 % y la tarifa de Wompi (2,65 % + $700 + IVA) el neto real cae
+                a ~10 % antes de bodega, empaque y logística. Por eso el 15 % es el umbral de alerta
+                y el sugerido apunta al 30 %.
+            </div>
+        </div>
+
+        <div class="bean-form-actions">
+            <a asp-action="Index" class="bean-btn-pill outline">Cancelar</a>
+            <button type="submit" class="bean-btn-pill primary"><i class="fas fa-save"></i> Guardar configuración</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -1,0 +1,173 @@
+@model Web.Models.ViewModels.PricingIndexViewModel
+@using Web.Constants
+@using Web.Models.Enums
+@using Microsoft.AspNetCore.Identity
+@using Web.Models
+@using Web.Services
+@inject IPermissionService PermissionService
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+    ViewData["Title"] = "Precios y márgenes";
+    Layout = "_Layout";
+
+    var co = System.Globalization.CultureInfo.GetCultureInfo("es-CO");
+
+    var currentUser = await UserManager.GetUserAsync(User);
+    var canUpdate = currentUser != null
+        && await PermissionService.HasPermissionAsync(currentUser, Modules.Pricing, Permissions.Update);
+
+    var isSuperAdmin = User.IsInRole(Roles.SuperAdmin);
+    var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+
+    string TabClass(string tab) => Model.Tab == tab ? "bean-tab active" : "bean-tab";
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Precios y márgenes</h1>
+        <p class="bean-panel-sub">
+            El costo lo pone el proveedor; el precio de venta lo pone Bean.
+            Objetivo @Model.TargetMarginPercent.ToString("N0") % · mínimo @Model.MinimumMarginPercent.ToString("N0") %.
+        </p>
+    </div>
+
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <form method="get" asp-action="Index" style="display:flex; gap:8px; align-items:center;">
+            <input type="hidden" name="tab" value="@Model.Tab" />
+            <input type="text" name="q" value="@Model.Query" class="bean-input" style="min-width:230px;"
+                   placeholder="Buscar por lote, nombre o proveedor…" />
+            <button type="submit" class="bean-btn-pill outline"><i class="fas fa-search"></i> Buscar</button>
+        </form>
+        @if (isSuperAdmin)
+        {
+            <a asp-action="Settings" class="bean-btn-pill outline"><i class="fas fa-sliders-h"></i> Configuración</a>
+        }
+    </div>
+</div>
+
+<div class="bean-tabs" style="margin-top:16px;">
+    <a class="@(TabClass("alertas"))" asp-action="Index" asp-route-tab="alertas" asp-route-q="@Model.Query">
+        Márgenes por revisar <span class="cnt">· @Model.CountAlerts</span>
+    </a>
+    <a class="@(TabClass("todos"))" asp-action="Index" asp-route-tab="todos" asp-route-q="@Model.Query">
+        Todos los lotes <span class="cnt">· @Model.CountAll</span>
+    </a>
+</div>
+
+@if (TempData["PricingOk"] != null)
+{
+    <div class="bean-panel-note" style="margin-top:16px;">
+        <i class="fas fa-check-circle"></i>
+        <div>@TempData["PricingOk"]</div>
+    </div>
+}
+@if (TempData["PricingError"] != null)
+{
+    <div class="bean-panel-note danger" style="margin-top:16px;">
+        <i class="fas fa-exclamation-triangle"></i>
+        <div>@TempData["PricingError"]</div>
+    </div>
+}
+
+@if (Model.Rows.Count == 0)
+{
+    <div class="bean-appr-empty" style="margin-top:22px;">
+        <div class="ico"><i class="fas fa-percentage"></i></div>
+        <h3>Nada por revisar aquí</h3>
+        <p>Cuando el costo de un proveedor rompa el margen mínimo, o falte fijar un precio de venta, el lote aparece en esta bandeja.</p>
+    </div>
+}
+else
+{
+    <div class="bean-panel-tablewrap">
+        <table class="bean-panel-table">
+            <thead>
+                <tr>
+                    <th>Lote</th>
+                    <th>Proveedor</th>
+                    <th>Costo</th>
+                    <th>PVP</th>
+                    <th>Margen</th>
+                    <th>Sugerido</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    var margin = row.Margin;
+                    var suggested = Model.Suggested(row);
+
+                    <tr>
+                        <td class="bean-td-name">
+                            <a asp-action="History" asp-route-id="@row.ProductID" style="color:inherit; text-decoration:none;">
+                                @row.Name
+                            </a>
+                            @if (!string.IsNullOrWhiteSpace(row.Lot))
+                            {
+                                <div style="font-size:12.5px; color:var(--bean-muted);">Lote @row.Lot</div>
+                            }
+                        </td>
+                        <td>@(row.ProviderName ?? "—")</td>
+                        <td>@row.SupplierPrice.ToString("C0", co)</td>
+                        <td style="font-weight:700; color:var(--bean-ink);">
+                            @(row.Price > 0 ? row.Price.ToString("C0", co) : "sin fijar")
+                        </td>
+                        <td>
+                            @if (margin.IsCalculable)
+                            {
+                                <span style="@(row.MarginAlert ? "color:#B4552E; font-weight:700;" : "")">
+                                    @margin.Percent.ToString("N2") %
+                                </span>
+                                <div style="font-size:12.5px; color:var(--bean-muted);">@margin.Amount.ToString("C0", co)</div>
+                            }
+                            else
+                            {
+                                <span style="color:#B4552E; font-weight:700;">—</span>
+                            }
+                        </td>
+                        <td>@(suggested > 0 ? suggested.ToString("C0", co) : "—")</td>
+                        <td class="bean-td-actions">
+                            @if (canUpdate)
+                            {
+                                <form asp-action="SetPrice" method="post" style="display:flex; gap:6px; align-items:center;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@row.ProductID" />
+                                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                    <input type="number" name="price" step="0.01" min="0"
+                                           value="@(row.Price > 0 ? row.Price : suggested)"
+                                           class="bean-input" style="width:120px;" />
+                                    <input type="text" name="reason" class="bean-input" style="width:150px;"
+                                           placeholder="Motivo (si baja del mínimo)" />
+                                    <button type="submit" class="bean-btn-pill primary">Fijar</button>
+                                </form>
+                            }
+                            <a asp-action="History" asp-route-id="@row.ProductID" class="bean-btn-pill outline icon" title="Histórico de precios">
+                                <i class="fas fa-clock-rotate-left"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-top:16px;">
+        <span style="font-size:13px; color:var(--bean-muted);">
+            Página @Model.Page de @Model.TotalPages · @Model.TotalCount lotes
+        </span>
+        <div style="display:flex; gap:8px;">
+            @if (Model.Page > 1)
+            {
+                <a class="bean-btn-pill outline" asp-action="Index" asp-route-tab="@Model.Tab"
+                   asp-route-q="@Model.Query" asp-route-page="@(Model.Page - 1)">&larr; Anterior</a>
+            }
+            @if (Model.Page < Model.TotalPages)
+            {
+                <a class="bean-btn-pill outline" asp-action="Index" asp-route-tab="@Model.Tab"
+                   asp-route-q="@Model.Query" asp-route-page="@(Model.Page + 1)">Siguiente &rarr;</a>
+            }
+        </div>
+    </div>
+}

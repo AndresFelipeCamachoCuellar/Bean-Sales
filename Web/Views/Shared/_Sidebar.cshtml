@@ -73,6 +73,19 @@
                     }
                 </a>
             }
+            @* Precios y márgenes (E2). Información interna de Bean: NO se le da al proveedor. *@
+            @if (await PermissionService.HasPermissionAsync(currentUser, Modules.Pricing, Permissions.Read))
+            {
+                var marginAlerts = await Context.Products.CountAsync(p => p.MarginAlert && p.Status);
+
+                <a class="bean-admin-navlink@(ActiveIf("Pricing"))" asp-area="" asp-controller="Pricing" asp-action="Index">
+                    <i class="fas fa-percentage"></i> <span>Precios</span>
+                    @if (marginAlerts > 0)
+                    {
+                        <span class="bean-admin-navcount">@marginAlerts</span>
+                    }
+                </a>
+            }
             @if (await PermissionService.HasPermissionAsync(currentUser, Modules.Users, Permissions.Read))
             {
                 <a class="bean-admin-navlink@(ActiveIf("Users"))" asp-area="" asp-controller="Users" asp-action="Index">

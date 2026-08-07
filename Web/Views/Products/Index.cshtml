@@ -110,9 +110,17 @@ else
                     </div>
                 </div>
 
+                @* HU-2.4: el proveedor ve SU precio (el costo que Bean le paga) y el PVP al
+                   que Bean lo vende. Nunca los de otro proveedor: la consulta ya está
+                   filtrada por ProviderID en ProductsController. *@
                 <div class="bean-prov-lot-col">
-                    <div class="k">Precio COL</div>
-                    <div class="v">@item.Price.ToString("C0")</div>
+                    <div class="k">Tu precio</div>
+                    <div class="v">@item.SupplierPrice.ToString("C0")</div>
+                </div>
+
+                <div class="bean-prov-lot-col">
+                    <div class="k">Precio en tienda</div>
+                    <div class="v">@(item.Price > 0 ? item.Price.ToString("C0") : "por fijar")</div>
                 </div>
 
                 <div class="bean-prov-lot-col">

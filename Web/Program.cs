@@ -4,8 +4,10 @@ using Microsoft.Extensions.Options;
 using Web.Data;
 using Web.Data.Seeds;
 using Web.Models;
+using Web.Services.Inventory;
 using Web.Services.Media;
 using Web.Services.Payments;
+using Web.Services.Pricing;
 using Web.Services.Shipping;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -123,6 +125,12 @@ else
 }
 
 builder.Services.AddScoped<ProductImageService>();
+
+// ---------- Pricing e inventario (ciclo BETA ago-2026) ----------
+// PricingService cachea la configuración de márgenes en IMemoryCache (ya registrado
+// arriba). InventoryService es el ÚNICO punto autorizado a escribir stock.
+builder.Services.AddScoped<PricingService>();
+builder.Services.AddScoped<InventoryService>();
 
 
 builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options => options.SignIn.RequireConfirmedAccount = false)
@@ -270,6 +278,11 @@ using (var scope = app.Services.CreateScope())
     await ContextSeed.SeedCountriesAsync(context);
     await ContextSeed.SeedDocumentTypesAsync(context);
     await ContextSeed.SeedShippingCitiesAsync(context, app.Environment);
+    // Ciclo BETA (ago-2026). Ambos son redes de seguridad idempotentes: las migraciones
+    // AddPricing / AddWarehouseInventory ya siembran estas filas en bases existentes, pero
+    // en una base NUEVA las migraciones corren antes de que existan los países.
+    await ContextSeed.SeedPricingSettingsAsync(context);
+    await ContextSeed.SeedDefaultWarehouseAsync(context);
 
     var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
     var roleManager = services.GetRequiredService<RoleManager<ApplicationRole>>();

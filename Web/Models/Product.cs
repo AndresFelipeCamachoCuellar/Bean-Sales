@@ -22,10 +22,43 @@ public class Product
     [StringLength(500)]
     public string Description { get; set; } = string.Empty;
 
+    /// <summary>
+    /// PVP: lo que paga el cliente. Desde el ciclo BETA (ago-2026) lo fija BEAN, no el
+    /// proveedor: solo lo edita quien tenga <c>Pricing/Update</c>. El catálogo, el carrito
+    /// y el checkout siguen leyendo este campo, así que su significado hacia afuera no cambia.
+    /// </summary>
     [Required]
     [Column(TypeName = "decimal(18,2)")]
     public decimal Price { get; set; }
 
+    /// <summary>
+    /// COSTO: lo que Bean le paga al proveedor por unidad. Lo edita el proveedor en sus
+    /// formularios. Margen = (Price − SupplierPrice) / Price.
+    /// ⚠️ Solo visible con permiso <c>Pricing/Read</c>: nunca se expone en el storefront.
+    /// </summary>
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal SupplierPrice { get; set; }
+
+    /// <summary>Cuándo se fijó el PVP por última vez (null = nunca se ha fijado).</summary>
+    public DateTime? PriceSetAt { get; set; }
+
+    /// <summary>Quién fijó el PVP por última vez.</summary>
+    [StringLength(256)]
+    public string? PriceSetBy { get; set; }
+
+    /// <summary>
+    /// true cuando el margen vigente quedó por debajo del mínimo configurado (típicamente
+    /// porque el proveedor subió su costo). Alimenta la bandeja "Márgenes por revisar".
+    /// NO bloquea la venta: el producto sigue en catálogo.
+    /// </summary>
+    public bool MarginAlert { get; set; }
+
+    /// <summary>
+    /// Total denormalizado de unidades disponibles entre TODAS las bodegas. La verdad
+    /// contable es el libro de <see cref="StockMovement"/>; este campo lo recalcula
+    /// <c>InventoryService</c> en la misma transacción. Lo consumen catálogo, carrito,
+    /// checkout, confirmación, "Mis pedidos" y aprobaciones: no borrar.
+    /// </summary>
     [Required]
     public int Stock { get; set; }
 
@@ -103,4 +136,13 @@ public class Product
     /// completa (Home/Details) o el gestor de fotos.
     /// </summary>
     public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
+
+    /// <summary>
+    /// Histórico de cambios de costo y PVP. Solo se carga en las pantallas de pricing
+    /// (permiso <c>Pricing/Read</c>); nunca en el catálogo ni en el carrito.
+    /// </summary>
+    public ICollection<PriceChangeLog> PriceChanges { get; set; } = new List<PriceChangeLog>();
+
+    /// <summary>Saldos por bodega. La verdad contable es el libro de <see cref="StockMovement"/>.</summary>
+    public ICollection<StockItem> StockItems { get; set; } = new List<StockItem>();
 }

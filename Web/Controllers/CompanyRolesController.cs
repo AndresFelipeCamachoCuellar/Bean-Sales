@@ -13,15 +13,37 @@ namespace Web.Controllers;
 [Authorize]
 public class CompanyRolesController : Controller
 {
+    /// <summary>
+    /// 🔒 ÚNICA fuente de verdad de qué módulos puede delegar un proveedor dentro de su
+    /// propia empresa. La usan el GET (para pintar) y el POST (para AUTORIZAR).
+    ///
+    /// NO agregar aquí módulos internos de Bean: <c>Pricing</c>, <c>Agreements</c>,
+    /// <c>Settlements</c>, <c>Orders</c>, <c>Users</c>, <c>Roles</c> exponen costo,
+    /// margen y condiciones comerciales del negocio, no del proveedor.
+    /// </summary>
+    private static readonly string[] AllowedModuleCodes =
+    {
+        Modules.CompanyProfile,
+        Modules.CompanyUsers,
+        Modules.CompanyRoles,
+        Modules.Products
+    };
+
     private readonly RoleManager<ApplicationRole> _roleManager;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ApplicationDbContext _context;
+    private readonly ILogger<CompanyRolesController> _logger;
 
-    public CompanyRolesController(RoleManager<ApplicationRole> roleManager, UserManager<ApplicationUser> userManager, ApplicationDbContext context)
+    public CompanyRolesController(
+        RoleManager<ApplicationRole> roleManager,
+        UserManager<ApplicationUser> userManager,
+        ApplicationDbContext context,
+        ILogger<CompanyRolesController> logger)
     {
         _roleManager = roleManager;
         _userManager = userManager;
         _context = context;
+        _logger = logger;
     }
 
     [HasPermission(Modules.CompanyRoles, Permissions.Read)]
@@ -167,60 +189,7 @@ public class CompanyRolesController : Controller
         var role = await _roleManager.Roles.FirstOrDefaultAsync(r => r.Id.ToString() == id && r.ProviderID == currentUser.ProviderID);
         if (role == null) return NotFound();
 
-        var model = new ManagePermissionsViewModel
-        {
-            RoleId = role.Id.ToString(),
-            RoleName = role.Name ?? string.Empty
-        };
-
-        // Get permissions assigned to the PROVIDER ADMIN role (Wait, we can iterate all modules, but only show those?)
-        // Better approach: Show modules that are relevant for Companies.
-        // Or cleaner: Fetch modules that the CURRENT User has access to, assuming they are ProviderAdmin.
-        // Actually, let's explicitly list the "Company" modules for now to avoid complexity or security leaks.
-        // Modules: CompanyProfile, CompanyUsers, CompanyRoles.
-        // Maybe "Sales", "Inventory" later.
-        
-        var allowedModules = new[] { Modules.CompanyProfile, Modules.CompanyUsers, Modules.CompanyRoles, Modules.Products };
-        
-        var companyModules = await _context.ParametricModules
-            .Include(m => m.ParametricPermissions)
-            .Where(m => allowedModules.Contains(m.Code) && m.Status)
-            .ToListAsync();
-
-        // Get existing assigned permissions for this target role
-        var rolePermissions = await _context.Permissions
-            .Where(p => p.RoleID == role.Id)
-            .Select(p => p.ParametricPermissionID)
-            .ToListAsync();
-
-        foreach (var module in companyModules)
-        {
-            var moduleViewModel = new ModulePermissionsViewModel
-            {
-                ModuleName = module.Name,
-                ModuleCode = module.Code
-            };
-
-            foreach (var perm in module.ParametricPermissions)
-            {
-                // Ensure we only show permissions that make sense?
-                // Provider Admin has full access to these modules, so they can delegate any permission they have.
-                // NOTE: Ideally we should verify if Current User HAS this permission before letting them assign it.
-                // But for now, as ProviderAdmin is the only one accessing this, and we filtered by AllowedModules, it's fairly safe.
-                
-                moduleViewModel.Permissions.Add(new PermissionSelectionViewModel
-                {
-                    ParametricPermissionID = perm.ParametricPermissionID,
-                    PermissionName = perm.Name,
-                    PermissionCode = perm.Code,
-                    Description = perm.Description,
-                    Selected = rolePermissions.Contains(perm.ParametricPermissionID)
-                });
-            }
-            model.Modules.Add(moduleViewModel);
-        }
-
-        return View(model);
+        return View(await BuildManagePermissionsModelAsync(role));
     }
 
     [HasPermission(Modules.CompanyRoles, Permissions.Update)]
@@ -238,20 +207,47 @@ public class CompanyRolesController : Controller
             .Where(p => p.RoleID == role.Id)
             .ToListAsync();
 
-        // Filter incoming permissions to ensure they belong to Allowed Modules?
-        // Relying on UI for now + the fact `ParametricPermissionID` GUIDs must exist.
-        
         var selectedIds = model.Modules
             .SelectMany(m => m.Permissions)
             .Where(p => p.Selected)
             .Select(p => p.ParametricPermissionID)
+            .Distinct()
             .ToList();
 
-         // 1. Remove permissions that are no longer selected
+        // 🔒 REVALIDACIÓN SERVER-SIDE. El formulario postea GUIDs de ParametricPermission;
+        // sin este filtro, un ProviderAdmin que forje IDs podía asignarse permisos de
+        // CUALQUIER módulo (Pricing, Agreements, Settlements, Orders, Users…). El GET solo
+        // pinta los módulos permitidos, pero eso es UI: la autorización se decide aquí.
+        var allowedPermissionIds = (await LoadAllowedModulesAsync())
+            .SelectMany(m => m.ParametricPermissions ?? new List<ParametricPermission>())
+            .Select(p => p.ParametricPermissionID)
+            .ToHashSet();
+
+        var forgedIds = selectedIds.Where(id => !allowedPermissionIds.Contains(id)).ToList();
+        if (forgedIds.Count > 0)
+        {
+            // No se ignora en silencio: se registra y se rechaza la operación completa.
+            _logger.LogWarning(
+                "Intento de asignar {Count} permiso(s) fuera de los módulos permitidos en el rol {RoleId} " +
+                "del proveedor {ProviderId}, por el usuario {User}. IDs: {Ids}.",
+                forgedIds.Count, role.Id, currentUser.ProviderID, User.Identity?.Name ?? "desconocido",
+                string.Join(", ", forgedIds));
+
+            ModelState.AddModelError(string.Empty,
+                "Algunos permisos enviados no pertenecen a los módulos que puedes administrar. " +
+                "No se guardó ningún cambio.");
+
+            return View(await BuildManagePermissionsModelAsync(role));
+        }
+
+        // 1. Quitar los que se destildaron. Se limita a los módulos administrables: un
+        //    permiso que Bean le haya concedido a este rol fuera de la lista (p. ej.
+        //    Orders/Read) NO se puede borrar desde esta pantalla, porque tampoco se ve.
         var toRemove = existingPermissions
-            .Where(p => !selectedIds.Contains(p.ParametricPermissionID))
+            .Where(p => allowedPermissionIds.Contains(p.ParametricPermissionID)
+                        && !selectedIds.Contains(p.ParametricPermissionID))
             .ToList();
-        
+
         if (toRemove.Any())
         {
             _context.Permissions.RemoveRange(toRemove);
@@ -276,5 +272,61 @@ public class CompanyRolesController : Controller
 
         await _context.SaveChangesAsync();
         return RedirectToAction(nameof(Index));
+    }
+
+    // ------------------------------------------------------------------ Helpers
+
+    /// <summary>
+    /// Módulos administrables por un proveedor, con sus permisos. La comparten el GET
+    /// (pintar) y el POST (autorizar): una sola consulta, una sola verdad.
+    /// </summary>
+    private async Task<List<ParametricModule>> LoadAllowedModulesAsync()
+    {
+        return await _context.ParametricModules
+            .Include(m => m.ParametricPermissions)
+            .Where(m => AllowedModuleCodes.Contains(m.Code) && m.Status)
+            .ToListAsync();
+    }
+
+    /// <summary>Arma la matriz de permisos del rol indicado (GET y re-render del POST fallido).</summary>
+    private async Task<ManagePermissionsViewModel> BuildManagePermissionsModelAsync(ApplicationRole role)
+    {
+        var model = new ManagePermissionsViewModel
+        {
+            RoleId = role.Id.ToString(),
+            RoleName = role.Name ?? string.Empty
+        };
+
+        var companyModules = await LoadAllowedModulesAsync();
+
+        var rolePermissions = await _context.Permissions
+            .Where(p => p.RoleID == role.Id)
+            .Select(p => p.ParametricPermissionID)
+            .ToListAsync();
+
+        foreach (var module in companyModules)
+        {
+            var moduleViewModel = new ModulePermissionsViewModel
+            {
+                ModuleName = module.Name,
+                ModuleCode = module.Code
+            };
+
+            foreach (var perm in module.ParametricPermissions ?? new List<ParametricPermission>())
+            {
+                moduleViewModel.Permissions.Add(new PermissionSelectionViewModel
+                {
+                    ParametricPermissionID = perm.ParametricPermissionID,
+                    PermissionName = perm.Name,
+                    PermissionCode = perm.Code,
+                    Description = perm.Description,
+                    Selected = rolePermissions.Contains(perm.ParametricPermissionID)
+                });
+            }
+
+            model.Modules.Add(moduleViewModel);
+        }
+
+        return model;
     }
 }

@@ -87,6 +87,16 @@ public class DashboardController : Controller
             HasTrend = false
         });
 
+        // 5º KPI (E2): lotes cuyo margen quedó bajo el mínimo o que aún no tienen PVP.
+        // Es la bandeja "Márgenes por revisar" de /Pricing.
+        var marginAlerts = await _context.Products.CountAsync(p => p.MarginAlert && p.Status);
+        vm.Kpis.Add(new DashboardKpi
+        {
+            Label = "Márgenes por revisar",
+            Value = marginAlerts.ToString("N0", EsCo),
+            HasTrend = false
+        });
+
         // ---- Gráfica "Ventas por semana": 8 semanas (7 previas + actual) ----
         // La agrupación por semana es difícil de traducir a SQL de forma portable,
         // así que se materializan las órdenes del rango y se agrupan EN MEMORIA

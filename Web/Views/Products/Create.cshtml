@@ -26,15 +26,7 @@
                 <span asp-validation-for="Name" class="bean-form-error"></span>
             </div>
 
-            <div class="bean-field">
-                <label asp-for="Price" class="bean-label">Precio (COP)</label>
-                <div class="bean-input-affix">
-                    <span class="affix">$</span>
-                    <input asp-for="Price" class="bean-input" type="number" step="0.01" />
-                </div>
-                <span asp-validation-for="Price" class="bean-form-error"></span>
-                <span class="bean-field-hint">Valor unitario en pesos colombianos (COP).</span>
-            </div>
+            @await Html.PartialAsync("_PricingFields", Model)
 
             <div class="bean-field">
                 <label asp-for="Stock" class="bean-label"></label>

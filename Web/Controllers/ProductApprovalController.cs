@@ -8,6 +8,7 @@ using Web.Data;
 using Web.Models;
 using Web.Models.Enums;
 using Web.Services.Media;
+using Web.Services.Pricing;
 
 namespace Web.Controllers;
 
@@ -17,15 +18,18 @@ public class ProductApprovalController : Controller
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ProductImageService _images;
+    private readonly PricingService _pricing;
 
     public ProductApprovalController(
         ApplicationDbContext context,
         UserManager<ApplicationUser> userManager,
-        ProductImageService images)
+        ProductImageService images,
+        PricingService pricing)
     {
         _context = context;
         _userManager = userManager;
         _images = images;
+        _pricing = pricing;
     }
 
     [HasPermission(Modules.ProductApprovals, Permissions.Read)]
@@ -126,6 +130,13 @@ public class ProductApprovalController : Controller
         // que activa el producto. El staff siempre puede editar (ProductApprovals/Update).
         ViewBag.ImageManager = await _images.BuildManagerAsync(product, canEdit: true, role: ImageUploader.Admin);
 
+        // Panel de pricing de la vista (costo, margen y precio sugerido). La vista decide
+        // qué muestra según el permiso Pricing/Read; aquí solo se pasan los umbrales.
+        var settings = await _pricing.GetSettingsAsync();
+        ViewBag.TargetMarginPercent = settings.TargetMarginPercent;
+        ViewBag.MinimumMarginPercent = settings.MinimumMarginPercent;
+        ViewBag.RoundingStep = settings.RoundingStep;
+
         return View(product);
     }
 
@@ -140,8 +151,20 @@ public class ProductApprovalController : Controller
 
         if (product == null) return NotFound();
 
-        if (product.ProductStatus != ProductStatus.Shipped && product.ProductStatus != ProductStatus.Active) 
+        if (product.ProductStatus != ProductStatus.Shipped && product.ProductStatus != ProductStatus.Active)
             return RedirectToAction(nameof(Index));
+
+        // 🔒 CANDADO DE E2: un lote NO pasa a Active sin precio de venta fijado. Es la
+        //    garantía de que Bean nunca venda al costo. Se valida en el POST porque
+        //    deshabilitar el botón en la vista no es una medida de seguridad.
+        if (product.ProductStatus == ProductStatus.Shipped && product.Price <= 0m)
+        {
+            TempData["PricingError"] =
+                "Este lote no tiene precio de venta fijado. Fíjalo antes de activarlo: " +
+                "sin PVP, Bean vendería al costo.";
+
+            return RedirectToAction(nameof(Receive), new { id });
+        }
 
         // 1. Update Countries Availability
         // This allows Incremental Updates: User checks new countries, unchecks old ones, etc.

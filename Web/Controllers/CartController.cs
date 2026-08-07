@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Web.Data;
 using Web.Models;
 using Web.Models.Enums;
+using Web.Services.Inventory;
 using Web.Services.Payments;
 using Web.Services.Shipping;
 using System.Globalization;
@@ -27,6 +28,7 @@ public class CartController : Controller
     private readonly PaymentApplicationService _paymentApplication;
     private readonly PendingOrderExpirationService _paymentExpiration;
     private readonly WompiOptions _wompiOptions;
+    private readonly InventoryService _inventory;
     private readonly ILogger<CartController> _logger;
 
     public CartController(
@@ -39,6 +41,7 @@ public class CartController : Controller
         PaymentApplicationService paymentApplication,
         PendingOrderExpirationService paymentExpiration,
         IOptions<WompiOptions> wompiOptions,
+        InventoryService inventory,
         ILogger<CartController> logger)
     {
         _context = context;
@@ -50,6 +53,7 @@ public class CartController : Controller
         _paymentApplication = paymentApplication;
         _paymentExpiration = paymentExpiration;
         _wompiOptions = wompiOptions.Value;
+        _inventory = inventory;
         _logger = logger;
     }
 
@@ -374,6 +378,12 @@ public class CartController : Controller
             return View(cartItems);
         }
 
+        // 3e. Bodega que despacha. Hoy solo hay una (CAL-01); cuando haya varias, aquí es
+        //     donde entrará la regla de asignación. Si todavía no existe ninguna (base sin
+        //     migrar/sembrar), se degrada al descuento directo sobre Product.Stock, que es
+        //     exactamente lo que hacía el checkout antes del inventario multi-bodega.
+        var warehouse = await _inventory.GetDefaultWarehouseAsync(ct);
+
         // 4-7. Crear orden + descontar stock + vaciar carrito de forma atómica
         await using var transaction = await _context.Database.BeginTransactionAsync(ct);
         try
@@ -405,7 +415,8 @@ public class CartController : Controller
                 ShippingCityDaneCode = city?.DaneCode,
                 ShippingCarrier = totals.CarrierName,
                 ShippingEstimatedDays = totals.EstimatedDays,
-                ShippingQuoteSource = totals.Source
+                ShippingQuoteSource = totals.Source,
+                FulfillmentWarehouseID = warehouse?.WarehouseID
             };
 
             decimal subtotal = 0m;
@@ -422,16 +433,12 @@ public class CartController : Controller
                     ProductID = item.ProductID,
                     ProductName = item.Product?.Name ?? string.Empty,
                     UnitPrice = unitPrice,
+                    // Snapshot del COSTO: sin él la épica E3 no puede liquidar al proveedor.
+                    SupplierPriceSnapshot = item.Product?.SupplierPrice ?? 0m,
                     Quantity = item.Quantity,
-                    SubTotal = lineTotal
+                    SubTotal = lineTotal,
+                    WarehouseID = warehouse?.WarehouseID
                 });
-
-                // 5. Descontar stock (entidad trackeada por el contexto)
-                var product = await _context.Products.FindAsync(item.ProductID);
-                if (product != null)
-                {
-                    product.Stock -= item.Quantity;
-                }
             }
 
             // Importes redondeados a PESOS ENTEROS antes de firmar y persistir: COP no
@@ -467,6 +474,59 @@ public class CartController : Controller
             _context.ShoppingCartItems.RemoveRange(userCart);
 
             await _context.SaveChangesAsync(ct);
+
+            // 7. Inventario. Dentro de la MISMA transacción: InventoryService detecta que
+            //    ya hay una abierta y se suma a ella en vez de anidar otra.
+            //    - Con pasarela: se RESERVA (mueve QuantityReserved, no QuantityOnHand).
+            //      El café sigue físicamente en bodega hasta que se pague y despache.
+            //    - Sin pasarela: el pedido nace pagado, así que sale de una vez (Sale).
+            var usuarioActual = User.Identity?.Name ?? "SYSTEM";
+
+            if (warehouse != null)
+            {
+                foreach (var line in order.Items)
+                {
+                    if (cobrarConPasarela)
+                    {
+                        await _inventory.ReserveAsync(
+                            line.ProductID, warehouse.WarehouseID, line.Quantity, usuarioActual, ct);
+                    }
+                    else
+                    {
+                        await _inventory.MoveStockAsync(
+                            line.ProductID,
+                            warehouse.WarehouseID,
+                            StockMovementType.Sale,
+                            -line.Quantity,                       // firmado: sale de la bodega
+                            StockReference.Order(order.OrderID),
+                            reason: null,
+                            unitCost: line.SupplierPriceSnapshot,
+                            user: usuarioActual,
+                            ct: ct);
+                    }
+                }
+            }
+            else
+            {
+                // Degradación segura: sin bodegas creadas se conserva el comportamiento
+                // anterior al inventario multi-bodega (descuento directo del total).
+                _logger.LogWarning(
+                    "No hay bodegas activas: el pedido {OrderId} descontó stock directo de Product.Stock. " +
+                    "Corre la migración AddWarehouseInventory y verifica que exista CAL-01.",
+                    order.OrderID);
+
+                foreach (var line in order.Items)
+                {
+                    var product = await _context.Products.FindAsync(new object?[] { line.ProductID }, ct);
+                    if (product != null)
+                    {
+                        product.Stock -= line.Quantity;
+                    }
+                }
+
+                await _context.SaveChangesAsync(ct);
+            }
+
             await transaction.CommitAsync(ct);
 
             // 8. A cobrar (Web Checkout de Wompi) o directo a la confirmación.
