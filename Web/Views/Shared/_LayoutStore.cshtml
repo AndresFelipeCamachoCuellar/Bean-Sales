@@ -9,8 +9,13 @@
 @inject IPermissionService PermissionService
 @inject Web.Data.ApplicationDbContext Context
 @{
-    // Contador de la bolsa (placeholder: se muestra sólo si el controlador lo expone en ViewBag.CartCount).
-    var cartCount = ViewBag.CartCount as int?;
+    // Contador de la bolsa.
+    // ANTES esto era `ViewBag.CartCount as int?`, que NINGÚN controlador seteaba nunca:
+    // el badge y su CSS existían pero la variable siempre era null, así que el cliente
+    // no tenía forma de saber que ya llevaba producto de una sesión anterior. Se calcula
+    // aquí para que aplique a TODA la tienda y no dependa de cada controlador.
+    // Coste: autenticado = 1 query indexada; anónimo = 0 queries (lee la sesión).
+    var cartCount = 0;
 
     // --- Puente storefront -> back-office -------------------------------
     // Detección de rol por claims (sin tocar la BD).
@@ -51,6 +56,32 @@
         {
             pendingApprovals = await Context.Products
                 .CountAsync(p => p.ProductStatus == ProductStatus.PendingApproval && p.Status);
+        }
+    }
+
+    // --- Contador de la bolsa -------------------------------------------
+    // Autenticado -> BD (la fuente de verdad; es lo que resucita un carrito viejo al
+    // iniciar sesión). Anónimo -> Session, sin tocar la BD.
+    // OJO: `Context` aquí es el ApplicationDbContext inyectado, que TAPA la propiedad
+    // HttpContext de RazorPage. Para la sesión hay que usar ViewContext.HttpContext.
+    if (isSignedIn)
+    {
+        navUser ??= await UserManager.GetUserAsync(User);
+        if (navUser != null)
+        {
+            cartCount = await Context.ShoppingCartItems
+                .Where(c => c.UserID == navUser.Id)
+                .SumAsync(c => (int?)c.Quantity) ?? 0;
+        }
+    }
+    else
+    {
+        var bagJson = ViewContext.HttpContext.Session.GetString("ShoppingCart");
+        if (!string.IsNullOrEmpty(bagJson))
+        {
+            var bagItems = System.Text.Json.JsonSerializer
+                .Deserialize<List<ShoppingCartItem>>(bagJson);
+            cartCount = bagItems?.Sum(i => i.Quantity) ?? 0;
         }
     }
 
@@ -230,13 +261,36 @@
                         <a class="bean-nav-simple-right" asp-controller="Account" asp-action="Login">Entrar</a>
                     }
 
-                    <a class="bean-bag" asp-controller="Cart" asp-action="Index" title="Ver carrito">
-                        <i class="fas fa-shopping-bag"></i> Bolsa
-                        @if (cartCount.HasValue && cartCount.Value > 0)
+                    <a class="bean-bag" asp-controller="Cart" asp-action="Index"
+                       title="@(cartCount > 0 ? $"Ver carrito · {cartCount} bolsa(s)" : "Ver carrito")">
+                        <i class="fas fa-shopping-bag"></i> <span class="lbl">Bolsa</span>
+                        @if (cartCount > 0)
                         {
-                            <span class="badge-count">@cartCount.Value</span>
+                            <span class="badge-count">@cartCount</span>
                         }
                     </a>
+
+                    @* Hamburguesa: sólo ≤980px, que es donde .bean-nav-links se oculta.
+                       Sin esto el menú principal simplemente desaparecía en móvil. *@
+                    <button class="bean-nav-burger" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#beanNavMobile"
+                            aria-controls="beanNavMobile" aria-expanded="false" aria-label="Abrir menú">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+
+            @* Panel de navegación móvil (Bootstrap collapse; el bundle ya se carga abajo). *@
+            <div class="collapse bean-nav-mobile" id="beanNavMobile">
+                <div class="bean-container">
+                    <a class="bean-nav-mobile-link @(navCatalogActive ? "active" : null)"
+                       asp-controller="Home" asp-action="Index" asp-fragment="lotes">Catálogo</a>
+                    <a class="bean-nav-mobile-link @(navOrigenesActive ? "active" : null)"
+                       asp-controller="Home" asp-action="Origenes">Orígenes</a>
+                    <a class="bean-nav-mobile-link @(navMayoreoActive ? "active" : null)"
+                       asp-controller="Account" asp-action="RegisterProvider">Mayoreo</a>
+                    <a class="bean-nav-mobile-link @(navNosotrosActive ? "active" : null)"
+                       asp-controller="Home" asp-action="Nosotros">Nosotros</a>
                 </div>
             </div>
         </nav>

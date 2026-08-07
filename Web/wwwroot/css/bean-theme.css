@@ -145,6 +145,34 @@
 .bean-nav-spacer { flex: 1 1 auto; }
 .bean-nav-actions { display: flex; align-items: center; gap: 14px; }
 
+/* --- Hamburguesa y panel móvil -------------------------------------
+   .bean-nav-links se oculta a ≤980px. Antes no había reemplazo, así que
+   el menú principal desaparecía y la tienda quedaba sin navegación en
+   móvil. La hamburguesa aparece exactamente en ese mismo breakpoint. */
+.bean-nav-burger {
+    display: none;
+    align-items: center; justify-content: center;
+    width: 40px; height: 40px; flex: 0 0 auto;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: var(--r-pill);
+    color: #fff; font-size: 16px; cursor: pointer;
+    transition: background .2s ease;
+}
+.bean-nav-burger:hover { background: rgba(255,255,255,.16); color: #fff; }
+.bean-nav-burger:focus-visible { outline: 2px solid var(--bean-terra); outline-offset: 2px; }
+
+.bean-nav-mobile { background: var(--bean-dark); border-top: 1px solid rgba(255,255,255,.10); }
+.bean-nav-mobile .bean-container { display: flex; flex-direction: column; padding-top: 8px; padding-bottom: 12px; }
+.bean-nav-mobile-link {
+    font-family: var(--font-body); font-weight: 600; font-size: 15px;
+    color: var(--bean-on-dark-3); padding: 12px 2px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.bean-nav-mobile-link:last-child { border-bottom: none; }
+.bean-nav-mobile-link:hover { color: #fff; }
+.bean-nav-mobile-link.active { color: #fff; border-left: 3px solid var(--bean-terra); padding-left: 12px; }
+
 /* selector de país (envuelve al ViewComponent) */
 .bean-country {
     display: inline-flex; align-items: center; gap: 8px;
@@ -885,11 +913,20 @@
     .bean-footer-grid { grid-template-columns: 1fr 1fr; }
     .bean-hero h1 { font-size: 48px; }
     .bean-nav-links { display: none; }
+    /* Reemplazo de los links ocultos: la hamburguesa entra en el MISMO breakpoint. */
+    .bean-nav-burger { display: inline-flex; }
     /* Píldora Panel: sólo icono (el badge se mantiene) */
     .bean-nav-panel { padding: 9px 11px; }
     .bean-nav-panel .lbl { display: none; }
     /* Menú de usuario: sólo avatar + chevron */
     .bean-usermenu-name { display: none; }
+    /* La nav-inner no envuelve: sin esto los pills se aplastan u overflowean. */
+    .bean-nav-inner { gap: 14px; }
+}
+/* El panel móvil no debe poder quedar visible en escritorio (p. ej. si el
+   usuario lo abre y luego ensancha la ventana). */
+@media (min-width: 981px) {
+    .bean-nav-mobile { display: none !important; }
 }
 @media (max-width: 640px) {
     .bean-container { padding-left: 20px; padding-right: 20px; }
@@ -898,12 +935,28 @@
     .bean-footer-grid { grid-template-columns: 1fr 1fr; }
     .bean-hero h1 { font-size: 38px; }
     .bean-hero { padding: 44px 20px 40px; }
+    /* --- Nav en pantallas angostas --- */
+    .bean-nav-inner { gap: 10px; }
+    .bean-nav-actions { gap: 8px; }
+    /* Toggle de idioma: hoy es un placeholder sin función. Fuera en móvil. */
+    .bean-lang-toggle { display: none; }
+    /* Bolsa: sólo icono + contador. El texto se come el ancho. */
+    .bean-bag { padding: 10px 13px; }
+    .bean-bag .lbl { display: none; }
+    .bean-brand { font-size: 19px; }
     .bean-order-row {
         grid-template-columns: 1fr auto;
         row-gap: 14px;
     }
     .bean-order-idcol { grid-column: 1 / -1; }
     .bean-usermenu .bean-usermenu-panel { min-width: min(280px, calc(100vw - 32px)); }
+}
+/* El <form> del CountrySelector trae `d-none d-sm-inline-block` de Bootstrap, así que
+   por debajo de 576px se oculta SOLO. El wrapper .bean-country se quedaba con su
+   fondo, borde, padding y el punto que late: una píldora huérfana y vacía en la nav.
+   Se oculta el wrapper en el mismo breakpoint que Bootstrap oculta el form. */
+@media (max-width: 575.98px) {
+    .bean-country { display: none; }
 }
 
 /* ---------------------------------------------------------------------

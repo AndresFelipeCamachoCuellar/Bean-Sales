@@ -72,6 +72,8 @@ public class CartController : Controller
         var product = await _context.Products.FindAsync(productId);
         if (product == null || !product.Status) return NotFound();
 
+        if (quantity < 1) quantity = 1;
+
         // 1. Authenticated User -> DB
         if (User.Identity?.IsAuthenticated == true)
         {
@@ -79,14 +81,25 @@ public class CartController : Controller
             var cartItem = await _context.ShoppingCartItems
                 .FirstOrDefaultAsync(c => c.UserID == user.Id && c.ProductID == productId);
 
+            // Validación de stock AL AGREGAR. Antes solo se validaba en el checkout, así
+            // que el cliente llenaba el carrito y se enteraba al final. Se valida contra
+            // el total resultante (lo que ya lleva + lo que agrega), porque el carrito
+            // acumula y puede venir de una sesión anterior.
+            var yaEnCarrito = cartItem?.Quantity ?? 0;
+            if (product.Stock < yaEnCarrito + quantity)
+            {
+                TempData["CartError"] = yaEnCarrito > 0
+                    ? $"Solo quedan {product.Stock} bolsa(s) de \"{product.Name}\" y ya tienes {yaEnCarrito} en tu carrito."
+                    : $"Solo quedan {product.Stock} bolsa(s) de \"{product.Name}\".";
+                return RedirectToAction(nameof(Index));
+            }
+
             if (cartItem != null)
             {
                 cartItem.Quantity += quantity;
             }
             else
             {
-                // Verify Stock? product.Stock < quantity...
-                
                 cartItem = new ShoppingCartItem
                 {
                     ShoppingCartItemID = Guid.NewGuid(),
@@ -103,6 +116,16 @@ public class CartController : Controller
         {
             var sessionCart = GetSessionCart();
             var existingItem = sessionCart.FirstOrDefault(c => c.ProductID == productId);
+
+            // Misma validación de stock que en la rama autenticada.
+            var yaEnCarrito = existingItem?.Quantity ?? 0;
+            if (product.Stock < yaEnCarrito + quantity)
+            {
+                TempData["CartError"] = yaEnCarrito > 0
+                    ? $"Solo quedan {product.Stock} bolsa(s) de \"{product.Name}\" y ya tienes {yaEnCarrito} en tu carrito."
+                    : $"Solo quedan {product.Stock} bolsa(s) de \"{product.Name}\".";
+                return RedirectToAction(nameof(Index));
+            }
 
             if (existingItem != null)
             {
