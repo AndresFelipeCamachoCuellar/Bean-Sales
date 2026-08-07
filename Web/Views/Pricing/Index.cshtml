@@ -144,7 +144,9 @@ else
                                 </form>
                             }
                             <a asp-action="History" asp-route-id="@row.ProductID" class="bean-btn-pill outline icon" title="Histórico de precios">
-                                <i class="fas fa-clock-rotate-left"></i>
+                                @* fa-history es el nombre de Font Awesome 5 (el que carga _Layout).
+                                   NO usar fa-clock-rotate-left: es el nombre de FA6 y aquí renderiza vacío. *@
+                                <i class="fas fa-history"></i>
                             </a>
                         </td>
                     </tr>
