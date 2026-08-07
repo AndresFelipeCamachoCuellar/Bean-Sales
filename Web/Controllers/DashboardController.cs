@@ -97,6 +97,17 @@ public class DashboardController : Controller
             HasTrend = false
         });
 
+        // 6º KPI (E1): lotes en el punto de reorden o por debajo, en cualquier bodega.
+        // Se reutiliza la MISMA consulta que el badge del sidebar y la matriz de inventario
+        // para que los tres números no puedan contradecirse.
+        var lowStock = await InventoryController.CountLowStockProductsAsync(_context);
+        vm.Kpis.Add(new DashboardKpi
+        {
+            Label = "Stock bajo",
+            Value = lowStock.ToString("N0", EsCo),
+            HasTrend = false
+        });
+
         // ---- Gráfica "Ventas por semana": 8 semanas (7 previas + actual) ----
         // La agrupación por semana es difícil de traducir a SQL de forma portable,
         // así que se materializan las órdenes del rango y se agrupan EN MEMORIA

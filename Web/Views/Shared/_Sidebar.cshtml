@@ -73,6 +73,27 @@
                     }
                 </a>
             }
+            @* Inventario multi-bodega (E1). Badge = lotes en el punto de reorden o por debajo. *@
+            @if (await PermissionService.HasPermissionAsync(currentUser, Modules.Inventory, Permissions.Read))
+            {
+                // Misma definición de "stock bajo" que la matriz y el KPI del dashboard.
+                var lowStock = await Web.Controllers.InventoryController.CountLowStockProductsAsync(Context);
+
+                <a class="bean-admin-navlink@(ActiveIf("Inventory"))" asp-area="" asp-controller="Inventory" asp-action="Index">
+                    <i class="fas fa-boxes"></i> <span>Inventario</span>
+                    @if (lowStock > 0)
+                    {
+                        <span class="bean-admin-navcount">@lowStock</span>
+                    }
+                </a>
+            }
+            @* Bodegas (E1). CRUD de ubicaciones físicas. *@
+            @if (await PermissionService.HasPermissionAsync(currentUser, Modules.Warehouses, Permissions.Read))
+            {
+                <a class="bean-admin-navlink@(ActiveIf("Warehouses"))" asp-area="" asp-controller="Warehouses" asp-action="Index">
+                    <i class="fas fa-warehouse"></i> <span>Bodegas</span>
+                </a>
+            }
             @* Precios y márgenes (E2). Información interna de Bean: NO se le da al proveedor. *@
             @if (await PermissionService.HasPermissionAsync(currentUser, Modules.Pricing, Permissions.Read))
             {

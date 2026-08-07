@@ -1,0 +1,84 @@
+@model Web.Models.ViewModels.WarehouseViewModel
+
+@*
+    Campos compartidos por Create y Edit. El <form> y el botón de guardar los pone cada
+    vista: así cada una apunta a su propia acción sin trucos.
+*@
+
+<div asp-validation-summary="ModelOnly" class="bean-form-summary"></div>
+
+<div class="bean-form-grid">
+    <div class="bean-field">
+        <label asp-for="Code" class="bean-label"></label>
+        <input asp-for="Code" class="bean-input" placeholder="CAL-01" maxlength="20" />
+        <span class="bean-field-hint">Código corto y único. Es lo que se ve en la matriz de inventario.</span>
+        <span asp-validation-for="Code" class="bean-form-error"></span>
+    </div>
+
+    <div class="bean-field">
+        <label asp-for="Name" class="bean-label"></label>
+        <input asp-for="Name" class="bean-input" placeholder="Bodega Principal Cali" maxlength="100" />
+        <span asp-validation-for="Name" class="bean-form-error"></span>
+    </div>
+
+    <div class="bean-field">
+        <label asp-for="CountryID" class="bean-label"></label>
+        <select asp-for="CountryID" class="bean-select">
+            <option value="">Selecciona un país…</option>
+            @foreach (var c in Model.CountryOptions)
+            {
+                <option value="@c.Id">@c.Label</option>
+            }
+        </select>
+        <span asp-validation-for="CountryID" class="bean-form-error"></span>
+    </div>
+
+    <div class="bean-field">
+        <label asp-for="City" class="bean-label"></label>
+        <input asp-for="City" class="bean-input" placeholder="Cali" maxlength="100" />
+        <span asp-validation-for="City" class="bean-form-error"></span>
+    </div>
+
+    <div class="bean-field">
+        <label asp-for="DaneCode" class="bean-label"></label>
+        <input asp-for="DaneCode" class="bean-input" placeholder="76001" maxlength="10" inputmode="numeric" />
+        <span class="bean-field-hint">
+            5 dígitos (DIVIPOLA). Cali es <strong>76001</strong>; 760001 es el código POSTAL, no el DANE.
+            Si se deja vacío, el envío se cotiza desde el origen configurado en <code>appsettings</code>.
+        </span>
+        <span asp-validation-for="DaneCode" class="bean-form-error"></span>
+    </div>
+
+    <div class="bean-field">
+        <label asp-for="Address" class="bean-label"></label>
+        <input asp-for="Address" class="bean-input" maxlength="200" />
+        <span asp-validation-for="Address" class="bean-form-error"></span>
+    </div>
+
+    <div class="bean-field col-span-2">
+        <div class="bean-switch-row">
+            <input asp-for="IsDefault" type="checkbox" />
+            <label asp-for="IsDefault"></label>
+        </div>
+        <span class="bean-field-hint">
+            Es la bodega que despacha en su país y la que fija el origen del envío.
+            Al marcarla, la bodega que lo era antes se desmarca sola.
+        </span>
+        <span asp-validation-for="IsDefault" class="bean-form-error"></span>
+    </div>
+
+    <div class="bean-field col-span-2">
+        <div class="bean-switch-row">
+            <input asp-for="IsActive" type="checkbox" />
+            <label asp-for="IsActive"></label>
+        </div>
+        <span class="bean-field-hint">
+            Una bodega inactiva no aparece en la matriz ni se puede usar para recibir lotes.
+            @if (!Model.IsNew && Model.UnitsOnHand > 0)
+            {
+                <strong>Hoy tiene @Model.UnitsOnHand unidades físicas: no se puede desactivar hasta que queden en 0.</strong>
+            }
+        </span>
+        <span asp-validation-for="IsActive" class="bean-form-error"></span>
+    </div>
+</div>

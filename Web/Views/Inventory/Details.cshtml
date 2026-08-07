@@ -1,0 +1,284 @@
+@model Web.Models.ViewModels.InventoryDetailsViewModel
+@using Web.Models.Enums
+@using Web.Models.ViewModels
+
+@{
+    ViewData["Title"] = "Movimientos de inventario";
+    Layout = "_Layout";
+
+    var co = System.Globalization.CultureInfo.GetCultureInfo("es-CO");
+
+    string EstadoLabel(ProductStatus s) => s switch
+    {
+        ProductStatus.Draft => "Borrador",
+        ProductStatus.PendingApproval => "Pendiente de aprobación",
+        ProductStatus.ApprovedToShip => "Aprobado · por enviar",
+        ProductStatus.Shipped => "Enviado · por recibir",
+        ProductStatus.Active => "Activo · en venta",
+        ProductStatus.Rejected => "Rechazado",
+        _ => s.ToString()
+    };
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">@Model.Name</h1>
+        <p class="bean-panel-sub">
+            @(Model.ProviderName ?? "Sin proveedor")
+            @if (!string.IsNullOrWhiteSpace(Model.Lot))
+            {
+                <text> · Lote @Model.Lot</text>
+            }
+            · @(EstadoLabel(Model.ProductStatus))
+        </p>
+    </div>
+    <a asp-action="Index" class="bean-btn-pill outline"><i class="fas fa-arrow-left"></i> Volver al inventario</a>
+</div>
+
+@if (TempData["InventoryOk"] != null)
+{
+    <div class="bean-panel-note" style="margin-top:16px;">
+        <i class="fas fa-check-circle"></i>
+        <div>@TempData["InventoryOk"]</div>
+    </div>
+}
+@if (TempData["InventoryError"] != null)
+{
+    <div class="bean-panel-note danger" style="margin-top:16px;">
+        <i class="fas fa-exclamation-triangle"></i>
+        <div>@TempData["InventoryError"]</div>
+    </div>
+}
+
+@* ---- Saldo por bodega ---- *@
+<div class="bean-panel-card">
+    <h2 class="bean-panel-title" style="font-size:19px; margin:0 0 6px;">Saldo por bodega</h2>
+    <p class="bean-panel-sub" style="margin:0 0 14px;">
+        <strong>Disponible</strong> = en mano − reservado. El catálogo publica el disponible total del lote
+        (hoy: <strong>@Model.ProductStock</strong> unidades).
+    </p>
+
+    @if (Model.Balances.Count == 0)
+    {
+        <div class="bean-panel-note">
+            <i class="fas fa-info-circle"></i>
+            <div>Este lote todavía no tiene saldo en ninguna bodega.</div>
+        </div>
+    }
+    else
+    {
+        <div class="bean-panel-tablewrap bean-inv-scroll" style="margin-top:0;">
+            <table class="bean-panel-table">
+                <thead>
+                    <tr>
+                        <th>Bodega</th>
+                        <th>En mano</th>
+                        <th>Reservado</th>
+                        <th>Disponible</th>
+                        <th>Punto de reorden</th>
+                        <th>Propiedad</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in Model.Balances)
+                    {
+                        <tr>
+                            <td class="bean-td-name">
+                                @b.Code
+                                <div class="bean-inv-lotmeta">
+                                    @b.Name · @b.City
+                                    @if (!b.WarehouseIsActive)
+                                    {
+                                        <span class="bean-role-chip">Inactiva</span>
+                                    }
+                                </div>
+                            </td>
+                            <td>@b.QuantityOnHand</td>
+                            <td>@b.QuantityReserved</td>
+                            <td>
+                                @if (b.QuantityAvailable <= 0)
+                                {
+                                    <span class="bean-inv-qty empty"><span class="dot"></span>@b.QuantityAvailable</span>
+                                }
+                                else if (b.IsLow)
+                                {
+                                    <span class="bean-inv-qty low"><span class="dot"></span>@b.QuantityAvailable</span>
+                                }
+                                else
+                                {
+                                    <span class="bean-inv-qty ok"><span class="dot"></span>@b.QuantityAvailable</span>
+                                }
+                            </td>
+                            <td>
+                                @if (Model.CanAdjust && b.HasStockItem)
+                                {
+                                    <form asp-action="SetReorderPoint" method="post" class="bean-inv-inlineform">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@Model.ProductID" />
+                                        <input type="hidden" name="warehouseId" value="@b.WarehouseID" />
+                                        <input type="number" name="reorderPoint" min="0" step="1"
+                                               value="@b.ReorderPoint" class="bean-input" style="width:90px;"
+                                               placeholder="—" />
+                                        <button type="submit" class="bean-btn-pill outline icon" title="Guardar punto de reorden">
+                                            <i class="fas fa-save"></i>
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <text>@(b.ReorderPoint.HasValue ? b.ReorderPoint.Value.ToString() : "—")</text>
+                                }
+                            </td>
+                            <td><span class="bean-role-chip">@(StockMovementUi.OwnershipLabel(b.Ownership))</span></td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th>Total</th>
+                        <th>@Model.TotalOnHand</th>
+                        <th>@Model.TotalReserved</th>
+                        <th>@Model.TotalAvailable</th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+</div>
+
+@* ---- Ajuste manual ---- *@
+@if (Model.CanAdjust)
+{
+    <div class="bean-panel-card">
+        <h2 class="bean-panel-title" style="font-size:19px; margin:0 0 6px;">Ajuste manual</h2>
+        <p class="bean-panel-sub" style="margin:0 0 14px;">
+            Para cuadrar diferencias de conteo, mermas o correcciones. Queda como asiento
+            <strong>permanente</strong> en el libro de movimientos: no se puede borrar, solo compensar con otro ajuste.
+        </p>
+
+        @if (Model.WarehouseOptions.Count == 0)
+        {
+            <div class="bean-panel-note danger">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>No hay bodegas operativas: crea una antes de poder ajustar inventario.</div>
+            </div>
+        }
+        else
+        {
+            <form asp-action="Adjust" method="post" class="bean-inv-adjustform"
+                  onsubmit="return confirm('El ajuste queda registrado de forma permanente en el libro de inventario. ¿Continuar?');">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.ProductID" />
+
+                <div class="bean-field">
+                    <label class="bean-label" for="adj-wh">Bodega</label>
+                    <select id="adj-wh" name="warehouseId" class="bean-select" required>
+                        @foreach (var opt in Model.WarehouseOptions)
+                        {
+                            <option value="@opt.Id">@opt.Label</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="bean-field">
+                    <label class="bean-label" for="adj-qty">Cantidad (+ entra · − sale)</label>
+                    <input id="adj-qty" type="number" name="quantity" step="1" class="bean-input"
+                           style="width:150px;" required placeholder="ej. -3" />
+                </div>
+
+                <div class="bean-field" style="flex:1; min-width:240px;">
+                    <label class="bean-label" for="adj-reason">Motivo (obligatorio)</label>
+                    <input id="adj-reason" type="text" name="reason" class="bean-input" maxlength="300" required
+                           placeholder="ej. Conteo físico del 7 de agosto: faltaban 3 bolsas" />
+                </div>
+
+                <div class="bean-field" style="justify-content:flex-end;">
+                    <button type="submit" class="bean-btn-pill primary">
+                        <i class="fas fa-balance-scale"></i> Registrar ajuste
+                    </button>
+                </div>
+            </form>
+        }
+    </div>
+}
+
+@* ---- Libro mayor ---- *@
+<div class="bean-panel-card">
+    <h2 class="bean-panel-title" style="font-size:19px; margin:0 0 6px;">Historial de movimientos</h2>
+    <p class="bean-panel-sub" style="margin:0 0 14px;">
+        Libro mayor inmutable: @Model.TotalMovements @(Model.TotalMovements == 1 ? "asiento" : "asientos") en total.
+    </p>
+
+    @if (Model.Movements.Count == 0)
+    {
+        <div class="bean-panel-note">
+            <i class="fas fa-info-circle"></i>
+            <div>Todavía no hay movimientos para este lote.</div>
+        </div>
+    }
+    else
+    {
+        <div class="bean-panel-tablewrap bean-inv-scroll" style="margin-top:0;">
+            <table class="bean-panel-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Bodega</th>
+                        <th>Cantidad</th>
+                        <th>Referencia</th>
+                        <th>Costo unit.</th>
+                        <th>Usuario</th>
+                        <th>Motivo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in Model.Movements)
+                    {
+                        <tr>
+                            <td style="white-space:nowrap;">@m.CreatedOn.ToString("d MMM yyyy '·' HH:mm", co)</td>
+                            <td><span class="@(StockMovementUi.CssClass(m.MovementType))"><span class="dot"></span>@(StockMovementUi.Label(m.MovementType))</span></td>
+                            <td>@m.WarehouseCode</td>
+                            <td class="@(m.Quantity < 0 ? "bean-inv-neg" : "bean-inv-pos")">
+                                @(m.Quantity > 0 ? "+" : string.Empty)@m.Quantity
+                            </td>
+                            <td>
+                                @if (m.ReferenceShortId != null)
+                                {
+                                    <span class="bean-role-chip">@m.ReferenceType #@m.ReferenceShortId</span>
+                                }
+                                else
+                                {
+                                    <text>—</text>
+                                }
+                            </td>
+                            <td>@(m.UnitCost.HasValue ? m.UnitCost.Value.ToString("C0", co) : "—")</td>
+                            <td style="font-size:12.5px; color:var(--bean-muted);">@m.CreatedBy</td>
+                            <td style="max-width:280px;">@(string.IsNullOrWhiteSpace(m.Reason) ? "—" : m.Reason)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-top:16px;">
+            <span style="font-size:13px; color:var(--bean-muted);">
+                Página @Model.Page de @Model.TotalPages · saldo de esta página: @Model.PageMovementBalance
+            </span>
+            <div style="display:flex; gap:8px;">
+                @if (Model.HasPrev)
+                {
+                    <a class="bean-btn-pill outline" asp-action="Details" asp-route-id="@Model.ProductID"
+                       asp-route-page="@(Model.Page - 1)">&larr; Anterior</a>
+                }
+                @if (Model.HasNext)
+                {
+                    <a class="bean-btn-pill outline" asp-action="Details" asp-route-id="@Model.ProductID"
+                       asp-route-page="@(Model.Page + 1)">Siguiente &rarr;</a>
+                }
+            </div>
+        </div>
+    }
+</div>

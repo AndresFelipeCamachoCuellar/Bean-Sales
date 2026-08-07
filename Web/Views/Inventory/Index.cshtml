@@ -1,0 +1,295 @@
+@model Web.Models.ViewModels.InventoryMatrixViewModel
+@using Web.Constants
+@using Web.Models
+@using Web.Models.Enums
+@using Web.Models.ViewModels
+@using Web.Services
+@using Microsoft.AspNetCore.Identity
+@inject IPermissionService PermissionService
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+    ViewData["Title"] = "Inventario";
+    Layout = "_Layout";
+
+    var currentUser = await UserManager.GetUserAsync(User);
+    var canManageWarehouses = currentUser != null
+        && await PermissionService.HasPermissionAsync(currentUser, Modules.Warehouses, Permissions.Read);
+
+    // Estados que tiene sentido filtrar en inventario (un borrador nunca ha llegado a bodega,
+    // pero se deja para poder auditar por qué un lote no aparece).
+    var estadosFiltrables = new[]
+    {
+        ProductStatus.Shipped,
+        ProductStatus.Active,
+        ProductStatus.ApprovedToShip,
+        ProductStatus.PendingApproval,
+        ProductStatus.Draft,
+        ProductStatus.Rejected
+    };
+
+    string EstadoLabel(ProductStatus s) => s switch
+    {
+        ProductStatus.Draft => "Borrador",
+        ProductStatus.PendingApproval => "Pendiente de aprobación",
+        ProductStatus.ApprovedToShip => "Aprobado · por enviar",
+        ProductStatus.Shipped => "Enviado · por recibir",
+        ProductStatus.Active => "Activo · en venta",
+        ProductStatus.Rejected => "Rechazado",
+        _ => s.ToString()
+    };
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Inventario</h1>
+        <p class="bean-panel-sub">
+            Disponibilidad por lote y por bodega. La celda muestra lo que se puede vender;
+            pasa el cursor por encima para ver cuánto hay en mano y cuánto está reservado.
+        </p>
+    </div>
+
+    @if (canManageWarehouses)
+    {
+        <a asp-controller="Warehouses" asp-action="Index" class="bean-btn-pill outline">
+            <i class="fas fa-warehouse"></i> Bodegas
+        </a>
+    }
+</div>
+
+@if (TempData["InventoryOk"] != null)
+{
+    <div class="bean-panel-note" style="margin-top:16px;">
+        <i class="fas fa-check-circle"></i>
+        <div>@TempData["InventoryOk"]</div>
+    </div>
+}
+@if (TempData["InventoryError"] != null)
+{
+    <div class="bean-panel-note danger" style="margin-top:16px;">
+        <i class="fas fa-exclamation-triangle"></i>
+        <div>@TempData["InventoryError"]</div>
+    </div>
+}
+
+@if (Model.NoWarehouses)
+{
+    <div class="bean-appr-empty" style="margin-top:22px;">
+        <div class="ico"><i class="fas fa-warehouse"></i></div>
+        <h3>Todavía no hay bodegas operativas</h3>
+        <p>
+            El inventario se organiza por bodega. Crea al menos una para poder recibir lotes
+            y ver aquí la disponibilidad.
+        </p>
+        @if (canManageWarehouses)
+        {
+            <div style="margin-top:16px;">
+                <a asp-controller="Warehouses" asp-action="Create" class="bean-btn-pill primary">
+                    <i class="fas fa-plus"></i> Crear la primera bodega
+                </a>
+            </div>
+        }
+    </div>
+}
+else
+{
+    @* Contenedor de todo el cuerpo: mantiene el resto de la vista en contexto de MARKUP,
+       que es donde `@if` / `@foreach` son válidos (dentro de un bloque de código C# habría
+       que escribirlos sin `@` — RZ1010). *@
+    <div class="bean-inv-body">
+
+        @* ---- Filtros: un solo GET, server-side (patrón de OrderManagement) ---- *@
+        <form method="get" asp-action="Index" class="bean-inv-filters">
+            <div class="bean-field">
+                <label class="bean-label" for="f-bodega">Bodega</label>
+                <select id="f-bodega" name="bodega" class="bean-select">
+                    <option value="">Todas las bodegas</option>
+                    @foreach (var opt in Model.WarehouseOptions)
+                    {
+                        <option value="@opt.Id" selected="@(Model.WarehouseID == opt.Id)">@opt.Label</option>
+                    }
+                </select>
+            </div>
+
+            <div class="bean-field">
+                <label class="bean-label" for="f-proveedor">Proveedor</label>
+                <select id="f-proveedor" name="proveedor" class="bean-select">
+                    <option value="">Todos los proveedores</option>
+                    @foreach (var opt in Model.ProviderOptions)
+                    {
+                        <option value="@opt.Id" selected="@(Model.ProviderID == opt.Id)">@opt.Label</option>
+                    }
+                </select>
+            </div>
+
+            <div class="bean-field">
+                <label class="bean-label" for="f-estado">Estado del lote</label>
+                <select id="f-estado" name="estado" class="bean-select">
+                    <option value="">Todos los estados</option>
+                    @foreach (var st in estadosFiltrables)
+                    {
+                        <option value="@st" selected="@(Model.Estado == st)">@(EstadoLabel(st))</option>
+                    }
+                </select>
+            </div>
+
+            <div class="bean-field">
+                <label class="bean-label" for="f-q">Buscar</label>
+                <input id="f-q" type="text" name="q" value="@Model.Query" class="bean-input"
+                       placeholder="Nombre o número de lote…" />
+            </div>
+
+            <div class="bean-inv-filters-actions">
+                <label class="bean-inv-check">
+                    <input type="checkbox" name="bajo" value="true" checked="@Model.SoloStockBajo" />
+                    <span>Solo stock bajo</span>
+                </label>
+                <button type="submit" class="bean-btn-pill primary"><i class="fas fa-search"></i> Filtrar</button>
+                <a asp-action="Index" class="bean-btn-pill outline">Limpiar</a>
+            </div>
+        </form>
+
+        @if (Model.LowStockCount > 0 && !Model.SoloStockBajo)
+        {
+            <div class="bean-panel-note danger" style="margin-top:16px;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>
+                    Hay <strong>@Model.LowStockCount</strong> @(Model.LowStockCount == 1 ? "lote" : "lotes")
+                    en el punto de reorden o por debajo.
+                    <a asp-action="Index" asp-route-bajo="true" asp-route-bodega="@Model.WarehouseID"
+                       asp-route-proveedor="@Model.ProviderID" asp-route-estado="@Model.Estado">Verlos</a>.
+                </div>
+            </div>
+        }
+
+        @if (Model.Rows.Count == 0)
+        {
+            <div class="bean-appr-empty" style="margin-top:22px;">
+                <div class="ico"><i class="fas fa-boxes"></i></div>
+                <h3>No hay lotes con estos filtros</h3>
+                <p>Ajusta el filtro, o registra la recepción de un lote desde la bandeja de aprobaciones.</p>
+            </div>
+        }
+        else
+        {
+            @* Scroll horizontal contenido: la matriz crece a lo ancho con cada bodega nueva
+               y sin este wrapper reventaría el layout en móvil. *@
+            <div class="bean-panel-tablewrap bean-inv-scroll">
+                <table class="bean-panel-table bean-inv-matrix">
+                    <thead>
+                        <tr>
+                            <th class="bean-inv-stickycol">Lote</th>
+                            @foreach (var col in Model.Columns)
+                            {
+                                <th class="bean-inv-whcol" title="@col.Name · @col.City">
+                                    @col.Code
+                                    <span class="wh-name">@col.City</span>
+                                </th>
+                            }
+                            <th class="bean-inv-totalcol">Total</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.Rows)
+                        {
+                            <tr>
+                                <td class="bean-inv-stickycol bean-td-name">
+                                    <a asp-action="Details" asp-route-id="@row.ProductID" class="bean-inv-lotlink">@row.Name</a>
+                                    <div class="bean-inv-lotmeta">
+                                        @if (!string.IsNullOrWhiteSpace(row.Lot))
+                                        {
+                                            <span>Lote @row.Lot</span>
+                                            <span class="sep">·</span>
+                                        }
+                                        <span>@(row.ProviderName ?? "Sin proveedor")</span>
+                                    </div>
+                                </td>
+
+                                @foreach (var col in Model.Columns)
+                                {
+                                    var cell = row.CellFor(col.WarehouseID);
+
+                                    <td class="bean-inv-cell" title="@cell.Tooltip">
+                                        @if (!cell.Exists)
+                                        {
+                                            <span class="bean-inv-qty none">—</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="bean-inv-qty @cell.State">
+                                                <span class="dot"></span>@cell.QuantityAvailable
+                                            </span>
+                                            if (cell.QuantityReserved > 0)
+                                            {
+                                                <span class="bean-inv-res">@cell.QuantityReserved res.</span>
+                                            }
+                                        }
+                                    </td>
+                                }
+
+                                <td class="bean-inv-totalcol">
+                                    <strong>@row.TotalAvailable</strong>
+                                    @if (row.TotalReserved > 0)
+                                    {
+                                        <span class="bean-inv-res">@row.TotalOnHand en mano</span>
+                                    }
+                                </td>
+
+                                <td class="bean-td-actions">
+                                    <a asp-action="Details" asp-route-id="@row.ProductID"
+                                       class="bean-btn-pill outline icon" title="Ver movimientos y ajustar">
+                                        <i class="fas fa-history"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th class="bean-inv-stickycol">Total por bodega</th>
+                            @foreach (var col in Model.Columns)
+                            {
+                                <th class="bean-inv-cell">@col.TotalAvailable</th>
+                            }
+                            <th class="bean-inv-totalcol">@Model.GrandTotalAvailable</th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="bean-inv-legend">
+                <span><i class="bean-inv-dot ok"></i> Disponible</span>
+                <span><i class="bean-inv-dot low"></i> En el punto de reorden o por debajo</span>
+                <span><i class="bean-inv-dot empty"></i> Agotado</span>
+                <span><i class="bean-inv-dot none"></i> No asignado a esa bodega</span>
+                <span class="bean-inv-legend-note">
+                    Los totales por bodega corresponden a los lotes que pasan el filtro actual, no solo a esta página.
+                </span>
+            </div>
+
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-top:16px;">
+                <span style="font-size:13px; color:var(--bean-muted);">
+                    Página @Model.Page de @Model.TotalPages · @Model.TotalCount lotes
+                </span>
+                <div style="display:flex; gap:8px;">
+                    @if (Model.HasPrev)
+                    {
+                        <a class="bean-btn-pill outline" asp-action="Index" asp-route-bodega="@Model.WarehouseID"
+                           asp-route-proveedor="@Model.ProviderID" asp-route-estado="@Model.Estado"
+                           asp-route-bajo="@Model.SoloStockBajo" asp-route-q="@Model.Query"
+                           asp-route-page="@(Model.Page - 1)">&larr; Anterior</a>
+                    }
+                    @if (Model.HasNext)
+                    {
+                        <a class="bean-btn-pill outline" asp-action="Index" asp-route-bodega="@Model.WarehouseID"
+                           asp-route-proveedor="@Model.ProviderID" asp-route-estado="@Model.Estado"
+                           asp-route-bajo="@Model.SoloStockBajo" asp-route-q="@Model.Query"
+                           asp-route-page="@(Model.Page + 1)">Siguiente &rarr;</a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}

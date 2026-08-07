@@ -1700,7 +1700,11 @@ select.bean-auth-input { appearance: none; -webkit-appearance: none;
    KPI cards + gráfica de barras CSS + "Por aprobar" + actividad reciente.
    ========================================================================= */
 .bean-kpi-grid {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin: 20px 0 22px;
+    /* auto-fit en vez de 4 fijas: el dashboard ya va por 6 KPIs (ventas, pedidos, por
+       aprobar, por despachar, márgenes, stock bajo) y con 4 columnas fijas los dos
+       últimos quedaban huérfanos en una segunda fila. */
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 18px; margin: 20px 0 22px;
 }
 .bean-kpi-card {
     background: #fff; border: 1px solid var(--bean-border); border-radius: 16px;
@@ -2249,4 +2253,129 @@ select.bean-auth-input { appearance: none; -webkit-appearance: none;
     /* En táctil no hay hover: los controles se muestran siempre. */
     .bean-media-actions { opacity: 1; }
     .bean-media-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+}
+
+/* =====================================================================
+   23. INVENTARIO — matriz producto × bodega, libro mayor y bodegas (E1)
+   Scope: dentro de body.bean-admin. Aditivo: no toca nada anterior.
+   Referencia visual: handoff vista 11 "Matriz Café × País".
+   ===================================================================== */
+
+/* ---- Barra de filtros ---- */
+.bean-inv-filters {
+    display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr));
+    gap: 14px 16px; align-items: end;
+    background: #fff; border: 1px solid var(--bean-border); border-radius: var(--r-card);
+    padding: 18px 20px; margin-top: 18px;
+}
+.bean-inv-filters-actions {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding-top: 4px;
+}
+.bean-inv-check {
+    display: inline-flex; align-items: center; gap: 8px; margin: 0;
+    font-size: 13.5px; font-weight: 600; color: var(--bean-ink); cursor: pointer;
+}
+.bean-inv-check input[type=checkbox] { accent-color: var(--bean-terra); width: 18px; height: 18px; cursor: pointer; }
+
+/* ---- Contenedor con scroll horizontal ----
+   La matriz crece a lo ancho con cada bodega nueva. Sin este contenedor, en móvil
+   la tabla desborda el layout entero y rompe la página (ya pasó con la nav). */
+.bean-inv-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* ---- Matriz ---- */
+.bean-inv-matrix { min-width: 620px; }
+.bean-inv-matrix thead th { background: var(--bean-dark); color: #fff; border-bottom: none; }
+.bean-inv-matrix tbody tr:nth-child(even) { background: #FDFBF7; }
+.bean-inv-matrix tbody tr:hover { background: #F7F0E8; }
+
+.bean-inv-whcol { text-align: center; }
+.bean-inv-whcol .wh-name {
+    display: block; font-weight: 500; text-transform: none; letter-spacing: 0;
+    font-size: 10.5px; opacity: .7; margin-top: 2px;
+}
+.bean-inv-cell { text-align: center; white-space: nowrap; }
+.bean-inv-totalcol { text-align: center; white-space: nowrap; background: var(--bean-cream-chip); }
+
+.bean-inv-matrix tfoot th {
+    background: var(--bean-cream-chip); color: var(--bean-ink);
+    font-family: var(--font-body); font-weight: 800; font-size: 13px;
+    padding: 12px 18px; border-top: 1px solid var(--bean-border); text-align: center;
+}
+.bean-inv-matrix tfoot th:first-child { text-align: left; }
+
+/* Columna del lote: se queda pegada al hacer scroll horizontal para no perder la referencia. */
+.bean-inv-stickycol {
+    position: sticky; left: 0; z-index: 2;
+    background: #fff; min-width: 210px; text-align: left;
+}
+.bean-inv-matrix thead .bean-inv-stickycol { background: var(--bean-dark); z-index: 3; }
+.bean-inv-matrix tfoot .bean-inv-stickycol { background: var(--bean-cream-chip); z-index: 3; }
+.bean-inv-matrix tbody tr:nth-child(even) .bean-inv-stickycol { background: #FDFBF7; }
+.bean-inv-matrix tbody tr:hover .bean-inv-stickycol { background: #F7F0E8; }
+
+.bean-inv-lotlink { color: inherit; text-decoration: none; }
+.bean-inv-lotlink:hover { color: var(--bean-terra); }
+.bean-inv-lotmeta { font-size: 12px; font-weight: 500; color: var(--bean-muted); margin-top: 3px; }
+.bean-inv-lotmeta .sep { margin: 0 5px; color: var(--bean-border); }
+
+/* ---- Cantidad de la celda, con punto de color (handoff vista 11) ---- */
+.bean-inv-qty {
+    display: inline-flex; align-items: center; gap: 6px;
+    border-radius: var(--r-pill); padding: 5px 12px;
+    font-family: var(--font-body); font-weight: 700; font-size: 13px; white-space: nowrap;
+}
+.bean-inv-qty .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.bean-inv-qty.ok    { background: var(--bean-success-bg); color: #3f7a50; }
+.bean-inv-qty.ok .dot    { background: #3f7a50; }
+.bean-inv-qty.low   { background: #F9E9E9; color: #b04a4a; }
+.bean-inv-qty.low .dot   { background: #b04a4a; }
+.bean-inv-qty.empty { background: #EFEBE4; color: #7A6552; }
+.bean-inv-qty.empty .dot { background: #c4b9a5; }
+.bean-inv-qty.none  { background: transparent; color: #c4b9a5; padding: 5px 0; }
+
+.bean-inv-res { display: block; font-size: 11px; color: var(--bean-muted); margin-top: 3px; }
+
+/* ---- Leyenda ---- */
+.bean-inv-legend {
+    display: flex; gap: 18px; flex-wrap: wrap; align-items: center;
+    margin-top: 14px; font-size: 12.5px; color: var(--bean-muted);
+}
+.bean-inv-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.bean-inv-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.bean-inv-dot.ok    { background: #3f7a50; }
+.bean-inv-dot.low   { background: #b04a4a; }
+.bean-inv-dot.empty { background: #c4b9a5; }
+.bean-inv-dot.none  { background: transparent; border: 1px dashed #c4b9a5; }
+.bean-inv-legend-note { font-style: italic; }
+
+/* ---- Signo de la cantidad en el libro mayor ---- */
+.bean-inv-pos { color: #3f7a50; font-weight: 700; white-space: nowrap; }
+.bean-inv-neg { color: #b04a4a; font-weight: 700; white-space: nowrap; }
+
+/* ---- Formularios en línea (punto de reorden) y de ajuste ---- */
+.bean-inv-inlineform { display: flex; align-items: center; gap: 6px; margin: 0; }
+.bean-inv-adjustform {
+    display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; margin: 0;
+}
+.bean-inv-adjustform .bean-field { margin-bottom: 0; }
+
+/* ---- Responsive: por debajo de 980 px los filtros pasan a 2 y luego a 1 columna,
+        y la matriz vive dentro de su scroll horizontal sin romper el layout. ---- */
+@media (max-width: 980px) {
+    .bean-inv-filters { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+    .bean-inv-legend { gap: 12px; font-size: 12px; }
+}
+
+@media (max-width: 640px) {
+    .bean-inv-filters { grid-template-columns: 1fr; padding: 16px; }
+    .bean-inv-filters-actions { flex-direction: column; align-items: stretch; }
+    .bean-inv-filters-actions .bean-btn-pill { justify-content: center; }
+    .bean-inv-adjustform { flex-direction: column; align-items: stretch; }
+    .bean-inv-adjustform .bean-field { min-width: 0 !important; width: 100%; }
+    .bean-inv-adjustform .bean-input,
+    .bean-inv-adjustform .bean-select { width: 100% !important; }
+    /* La columna pegada come demasiado ancho en pantallas pequeñas. */
+    .bean-inv-stickycol { position: static; min-width: 160px; }
 }

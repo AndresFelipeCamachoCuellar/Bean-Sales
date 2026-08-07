@@ -884,6 +884,49 @@ public class CartController : Controller
     }
 
     /// <summary>
+    /// Código DANE de ORIGEN de la cotización de envío.
+    ///
+    /// Desde E1 el origen es la <b>bodega que despacha</b> (la misma que se persiste en
+    /// <c>Order.FulfillmentWarehouseID</c>), no una constante de <c>appsettings</c>: con
+    /// varias bodegas —y sobre todo con bodegas en otras ciudades— cotizar siempre desde
+    /// Cali daría precios equivocados.
+    ///
+    /// FALLBACK intacto: si todavía no hay bodegas, o si la bodega no tiene DANE (caso
+    /// normal fuera de Colombia), se usa el origen configurado. Nunca se devuelve vacío
+    /// por esta vía, así que el cotizador se comporta exactamente como antes.
+    /// </summary>
+    private async Task<string> ResolveOriginDaneCodeAsync(CancellationToken ct)
+    {
+        try
+        {
+            var warehouse = await _inventory.GetDefaultWarehouseAsync(ct);
+            var dane = warehouse?.DaneCode;
+
+            if (!string.IsNullOrWhiteSpace(dane))
+            {
+                return dane.Trim();
+            }
+
+            if (warehouse != null)
+            {
+                _logger.LogDebug(
+                    "La bodega {Code} no tiene código DANE: se cotiza el envío desde el origen de appsettings ({Dane}).",
+                    warehouse.Code, _shippingOptions.Origin.DaneCode);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Cotizar NUNCA puede tumbar el carrito: si la consulta falla se sigue con el
+            // origen configurado, igual que hace el fallback de tarifa fija.
+            _logger.LogWarning(ex,
+                "No se pudo resolver la bodega de despacho para el origen del envío. " +
+                "Se usa el origen de appsettings.");
+        }
+
+        return _shippingOptions.Origin.DaneCode;
+    }
+
+    /// <summary>
     /// Cotiza el carrito hacia un destino SIN tocar ViewBag. La usan los endpoints
     /// que devuelven JSON.
     /// </summary>
@@ -912,10 +955,14 @@ public class CartController : Controller
                 null);
         }
 
+        // El envío sale de la bodega que despacha (la misma que después queda en
+        // Order.FulfillmentWarehouseID), no de una constante de configuración.
+        var originDaneCode = await ResolveOriginDaneCodeAsync(ct);
+
         // Un solo bulto agregado con la heurística compartida (peso/dimensiones/valor declarado).
         var package = ShippingPackageBuilder.Build(
             items,
-            _shippingOptions.Origin.DaneCode,
+            originDaneCode,
             destinationDaneCode ?? string.Empty,
             _shippingOptions.Defaults);
 
