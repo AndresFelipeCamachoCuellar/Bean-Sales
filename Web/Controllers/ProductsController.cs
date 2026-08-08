@@ -12,9 +12,19 @@ using Web.Models.ViewModels;
 using Web.Services;
 using Web.Services.Media;
 using Web.Services.Pricing;
+using Web.Services.Tenancy;
 
 namespace Web.Controllers;
 
+/// <summary>
+/// Catálogo del PROVEEDOR: cada empresa gestiona únicamente sus propios lotes.
+///
+/// El aislamiento multi-tenant ya no se escribe a mano en cada acción: lo aplica
+/// <see cref="IProviderScope"/> (E5.2). Dos reglas al tocar este controlador:
+///  · Para listar → <c>scope.ApplyTo(query)</c>.
+///  · Para cargar por ID → <c>scope.SingleOwnedAsync(query, p =&gt; p.ProductID == id)</c>,
+///    NUNCA <c>FirstOrDefaultAsync(p =&gt; p.ProductID == id)</c> a secas: eso es un IDOR.
+/// </summary>
 [Authorize]
 public class ProductsController : Controller
 {
@@ -23,31 +33,37 @@ public class ProductsController : Controller
     private readonly ProductImageService _images;
     private readonly PricingService _pricing;
     private readonly IPermissionService _permissions;
+    private readonly IProviderScope _scope;
 
     public ProductsController(
         ApplicationDbContext context,
         UserManager<ApplicationUser> userManager,
         ProductImageService images,
         PricingService pricing,
-        IPermissionService permissions)
+        IPermissionService permissions,
+        IProviderScope scope)
     {
         _context = context;
         _userManager = userManager;
         _images = images;
         _pricing = pricing;
         _permissions = permissions;
+        _scope = scope;
     }
 
     [HasPermission(Modules.Products, Permissions.Read)]
     public async Task<IActionResult> Index()
     {
-        var currentUser = await _userManager.GetUserAsync(User);
-        if (currentUser?.ProviderID == null) return Forbid();
+        // Pantalla exclusiva del proveedor: el staff de Bean ve el catálogo completo desde
+        // Aprobaciones / Precios / Inventario, no desde aquí.
+        var scope = await _scope.RequireProviderAsync();
+        if (scope == null) return Forbid();
 
-        var products = await _context.Products
+        var products = await scope
+            .ApplyTo(_context.Products)
             .Include(p => p.ProductCountries)
             .ThenInclude(pc => pc.Country)
-            .Where(p => p.ProviderID == currentUser.ProviderID && p.Status)
+            .Where(p => p.Status)
             .OrderByDescending(p => p.CreatedOn)
             .ToListAsync();
 
@@ -70,7 +86,8 @@ public class ProductsController : Controller
     public async Task<IActionResult> Create(ProductViewModel model)
     {
         var currentUser = await _userManager.GetUserAsync(User);
-        if (currentUser?.ProviderID == null) return Forbid();
+        var scope = await _scope.RequireProviderAsync();
+        if (currentUser == null || scope == null) return Forbid();
 
         // 🔒 El permiso se resuelve SIEMPRE en el servidor: el valor que venga en el
         // formulario se descarta (se puede forjar desde DevTools).
@@ -82,7 +99,8 @@ public class ProductsController : Controller
             var product = new Product
             {
                 ProductID = Guid.NewGuid(),
-                ProviderID = currentUser.ProviderID.Value,
+                // El dueño lo pone el servidor desde la sesión, nunca el formulario.
+                ProviderID = scope.CurrentProviderId!.Value,
                 Name = model.Name,
                 Description = model.Description,
                 // Costo del proveedor. El PVP lo fija Bean después (candado de E2): un
@@ -150,12 +168,14 @@ public class ProductsController : Controller
     [HttpGet]
     public async Task<IActionResult> Edit(Guid id)
     {
-        var currentUser = await _userManager.GetUserAsync(User);
-        if (currentUser?.ProviderID == null) return Forbid();
+        var scope = await _scope.RequireProviderAsync();
+        if (scope == null) return Forbid();
 
-        var product = await _context.Products
-            .Include(p => p.ProductCountries)
-            .FirstOrDefaultAsync(p => p.ProductID == id && p.ProviderID == currentUser.ProviderID);
+        // El filtro por proveedor lo pone SingleOwnedAsync: un lote de otra empresa devuelve
+        // null y sale por NotFound, sin llegar a materializarse.
+        var product = await scope.SingleOwnedAsync(
+            _context.Products.Include(p => p.ProductCountries),
+            p => p.ProductID == id);
 
         if (product == null) return NotFound();
 
@@ -211,17 +231,28 @@ public class ProductsController : Controller
     public async Task<IActionResult> Edit(ProductViewModel model)
     {
         var currentUser = await _userManager.GetUserAsync(User);
-        if (currentUser?.ProviderID == null) return Forbid();
+        var scope = await _scope.RequireProviderAsync();
+        if (currentUser == null || scope == null) return Forbid();
 
         // 🔒 Igual que en Create: el permiso se resuelve en el servidor, nunca desde el POST.
         var canEditSalePrice = await CanEditSalePriceAsync(currentUser);
         model.CanEditSalePrice = canEditSalePrice;
 
+        // El id llega como string desde el formulario: se parsea AQUÍ, no dentro de la
+        // consulta. Comparar p.ProductID.ToString() obligaba a SQL Server a convertir cada
+        // fila (CAST) y a descartar el índice de la clave primaria.
+        if (!Guid.TryParse(model.ProductId, out var editingId))
+        {
+            return NotFound();
+        }
+
         if (ModelState.IsValid)
         {
-            var product = await _context.Products
-                .Include(p => p.ProductCountries)
-                .FirstOrDefaultAsync(p => p.ProductID.ToString() == model.ProductId && p.ProviderID == currentUser.ProviderID);
+            // 🔒 El POST revalida EXACTAMENTE lo mismo que filtró el GET. Confiar en que el
+            // formulario solo pueda traer ids ya vistos es confiar en el navegador.
+            var product = await scope.SingleOwnedAsync(
+                _context.Products.Include(p => p.ProductCountries),
+                p => p.ProductID == editingId);
 
             if (product == null) return NotFound();
 
@@ -310,15 +341,13 @@ public class ProductsController : Controller
 
         // ModelState inválido: se rearma el gestor de fotos para que el proveedor no
         // pierda de vista lo que ya subió (las fotos NO viven en este formulario).
-        if (Guid.TryParse(model.ProductId, out var editingId))
-        {
-            var editing = await _context.Products
-                .FirstOrDefaultAsync(p => p.ProductID == editingId && p.ProviderID == currentUser.ProviderID);
+        var editing = await scope.SingleOwnedAsync(
+            _context.Products,
+            p => p.ProductID == editingId);
 
-            if (editing is not null)
-            {
-                model.ImageManager = await _images.BuildManagerAsync(editing, canEdit: true, role: ImageUploader.Provider);
-            }
+        if (editing is not null)
+        {
+            model.ImageManager = await _images.BuildManagerAsync(editing, canEdit: true, role: ImageUploader.Provider);
         }
 
         await LoadPricingContextAsync(model);
@@ -331,10 +360,10 @@ public class ProductsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SubmitForApproval(Guid id)
     {
-        var currentUser = await _userManager.GetUserAsync(User);
-        if (currentUser?.ProviderID == null) return Forbid();
+        var scope = await _scope.RequireProviderAsync();
+        if (scope == null) return Forbid();
 
-        var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductID == id && p.ProviderID == currentUser.ProviderID);
+        var product = await scope.SingleOwnedAsync(_context.Products, p => p.ProductID == id);
         if (product == null) return NotFound();
 
         if (product.ProductStatus == ProductStatus.Draft)
@@ -353,10 +382,10 @@ public class ProductsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Ship(Guid id, string shippingDetails)
     {
-        var currentUser = await _userManager.GetUserAsync(User);
-        if (currentUser?.ProviderID == null) return Forbid();
+        var scope = await _scope.RequireProviderAsync();
+        if (scope == null) return Forbid();
 
-        var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductID == id && p.ProviderID == currentUser.ProviderID);
+        var product = await scope.SingleOwnedAsync(_context.Products, p => p.ProductID == id);
         if (product == null) return NotFound();
 
         // Ensure product is in correct state

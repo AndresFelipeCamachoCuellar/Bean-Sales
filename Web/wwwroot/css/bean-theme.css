@@ -829,7 +829,11 @@
     display: flex; align-items: center; justify-content: space-between;
     gap: 16px; margin-bottom: 22px; flex-wrap: wrap;
 }
-.bean-order-filters { display: flex; gap: 8px; }
+/* flex-wrap OBLIGATORIO: sin él las 4 píldoras (Todos/Por pagar/En camino/Entregados)
+   suman ~440px y en un móvil de 360px desbordan el contenedor. Eso ensancha la página
+   por encima del viewport y provoca scroll horizontal: el síntoma visible era el título
+   "Mis pedidos" cortado por la izquierda. .bean-filters (catálogo) ya lo tenía. */
+.bean-order-filters { display: flex; gap: 8px; flex-wrap: wrap; }
 .bean-filter-pill {
     border: 1px solid var(--bean-border); background: #fff;
     border-radius: var(--r-pill); padding: 8px 18px;
@@ -950,6 +954,35 @@
     }
     .bean-order-idcol { grid-column: 1 / -1; }
     .bean-usermenu .bean-usermenu-panel { min-width: min(280px, calc(100vw - 32px)); }
+
+    /* --- Fila del carrito en móvil ---------------------------------------
+       .bean-cart-item era flex SIN ninguna regla responsive: miniatura 64px +
+       info + stepper + precio + papelera no caben en 360px. El nombre se partía
+       letra a letra y el precio quedaba cortado ("$214.3…").
+       Se reordena en dos filas, con la miniatura ocupando ambas:
+           [thumb] [nombre/meta] [precio]
+           [thumb] [stepper]     [borrar]                                   */
+    .bean-cart-item {
+        display: grid;
+        grid-template-columns: 56px minmax(0, 1fr) auto;
+        grid-template-areas:
+            "thumb info sub"
+            "thumb qty  del";
+        gap: 8px 12px;
+        padding: 16px;
+        align-items: center;
+    }
+    .bean-cart-item > .bean-cart-thumb     { grid-area: thumb; width: 56px; height: 56px; align-self: start; }
+    .bean-cart-item > .bean-cart-item-info { grid-area: info; }
+    .bean-cart-item > form:nth-of-type(1)  { grid-area: qty; }
+    .bean-cart-item > .bean-cart-item-sub  { grid-area: sub; min-width: 0; }
+    .bean-cart-item > form:nth-of-type(2)  { grid-area: del; }
+    /* Un nombre largo sin espacios no debe volver a romper la caja. */
+    .bean-cart-item-name { font-size: 15px; overflow-wrap: anywhere; }
+    .bean-cart-item-sub { font-size: 15px; }
+    /* Stepper compacto para que quepa junto al precio. */
+    .bean-cart-item .bean-stepper button { width: 30px; height: 30px; font-size: 16px; }
+    .bean-cart-item .bean-stepper input { width: 34px; font-size: 14px; }
 }
 /* El <form> del CountrySelector trae `d-none d-sm-inline-block` de Bootstrap, así que
    por debajo de 576px se oculta SOLO. El wrapper .bean-country se quedaba con su
@@ -2378,4 +2411,28 @@ select.bean-auth-input { appearance: none; -webkit-appearance: none;
     .bean-inv-adjustform .bean-select { width: 100% !important; }
     /* La columna pegada come demasiado ancho en pantallas pequeñas. */
     .bean-inv-stickycol { position: static; min-width: 160px; }
+}
+
+/* =====================================================================
+   27. PERMISOS EFECTIVOS DE UN USUARIO (E5 · HU-5.5)
+   Reutiliza .bean-perm-grid / .bean-perm-module de la sección 21; aquí
+   solo se añade la línea "Viene de: <rol>", que es la información que
+   antes había que deducir leyendo la BD a mano.
+   ===================================================================== */
+
+.bean-perm-source {
+    display: block;
+    margin-top: 6px;
+    font-weight: 500;
+    font-size: 11.5px;
+    color: var(--bean-muted);
+}
+
+/* Los chips de rol dentro de la línea de origen van más pequeños que en las
+   tablas: aquí son una nota al pie, no el dato principal de la fila. */
+.bean-perm-source .bean-role-chip {
+    font-size: 11px;
+    padding: 2px 8px;
+    margin-left: 4px;
+    vertical-align: middle;
 }

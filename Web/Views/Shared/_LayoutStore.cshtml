@@ -18,15 +18,28 @@
     var cartCount = 0;
 
     // --- Puente storefront -> back-office -------------------------------
-    // Detección de rol por claims (sin tocar la BD).
+    // 🔴 ANTES: `isProviderRole = User.IsInRole(Roles.ProviderAdmin)`.
+    // Eso contradecía el modelo de roles DINÁMICOS del proyecto: un proveedor puede
+    // crear sus propios roles ("Creador de productos", "Bodeguero"…) con los permisos
+    // que quiera. Un usuario con uno de esos roles NO está en ProviderAdmin, así que
+    // isStaff daba false, no se consultaba ni un permiso y NUNCA le aparecía la píldora
+    // "Panel" — aunque su rol tuviera Products/Read. Quedaba encerrado en la tienda.
+    // AHORA: pertenecer a una empresa (ProviderID) es lo que define "staff de proveedor";
+    // lo que se puede VER se decide por permisos, no por el nombre del rol.
     var isSignedIn = SignInManager.IsSignedIn(User);
     var isSuperAdmin = isSignedIn && User.IsInRole(Web.Constants.Roles.SuperAdmin);
-    var isProviderRole = isSignedIn && User.IsInRole(Web.Constants.Roles.ProviderAdmin);
-    var isStaff = isSuperAdmin || isProviderRole;
 
-    // Las consultas (UserManager / PermissionService / DbContext) se ejecutan
-    // SÓLO para staff: un cliente o un anónimo no dispara ninguna query aquí.
+    // navUser se carga una sola vez y lo reutilizan el contador de la bolsa,
+    // los permisos y el nombre visible (el contador ya lo pedía igual).
     ApplicationUser? navUser = null;
+    if (isSignedIn)
+    {
+        navUser = await UserManager.GetUserAsync(User);
+    }
+
+    var isProvider = navUser?.ProviderID != null;
+    var isStaff = isSuperAdmin || isProvider;
+
     var canReadUsers = false;
     var canReadRoles = false;
     var canReadApprovals = false;
@@ -36,7 +49,6 @@
 
     if (isStaff)
     {
-        navUser = await UserManager.GetUserAsync(User);
         if (navUser != null)
         {
             if (isSuperAdmin)
@@ -66,7 +78,6 @@
     // HttpContext de RazorPage. Para la sesión hay que usar ViewContext.HttpContext.
     if (isSignedIn)
     {
-        navUser ??= await UserManager.GetUserAsync(User);
         if (navUser != null)
         {
             cartCount = await Context.ShoppingCartItems
@@ -86,14 +97,15 @@
     }
 
     // La píldora sólo aparece si el destino es realmente accesible (evita 403).
-    var showPanelPill = isSuperAdmin || (isProviderRole && canReadProducts);
+    // Se decide por PERMISO (Products/Read), no por el nombre del rol.
+    var showPanelPill = isSuperAdmin || (isProvider && canReadProducts);
 
     // Nombre visible: FirstName si lo tenemos cargado (staff), si no el UserName del claim.
     var navDisplayName = !string.IsNullOrWhiteSpace(navUser?.FirstName)
         ? navUser!.FirstName
         : (User.Identity?.Name ?? "Mi cuenta");
     var navInitial = navDisplayName.Trim().Length > 0 ? navDisplayName.Trim().Substring(0, 1) : "U";
-    var navRoleLabel = isSuperAdmin ? "Administrador" : (isProviderRole ? "Proveedor verificado" : "Cliente");
+    var navRoleLabel = isSuperAdmin ? "Administrador" : (isProvider ? "Proveedor verificado" : "Cliente");
     // Dashboard es [Authorize(Roles = SuperAdmin)]: el proveedor va a su propio panel.
     var panelController = isSuperAdmin ? "Dashboard" : "Products";
 
@@ -218,7 +230,7 @@
                                     }
                                     <div class="bean-usermenu-sep"></div>
                                 }
-                                else if (isProviderRole)
+                                else if (isProvider)
                                 {
                                     if (canReadProducts)
                                     {

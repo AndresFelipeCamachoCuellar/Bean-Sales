@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Web.Services.Tenancy;
 
 namespace Web.Models;
 
-public class ApplicationUser : IdentityUser<Guid>
+// IOptionallyProviderOwned: ProviderID == null significa "usuario interno de Bean".
+public class ApplicationUser : IdentityUser<Guid>, IOptionallyProviderOwned
 {
     // IdentityUser already provides Id (mapped to UserID logic), UserName, Email, PasswordHash, etc.
 

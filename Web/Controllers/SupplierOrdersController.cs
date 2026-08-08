@@ -8,6 +8,7 @@ using Web.Data;
 using Web.Models;
 using Web.Models.Enums;
 using Web.Models.ViewModels;
+using Web.Services.Tenancy;
 
 namespace Web.Controllers;
 
@@ -16,32 +17,40 @@ namespace Web.Controllers;
 // con "Tu pago" = suma de subtotales de SUS líneas (no el total del pedido, que
 // puede incluir productos de otros proveedores en un carrito multi-marca).
 //
-// Scoping por proveedor: idéntico al de ProductsController — el proveedor se
-// obtiene de ApplicationUser.ProviderID (multi-tenancy). Se protege con el mismo
+// Scoping por proveedor: desde E5.2 lo aplica IProviderScope. Se protege con el mismo
 // permiso Products/Read que usa el proveedor para su catálogo.
+//
+// ⚠️ OJO al refactorizar: aquí NO se filtran "pedidos del proveedor" (Order no tiene
+// ProviderID), sino "pedidos que TOCAN al menos un producto del proveedor". Por eso el
+// filtro va sobre la subconsulta de líneas (scope.ApplyTo(_context.Products)) y NO sobre
+// _context.Orders. Un pedido multi-marca entra en la lista de los DOS proveedores, y cada
+// uno solo puede ver sus propias líneas (ProviderItems).
 [Authorize]
 public class SupplierOrdersController : Controller
 {
     private readonly ApplicationDbContext _context;
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IProviderScope _scope;
 
-    public SupplierOrdersController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+    public SupplierOrdersController(ApplicationDbContext context, IProviderScope scope)
     {
         _context = context;
-        _userManager = userManager;
+        _scope = scope;
     }
 
     // GET /SupplierOrders  → cola de pedidos entrantes del proveedor actual.
     [HasPermission(Modules.Products, Permissions.Read)]
     public async Task<IActionResult> Index()
     {
-        var currentUser = await _userManager.GetUserAsync(User);
-        if (currentUser?.ProviderID == null) return Forbid();
+        var scope = await _scope.RequireProviderAsync();
+        if (scope == null) return Forbid();
 
-        var providerId = currentUser.ProviderID.Value;
+        var providerId = scope.CurrentProviderId!.Value;
+
+        // Ids de los lotes del proveedor. Es una SUBCONSULTA (no se materializa): EF la
+        // traduce a un EXISTS/IN contra la tabla de productos.
+        var myProductIds = scope.ApplyTo(_context.Products).Select(p => p.ProductID);
 
         // Pedidos que incluyen al menos una línea de un producto de este proveedor.
-        // El filtro se traduce a SQL (join OrderItem→Product) por EF Core.
         var orders = await _context.Orders
             .Include(o => o.User)
             .Include(o => o.Items)
@@ -49,7 +58,7 @@ public class SupplierOrdersController : Controller
             // Solo pedidos PAGADOS: el proveedor no debe preparar café de un pedido que
             // todavía está esperando el pago (o que se abandonó en la pasarela).
             .Where(o => o.PaymentStatus == PaymentStatus.Approved
-                        && o.Items.Any(i => i.Product != null && i.Product.ProviderID == providerId))
+                        && o.Items.Any(i => myProductIds.Contains(i.ProductID)))
             .OrderByDescending(o => o.OrderDate)
             .ToListAsync();
 

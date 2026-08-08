@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,20 @@ using Web.Services;
 
 namespace Web.Controllers;
 
+/// <summary>
+/// Diagnóstico del sembrado de módulos y permisos. Se usó para depurar por qué el
+/// <c>[HasPermission]</c> devolvía 403 tras sembrar un módulo nuevo.
+///
+/// 🔒 EXCLUSIVO DEL SUPERADMIN. Sin este atributo bastaba con estar autenticado —un cliente
+/// del storefront servía— para leer el nombre de usuario, los roles, si los módulos existen
+/// y cuántos permisos tiene el rol SuperAdmin. Eso es un mapa de la superficie de
+/// autorización servido en JSON a cualquiera que adivine la ruta <c>/Debug</c>.
+///
+/// Se protege con <c>[Authorize(Roles = ...)]</c> y no con <c>[HasPermission]</c> a
+/// propósito: esta pantalla existe justamente para diagnosticar cuando el sistema de
+/// permisos NO funciona, así que no puede depender de él.
+/// </summary>
+[Authorize(Roles = Roles.SuperAdmin)]
 public class DebugController : Controller
 {
     private readonly UserManager<ApplicationUser> _userManager;

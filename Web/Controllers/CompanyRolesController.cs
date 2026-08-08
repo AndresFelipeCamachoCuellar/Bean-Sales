@@ -7,9 +7,27 @@ using Web.Constants;
 using Web.Data;
 using Web.Models;
 using Web.Models.ViewModels;
+using Web.Services.Tenancy;
 
 namespace Web.Controllers;
 
+/// <summary>
+/// Roles PROPIOS de una empresa proveedora (<c>ProviderID == el del usuario</c>).
+///
+/// ─────────────────────────────────────────────────────────────────────────────────────
+/// NOMBRE VISIBLE ≠ NOMBRE DE IDENTITY
+/// ─────────────────────────────────────────────────────────────────────────────────────
+/// Identity impone un índice único global sobre <c>NormalizedName</c>, así que dos
+/// proveedores no podían llamar "Bodeguero" a sus respectivos roles: el segundo recibía
+/// «Role name is already taken», mensaje que además le revelaba que otra empresa ya usaba
+/// ese nombre.
+///
+/// Desde este cambio, lo que el usuario escribe se guarda en
+/// <see cref="ApplicationRole.DisplayName"/> y el <c>Name</c> de Identity se genera con
+/// <see cref="RoleNaming.ForProvider"/> (<c>p:{ProviderID:N}:{clave}</c>). La unicidad se
+/// valida POR PROVEEDOR contra el nombre visible, y el mensaje de error nunca menciona a
+/// otro tenant.
+/// </summary>
 [Authorize]
 public class CompanyRolesController : Controller
 {
@@ -52,16 +70,24 @@ public class CompanyRolesController : Controller
         var currentUser = await _userManager.GetUserAsync(User);
         if (currentUser?.ProviderID == null) return Forbid();
 
+        var providerId = currentUser.ProviderID.Value;
+
         var roles = await _roleManager.Roles
-            .Where(r => r.ProviderID == currentUser.ProviderID)
+            .Where(r => r.ProviderID == providerId)
+            .Select(r => new { r.Id, r.Name, r.DisplayName, r.Description })
             .ToListAsync();
 
-        var model = roles.Select(r => new RoleViewModel
-        {
-            Id = r.Id.ToString(),
-            Name = r.Name ?? string.Empty,
-            Description = r.Description
-        }).ToList();
+        // Guid.ToString() se hace en memoria, ya materializada la consulta: dentro del
+        // IQueryable obligaría a un CAST por fila y descartaría el índice.
+        var model = roles
+            .Select(r => new RoleViewModel
+            {
+                Id = r.Id.ToString(),
+                Name = RoleNaming.Display(r.DisplayName, r.Name),
+                Description = r.Description
+            })
+            .OrderBy(r => r.Name)
+            .ToList();
 
         return View(model);
     }
@@ -81,12 +107,24 @@ public class CompanyRolesController : Controller
         var currentUser = await _userManager.GetUserAsync(User);
         if (currentUser?.ProviderID == null) return Forbid();
 
+        var providerId = currentUser.ProviderID.Value;
+
         if (ModelState.IsValid)
         {
-            var role = new ApplicationRole(model.Name)
+            if (await DisplayNameTakenAsync(providerId, model.Name, excludingRoleId: null))
             {
-                Description = model.Description,
-                ProviderID = currentUser.ProviderID,
+                ModelState.AddModelError(nameof(model.Name), DuplicateNameMessage);
+                return View(model);
+            }
+
+            var role = new ApplicationRole
+            {
+                // Nombre técnico, único por construcción dentro de este proveedor.
+                Name = RoleNaming.ForProvider(providerId, model.Name),
+                // Nombre visible, el único que se muestra.
+                DisplayName = model.Name.Trim(),
+                Description = model.Description ?? string.Empty,
+                ProviderID = providerId,
                 CreatedBy = User.Identity?.Name ?? "SYSTEM",
                 CreatedOn = DateTime.Now,
                 Status = true
@@ -97,10 +135,8 @@ public class CompanyRolesController : Controller
             {
                 return RedirectToAction(nameof(Index));
             }
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError(string.Empty, error.Description);
-            }
+
+            AddIdentityErrors(result);
         }
         return View(model);
     }
@@ -112,15 +148,13 @@ public class CompanyRolesController : Controller
         var currentUser = await _userManager.GetUserAsync(User);
         if (currentUser?.ProviderID == null) return Forbid();
 
-        if (string.IsNullOrEmpty(id)) return NotFound();
-        
-        var role = await _roleManager.Roles.FirstOrDefaultAsync(r => r.Id.ToString() == id && r.ProviderID == currentUser.ProviderID);
+        var role = await LoadOwnedRoleAsync(id, currentUser.ProviderID.Value);
         if (role == null) return NotFound();
 
         var model = new RoleViewModel
         {
             Id = role.Id.ToString(),
-            Name = role.Name ?? string.Empty,
+            Name = RoleNaming.Display(role),
             Description = role.Description
         };
         return View(model);
@@ -134,23 +168,37 @@ public class CompanyRolesController : Controller
         var currentUser = await _userManager.GetUserAsync(User);
         if (currentUser?.ProviderID == null) return Forbid();
 
+        var providerId = currentUser.ProviderID.Value;
+
         if (ModelState.IsValid)
         {
-            var role = await _roleManager.Roles.FirstOrDefaultAsync(r => r.Id.ToString() == model.Id && r.ProviderID == currentUser.ProviderID);
+            var role = await LoadOwnedRoleAsync(model.Id, providerId);
             if (role == null) return NotFound();
 
-            role.Name = model.Name;
-            role.Description = model.Description;
+            if (await DisplayNameTakenAsync(providerId, model.Name, excludingRoleId: role.Id))
+            {
+                ModelState.AddModelError(nameof(model.Name), DuplicateNameMessage);
+                return View(model);
+            }
+
+            // ⚠️ Al renombrar cambia también el Name de Identity, y el claim de rol viaja
+            // dentro de la cookie de sesión. Los usuarios que ya tuvieran sesión abierta con
+            // este rol la verán refrescada por el SecurityStamp de Identity; si algún día se
+            // comprobara este rol por nombre (hoy no: PermissionService resuelve por RoleId),
+            // habría que forzar el re-login.
+            role.Name = RoleNaming.ForProvider(providerId, model.Name);
+            role.DisplayName = model.Name.Trim();
+            role.Description = model.Description ?? string.Empty;
+            role.ModifiedBy = User.Identity?.Name ?? "SYSTEM";
+            role.ModifiedOn = DateTime.Now;
 
             var result = await _roleManager.UpdateAsync(role);
             if (result.Succeeded)
             {
                 return RedirectToAction(nameof(Index));
             }
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError(string.Empty, error.Description);
-            }
+
+            AddIdentityErrors(result);
         }
         return View(model);
     }
@@ -163,15 +211,18 @@ public class CompanyRolesController : Controller
         var currentUser = await _userManager.GetUserAsync(User);
         if (currentUser?.ProviderID == null) return Forbid();
 
-        var role = await _roleManager.Roles.FirstOrDefaultAsync(r => r.Id.ToString() == id && r.ProviderID == currentUser.ProviderID);
+        var role = await LoadOwnedRoleAsync(id, currentUser.ProviderID.Value);
         if (role != null)
         {
-             // Check if role has users? 
-            var usersInRole = await _userManager.GetUsersInRoleAsync(role.Name!);
-            if (usersInRole.Any())
+            // Se pregunta por RoleId, no por nombre. GetUsersInRoleAsync(role.Name) resolvía
+            // el rol por su nombre GLOBAL: además de ser una segunda búsqueda innecesaria,
+            // era el mismo mecanismo global que rompía el multi-tenant.
+            var roleInUse = await _context.UserRoles.AnyAsync(ur => ur.RoleId == role.Id);
+            if (roleInUse)
             {
-                // Ideally return error, for now just redirect
-                 return RedirectToAction(nameof(Index));
+                TempData["CompanyRolesError"] =
+                    "No se puede eliminar el rol porque todavía hay usuarios que lo tienen asignado.";
+                return RedirectToAction(nameof(Index));
             }
 
             await _roleManager.DeleteAsync(role);
@@ -186,7 +237,7 @@ public class CompanyRolesController : Controller
         var currentUser = await _userManager.GetUserAsync(User);
         if (currentUser?.ProviderID == null) return Forbid();
 
-        var role = await _roleManager.Roles.FirstOrDefaultAsync(r => r.Id.ToString() == id && r.ProviderID == currentUser.ProviderID);
+        var role = await LoadOwnedRoleAsync(id, currentUser.ProviderID.Value);
         if (role == null) return NotFound();
 
         return View(await BuildManagePermissionsModelAsync(role));
@@ -200,7 +251,7 @@ public class CompanyRolesController : Controller
         var currentUser = await _userManager.GetUserAsync(User);
         if (currentUser?.ProviderID == null) return Forbid();
 
-        var role = await _roleManager.Roles.FirstOrDefaultAsync(r => r.Id.ToString() == model.RoleId && r.ProviderID == currentUser.ProviderID);
+        var role = await LoadOwnedRoleAsync(model.RoleId, currentUser.ProviderID.Value);
         if (role == null) return NotFound();
 
         var existingPermissions = await _context.Permissions
@@ -277,6 +328,73 @@ public class CompanyRolesController : Controller
     // ------------------------------------------------------------------ Helpers
 
     /// <summary>
+    /// Mensaje ÚNICO de nombre repetido. Habla solo de "tus roles": jamás debe delatar que
+    /// otra empresa usa ese mismo nombre, que es justo lo que hacía el «Role name is already
+    /// taken» de Identity.
+    /// </summary>
+    private const string DuplicateNameMessage = "Ya tienes un rol con ese nombre. Elige otro.";
+
+    /// <summary>
+    /// Carga un rol comprobando la pertenencia al proveedor EN LA MISMA consulta, y por
+    /// <c>Guid</c> (no por <c>Id.ToString()</c>, que forzaba un CAST por fila y descartaba
+    /// el índice de la clave primaria).
+    /// </summary>
+    private async Task<ApplicationRole?> LoadOwnedRoleAsync(string? id, Guid providerId)
+    {
+        if (!Guid.TryParse(id, out var roleId)) return null;
+
+        return await _roleManager.Roles
+            .FirstOrDefaultAsync(r => r.Id == roleId && r.ProviderID == providerId);
+    }
+
+    /// <summary>
+    /// ¿Este proveedor ya tiene un rol con ese nombre visible?
+    ///
+    /// La comparación se hace EN MEMORIA sobre <see cref="RoleNaming.Key"/> (minúsculas y
+    /// sin tildes) y no en SQL, a propósito: SQL Server compara sin distinguir mayúsculas y
+    /// SQLite sí las distingue, así que el mismo <c>==</c> daría resultados distintos en
+    /// producción y en los tests. Un proveedor tiene un puñado de roles: el costo es nulo.
+    /// </summary>
+    private async Task<bool> DisplayNameTakenAsync(Guid providerId, string? displayName, Guid? excludingRoleId)
+    {
+        var candidate = RoleNaming.Key(displayName);
+        if (candidate.Length == 0) return false;
+
+        var siblings = await _roleManager.Roles
+            .Where(r => r.ProviderID == providerId)
+            .Select(r => new { r.Id, r.DisplayName, r.Name })
+            .ToListAsync();
+
+        return siblings.Any(r =>
+            (!excludingRoleId.HasValue || r.Id != excludingRoleId.Value)
+            && RoleNaming.Key(RoleNaming.Display(r.DisplayName, r.Name)) == candidate);
+    }
+
+    /// <summary>
+    /// Vuelca los errores de Identity en el <c>ModelState</c>, REESCRIBIENDO el de nombre
+    /// duplicado.
+    ///
+    /// El texto original ("Role name 'p:74390816…:bodeguero' is already taken") filtra el
+    /// nombre técnico interno y, antes de este cambio, confirmaba la existencia de un rol de
+    /// OTRA empresa. Con el prefijo por proveedor ya solo puede dispararse en una carrera
+    /// entre dos peticiones del mismo tenant, pero el mensaje se sanea igual: la validación
+    /// previa (<see cref="DisplayNameTakenAsync"/>) y ésta dicen exactamente lo mismo.
+    /// </summary>
+    private void AddIdentityErrors(IdentityResult result)
+    {
+        foreach (var error in result.Errors)
+        {
+            if (string.Equals(error.Code, "DuplicateRoleName", StringComparison.Ordinal))
+            {
+                ModelState.AddModelError(nameof(RoleViewModel.Name), DuplicateNameMessage);
+                continue;
+            }
+
+            ModelState.AddModelError(string.Empty, error.Description);
+        }
+    }
+
+    /// <summary>
     /// Módulos administrables por un proveedor, con sus permisos. La comparten el GET
     /// (pintar) y el POST (autorizar): una sola consulta, una sola verdad.
     /// </summary>
@@ -294,7 +412,7 @@ public class CompanyRolesController : Controller
         var model = new ManagePermissionsViewModel
         {
             RoleId = role.Id.ToString(),
-            RoleName = role.Name ?? string.Empty
+            RoleName = RoleNaming.Display(role)
         };
 
         var companyModules = await LoadAllowedModulesAsync();

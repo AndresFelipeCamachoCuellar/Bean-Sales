@@ -1,10 +1,14 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Web.Models.Enums;
+using Web.Services.Tenancy;
 
 namespace Web.Models;
 
-public class Product
+// IProviderOwned: marca el lote como propiedad de una empresa proveedora. Es lo que permite
+// que IProviderScope.ApplyTo/SingleOwnedAsync apliquen el aislamiento multi-tenant sin que
+// cada controlador tenga que acordarse de escribir el .Where(p => p.ProviderID == ...).
+public class Product : IProviderOwned
 {
     [Key]
     public Guid ProductID { get; set; }

@@ -23,6 +23,22 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+
+    <!--
+      Proveedor EF REAL para los tests de aislamiento multi-tenant (E5.2).
+
+      ⚠️ Deliberadamente SQLite y NO Microsoft.EntityFrameworkCore.InMemory:
+        · InMemory no traduce LINQ a SQL, así que un filtro mal construido (por ejemplo
+          uno que EF no sabría traducir) pasaría en verde y reventaría en producción.
+        · InMemory no soporta transacciones ni `rowversion`, que el proyecto ya usa en
+          InventoryService y StockItem.
+      Con SQLite en memoria (`DataSource=:memory:`) hay SQL de verdad, esquema de verdad y
+      transacciones, y cada test corre contra una base limpia y aislada.
+
+      La versión sigue a la del proveedor de SQL Server en Web/Web.csproj: si se sube una,
+      hay que subir la otra o NuGet resolverá dos versiones distintas de EF Core.
+    -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.2" />
   </ItemGroup>
 
   <ItemGroup>
