@@ -7,7 +7,7 @@
 <div class="bean-panel-head">
     <div>
         <h1 class="bean-panel-title">Gestión de roles</h1>
-        <p class="bean-panel-sub">Define los roles del sistema y los permisos granulares de cada uno.</p>
+        <p class="bean-panel-sub">Roles internos de Bean y sus permisos granulares. Los roles de cada empresa proveedora se gestionan desde el panel de esa empresa.</p>
     </div>
     <a asp-action="Create" class="bean-prov-newlot"><i class="fas fa-plus"></i> Crear nuevo rol</a>
 </div>
@@ -27,7 +27,7 @@
                     <td class="bean-td-name">@item.Name</td>
                     <td>
                         <div class="bean-td-actions">
-                            @if (item.Name != Web.Constants.Roles.SuperAdmin && item.Name != Web.Constants.Roles.ProviderAdmin)
+                            @if (!item.IsSystem)
                             {
                                 <a asp-action="Edit" asp-route-id="@item.Id" class="bean-btn-pill outline icon" title="Editar Nombre">
                                     <i class="fas fa-edit"></i>

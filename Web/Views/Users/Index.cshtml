@@ -76,6 +76,13 @@
                         }
                     </td>
                     <td>
+                        @* Diagnóstico de permisos (HU-5.5): responde "¿por qué este usuario
+                           ve esta pantalla?" sin tener que consultar la BD a mano. Solo
+                           lectura, así que basta con Users/Read (ya se tiene si se ve esta
+                           tabla) y se muestra también para la propia cuenta. *@
+                        <a asp-action="EffectivePermissions" asp-route-id="@item.Id" class="bean-btn-pill outline icon" title="Ver permisos efectivos">
+                            <i class="fas fa-key"></i>
+                        </a>
                         @if (canUpdate && !isCurrentUser)
                         {
                             <a asp-action="Edit" asp-route-id="@item.Id" class="bean-btn-pill outline icon" title="Editar">

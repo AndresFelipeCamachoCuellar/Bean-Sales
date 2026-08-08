@@ -1,0 +1,150 @@
+@model Web.Models.ViewModels.EffectivePermissionsViewModel
+
+@{
+    ViewData["Title"] = $"Permisos efectivos · {Model.UserName}";
+}
+
+<div class="bean-panel-head">
+    <div>
+        <h1 class="bean-panel-title">Permisos efectivos</h1>
+        <p class="bean-panel-sub">
+            @(string.IsNullOrWhiteSpace(Model.FullName) ? Model.UserName : Model.FullName)
+            @if (!string.IsNullOrWhiteSpace(Model.Email))
+            {
+                <text> · @Model.Email</text>
+            }
+            @if (Model.IsProvider)
+            {
+                <text> · </text><span class="bean-role-chip">@Model.ProviderName</span>
+            }
+            else
+            {
+                <text> · </text><span class="bean-role-chip">Equipo Bean</span>
+            }
+        </p>
+    </div>
+    <a asp-action="Index" class="bean-btn-pill outline">
+        <i class="fas fa-arrow-left"></i> Volver a usuarios
+    </a>
+</div>
+
+<div class="bean-panel-note">
+    <i class="fas fa-info-circle"></i>
+    <span>
+        Esta pantalla es <strong>solo de lectura</strong>: muestra lo que el usuario puede hacer hoy y
+        de qué rol le viene cada permiso. Para conceder o quitar permisos hay que editar el rol
+        correspondiente en <strong>Roles</strong> (roles de Bean) o en <strong>Roles (Empresa)</strong>
+        (roles del proveedor).
+    </span>
+</div>
+
+@* ------------------------------------------------------------------ Roles *@
+<div class="bean-panel-card" style="margin-top:18px;">
+    <h2 class="bean-panel-title" style="font-size:17px;margin:0 0 4px;">Roles asignados</h2>
+    <p class="bean-panel-sub" style="margin:0 0 14px;">
+        Los permisos NO se asignan a las personas: se asignan a los roles. Todo lo de abajo sale de aquí.
+    </p>
+
+    @if (Model.Roles.Count == 0)
+    {
+        <div class="bean-panel-note danger">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>
+                Este usuario no tiene ningún rol asignado, así que <strong>no puede entrar a ninguna
+                pantalla del panel</strong>. Si esperabas lo contrario, asígnale un rol desde
+                “Editar usuario”.
+            </span>
+        </div>
+    }
+    else
+    {
+        <div class="bean-panel-tablewrap">
+            <table class="bean-panel-table">
+                <thead>
+                    <tr>
+                        <th>Rol</th>
+                        <th>Ámbito</th>
+                        <th>Descripción</th>
+                        <th>Permisos que aporta</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var role in Model.Roles)
+                    {
+                        <tr>
+                            <td class="bean-td-name">@role.Name</td>
+                            <td>
+                                @if (role.IsGlobal)
+                                {
+                                    <span class="bean-status draft"><span class="dot"></span>Global (Bean)</span>
+                                }
+                                else
+                                {
+                                    <span class="bean-status active"><span class="dot"></span>De la empresa</span>
+                                }
+                            </td>
+                            <td>@role.Description</td>
+                            <td>@role.PermissionCount</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@* ------------------------------------------------- Permisos por módulo *@
+<div class="bean-panel-head" style="margin-top:26px;">
+    <div>
+        <h2 class="bean-panel-title" style="font-size:17px;">Permisos por módulo</h2>
+        <p class="bean-panel-sub">
+            @Model.TotalPermissions permiso@(Model.TotalPermissions == 1 ? "" : "s") efectivo@(Model.TotalPermissions == 1 ? "" : "s")
+            en @Model.Modules.Count módulo@(Model.Modules.Count == 1 ? "" : "s").
+        </p>
+    </div>
+</div>
+
+@if (Model.Modules.Count == 0)
+{
+    <div class="bean-appr-empty">
+        <div class="ico"><i class="fas fa-key"></i></div>
+        <h3>Sin permisos efectivos</h3>
+        <p>Sus roles no tienen ningún permiso asignado, o no tiene roles.</p>
+    </div>
+}
+else
+{
+    <div class="bean-perm-grid">
+        @foreach (var module in Model.Modules)
+        {
+            <div class="bean-perm-module">
+                <div class="bean-perm-module-head">
+                    @module.ModuleName
+                    <small style="opacity:.7;font-weight:500;"> · @module.ModuleCode</small>
+                </div>
+                <div class="bean-perm-list">
+                    @foreach (var permission in module.Permissions)
+                    {
+                        <div class="bean-perm-item">
+                            <i class="fas fa-check-circle" style="color:var(--bean-success);margin-top:3px;flex-shrink:0;"></i>
+                            <label>
+                                @permission.PermissionName
+                                @if (!string.IsNullOrWhiteSpace(permission.Description))
+                                {
+                                    <small>@permission.Description</small>
+                                }
+                                <small class="bean-perm-source">
+                                    Viene de:
+                                    @foreach (var roleName in permission.GrantedBy)
+                                    {
+                                        <span class="bean-role-chip">@roleName</span>
+                                    }
+                                </small>
+                            </label>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}

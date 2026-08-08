@@ -190,38 +190,49 @@ public static class ContextSeed
         public string? Department { get; set; }
     }
 
+    /// <summary>
+    /// Roles GLOBALES de Bean. Los cuatro tienen <c>ProviderID == null</c> y su
+    /// <c>Name</c> es el literal de <see cref="Roles"/>: se usan por nombre en
+    /// <c>[Authorize(Roles = ...)]</c>, <c>User.IsInRole(...)</c> y <c>AddToRoleAsync(...)</c>.
+    /// <b>Nunca se prefijan</b> (ver <see cref="Web.Services.Tenancy.RoleNaming"/>); el prefijo
+    /// por tenant es exclusivo de los roles creados desde <c>CompanyRoles</c>.
+    /// </summary>
     public static async Task SeedRolesAsync(UserManager<ApplicationUser> userManager, RoleManager<ApplicationRole> roleManager)
     {
         //Seed Roles
-        await roleManager.CreateAsync(new ApplicationRole 
-        { 
-            Name = Roles.SuperAdmin, 
+        await roleManager.CreateAsync(new ApplicationRole
+        {
+            Name = Roles.SuperAdmin,
+            DisplayName = Roles.SuperAdmin,
             Description = "Full access to system",
             Status = true,
             CreatedBy = "SYSTEM",
             CreatedOn = DateTime.Now
         });
-        await roleManager.CreateAsync(new ApplicationRole 
-        { 
-            Name = Roles.Admin, 
+        await roleManager.CreateAsync(new ApplicationRole
+        {
+            Name = Roles.Admin,
+            DisplayName = Roles.Admin,
             Description = "Administrative access",
             Status = true,
             CreatedBy = "SYSTEM",
             CreatedOn = DateTime.Now
         });
-        await roleManager.CreateAsync(new ApplicationRole 
-        { 
-            Name = Roles.Basic, 
+        await roleManager.CreateAsync(new ApplicationRole
+        {
+            Name = Roles.Basic,
+            DisplayName = Roles.Basic,
             Description = "Standard user access",
             Status = true,
             CreatedBy = "SYSTEM",
         });
-        
+
         if (!await roleManager.RoleExistsAsync(Roles.ProviderAdmin))
         {
-            await roleManager.CreateAsync(new ApplicationRole 
-            { 
-                Name = Roles.ProviderAdmin, 
+            await roleManager.CreateAsync(new ApplicationRole
+            {
+                Name = Roles.ProviderAdmin,
+                DisplayName = Roles.ProviderAdmin,
                 Description = "Administrator for a specific Provider Company",
                 Status = true,
                 CreatedBy = "SYSTEM",

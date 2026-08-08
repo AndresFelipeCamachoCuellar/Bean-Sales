@@ -22,6 +22,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddScoped<Web.Services.IPermissionService, Web.Services.PermissionService>();
 
+// ---------- Aislamiento multi-tenant (E5.2) ----------
+// IProviderScope resuelve "a qué empresa proveedora pertenece quien está pidiendo" y ofrece
+// los helpers que aplican el filtro por ProviderID. Necesita el HttpContext para leer el
+// usuario de la petición.
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<Web.Services.Tenancy.IProviderScope, Web.Services.Tenancy.ProviderScope>();
+
 // ---------- Envío ----------
 // Caché en memoria: la usan el catálogo de municipios y (más adelante) las cotizaciones.
 builder.Services.AddMemoryCache();

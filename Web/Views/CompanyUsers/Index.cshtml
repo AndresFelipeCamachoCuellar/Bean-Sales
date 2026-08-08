@@ -13,6 +13,13 @@
     var canUpdate = await PermissionService.HasPermissionAsync(user, Modules.CompanyUsers, Permissions.Update);
 }
 
+@if (TempData["CompanyUserCreated"] != null)
+{
+    <div class="bean-alert-info" role="status">
+        <i class="fas fa-check-circle"></i> @TempData["CompanyUserCreated"]
+    </div>
+}
+
 <div class="bean-panel-head">
     <div>
         <h1 class="bean-panel-title">Usuarios de la empresa</h1>
