@@ -171,7 +171,7 @@ public class RolesController : Controller
                 ModuleCode = module.Code
             };
 
-            foreach (var perm in module.ParametricPermissions)
+            foreach (var perm in module.ParametricPermissions ?? [])
             {
                 moduleViewModel.Permissions.Add(new PermissionSelectionViewModel
                 {

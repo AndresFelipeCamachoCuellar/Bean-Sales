@@ -1,49 +1,61 @@
 @model Web.Models.ViewModels.ManagePermissionsViewModel
 @{
     ViewData["Title"] = "Gestionar Permisos";
+    Layout = "_LayoutAdminTailwind";
 }
 
-<div class="bean-panel-head">
-    <div>
-        <h1 class="bean-panel-title">Permisos del rol: @Model.RoleName</h1>
-        <p class="bean-panel-sub">Activa o desactiva los permisos granulares por módulo para este rol.</p>
+<div class="space-y-6">
+    <div class="flex flex-col gap-5 border-b border-oat pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div class="max-w-3xl">
+            <h1 class="text-2xl font-extrabold tracking-[-0.03em] text-ink sm:text-3xl">Permisos del rol: @Model.RoleName</h1>
+            <p class="mt-2 text-sm leading-6 text-ink/65 sm:text-base">Activa o desactiva los permisos granulares por módulo para este rol.</p>
+        </div>
+        <a asp-action="Index"
+           class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 self-start border border-ink/20 bg-white px-5 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay sm:self-auto">
+            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                <path d="m15 18-6-6 6-6" />
+            </svg>
+            Volver
+        </a>
     </div>
-    <a asp-action="Index" class="bean-btn-pill outline"><i class="fas fa-arrow-left"></i> Volver</a>
-</div>
 
-<div class="bean-form-card">
-    <form asp-action="ManagePermissions">
+    <form asp-action="ManagePermissions" method="post">
         <input type="hidden" asp-for="RoleId" />
 
-        <div class="bean-perm-grid">
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             @for (int i = 0; i < Model.Modules.Count; i++)
             {
-                <div class="bean-perm-module">
-                    <div class="bean-perm-module-head">@Model.Modules[i].ModuleName</div>
+                <section class="border border-oat bg-white">
+                    <h2 class="border-b border-oat bg-ink px-5 py-4 text-base font-extrabold text-white">@Model.Modules[i].ModuleName</h2>
 
                     <input type="hidden" asp-for="Modules[i].ModuleCode" />
                     <input type="hidden" asp-for="Modules[i].ModuleName" />
 
-                    <div class="bean-perm-list">
+                    <div class="divide-y divide-oat">
                         @for (int j = 0; j < Model.Modules[i].Permissions.Count; j++)
                         {
-                            <div class="bean-perm-item">
+                            <div class="grid min-h-20 grid-cols-[auto_1fr] gap-x-3 px-5 py-4 transition-colors hover:bg-cream/70">
                                 <input type="hidden" asp-for="Modules[i].Permissions[j].ParametricPermissionID" />
                                 <input type="hidden" asp-for="Modules[i].Permissions[j].PermissionName" />
-                                <input type="checkbox" asp-for="Modules[i].Permissions[j].Selected" id="@($"perm_{i}_{j}")">
-                                <label for="@($"perm_{i}_{j}")">
-                                    @Model.Modules[i].Permissions[j].PermissionName
-                                    <small>@Model.Modules[i].Permissions[j].Description</small>
+                                <input type="checkbox" asp-for="Modules[i].Permissions[j].Selected" id="@($"perm_{i}_{j}")" class="mt-0.5 size-5 cursor-pointer accent-clay focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-white">
+                                <label for="@($"perm_{i}_{j}")" class="cursor-pointer">
+                                    <span class="block text-sm font-extrabold text-ink">@Model.Modules[i].Permissions[j].PermissionName</span>
+                                    <span class="mt-1 block text-xs leading-5 text-ink/60">@Model.Modules[i].Permissions[j].Description</span>
                                 </label>
                             </div>
                         }
                     </div>
-                </div>
+                </section>
             }
         </div>
 
-        <div class="bean-form-actions">
-            <button type="submit" class="bean-btn-pill primary"><i class="fas fa-save"></i> Guardar permisos</button>
+        <div class="mt-6 flex justify-end border-t border-oat pt-6">
+            <button type="submit" class="inline-flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 bg-clay px-6 text-sm font-extrabold text-white transition-colors hover:bg-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream sm:w-auto">
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path d="M5 4h12l2 2v14H5V4Z" /><path d="M8 4v6h8V4M8 20v-6h8v6" />
+                </svg>
+                Guardar permisos
+            </button>
         </div>
     </form>
 </div>

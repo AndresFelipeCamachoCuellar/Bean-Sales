@@ -2,172 +2,154 @@
 
 @{
     ViewData["Title"] = "Nuevo Producto";
-    Layout = "_Layout";
+    Layout = "_LayoutAdminTailwind";
     var isSuperAdmin = User.IsInRole(Web.Constants.Roles.SuperAdmin);
+    const string labelClass = "font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/65";
+    const string inputClass = "mt-2 min-h-12 w-full border border-ink/25 bg-cream px-4 py-2 text-base text-ink caret-clay outline-none transition-colors placeholder:text-ink/40 hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25 [&.input-validation-error]:border-clay [&.input-validation-error]:bg-clay/5 [&.input-validation-error]:ring-1 [&.input-validation-error]:ring-clay";
+    const string selectClass = "mt-2 min-h-12 w-full cursor-pointer border border-ink/25 bg-cream px-3 py-2 text-sm font-semibold text-ink outline-none transition-colors hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25 [&.input-validation-error]:border-clay [&.input-validation-error]:bg-clay/5";
+    const string errorClass = "block pt-2 text-xs font-bold leading-5 text-clay-dark [&.field-validation-valid]:hidden";
+    const string hintClass = "mt-2 block text-xs font-medium leading-5 text-ink/50";
 }
 
-<div class="bean-panel-head">
-    <div>
-        <h1 class="bean-panel-title">Crear nuevo lote</h1>
-        <p class="bean-panel-sub">Registra un lote de café con sus datos comerciales, su trazabilidad y los países donde quieres venderlo.</p>
+<header class="flex flex-col gap-6 border-b border-ink/15 pb-7 lg:flex-row lg:items-end lg:justify-between">
+    <div class="max-w-3xl">
+        <h1 class="font-display text-3xl leading-none tracking-[-0.04em] text-ink sm:text-4xl">Crear nuevo lote</h1>
+        <p class="mt-3 max-w-2xl text-sm leading-6 text-ink/65 sm:text-base">Registra los datos comerciales, la trazabilidad y los países donde quieres venderlo. Se guardará como borrador.</p>
     </div>
-    <a asp-action="Index" class="bean-btn-pill outline"><i class="fas fa-arrow-left"></i> Volver</a>
-</div>
+    <a asp-action="Index" class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 self-start border border-ink/20 bg-white px-5 py-3 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream lg:self-auto">
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5m6 6-6-6 6-6" /></svg>
+        Volver
+    </a>
+</header>
 
-<div class="bean-form-card">
-    <form asp-action="Create" method="post">
-        <div asp-validation-summary="ModelOnly" class="bean-form-summary"></div>
+<form asp-action="Create" method="post" class="mt-8 space-y-8">
+    <div asp-validation-summary="ModelOnly" class="hidden border border-clay bg-clay/10 p-4 text-sm font-semibold leading-6 text-clay-dark [&.validation-summary-errors]:block [&_ul]:space-y-1" role="alert" aria-live="polite"></div>
 
-        <h2 class="bean-form-section-title">Información del producto</h2>
-        <div class="bean-form-grid">
-            <div class="bean-field col-span-2">
-                <label asp-for="Name" class="bean-label"></label>
-                <input asp-for="Name" class="bean-input" placeholder="Ej: Café Especial Recolección 2024" />
-                <span asp-validation-for="Name" class="bean-form-error"></span>
+    <section class="border border-ink/15 bg-white" aria-labelledby="producto-title">
+        <div class="border-b border-oat px-4 py-5 sm:px-6">
+            <h2 id="producto-title" class="text-xl font-extrabold tracking-[-0.03em] text-ink">Información del producto</h2>
+            <p class="mt-2 text-sm leading-6 text-ink/60">Nombre, costo para Bean, inventario inicial y descripción comercial.</p>
+        </div>
+        <div class="grid gap-x-6 gap-y-5 p-4 sm:p-6 md:grid-cols-2">
+            <div class="md:col-span-2">
+                <label asp-for="Name" class="@labelClass"></label>
+                <input asp-for="Name" class="@inputClass" placeholder="Ej: Café Especial Recolección 2024" />
+                <span asp-validation-for="Name" class="@errorClass" aria-live="polite"></span>
             </div>
 
             @await Html.PartialAsync("_PricingFields", Model)
 
-            <div class="bean-field">
-                <label asp-for="Stock" class="bean-label"></label>
-                <input asp-for="Stock" class="bean-input" type="number" />
-                <span asp-validation-for="Stock" class="bean-form-error"></span>
+            <div>
+                <label asp-for="Stock" class="@labelClass"></label>
+                <input asp-for="Stock" class="@inputClass" type="number" />
+                <span asp-validation-for="Stock" class="@errorClass" aria-live="polite"></span>
             </div>
 
-            <div class="bean-field col-span-2">
-                <label asp-for="Description" class="bean-label"></label>
-                <textarea asp-for="Description" class="bean-input" rows="3" placeholder="Perfil del lote, recomendación de preparación, historia de la finca…"></textarea>
-                <span asp-validation-for="Description" class="bean-form-error"></span>
+            <div class="md:col-span-2">
+                <label asp-for="Description" class="@labelClass"></label>
+                <textarea asp-for="Description" class="@inputClass" rows="4" placeholder="Perfil del lote, recomendación de preparación, historia de la finca…"></textarea>
+                <span asp-validation-for="Description" class="@errorClass" aria-live="polite"></span>
             </div>
         </div>
+    </section>
 
-        <h2 class="bean-form-section-title">Trazabilidad y perfil de taza (opcional)</h2>
-        <div class="bean-form-grid cols-3">
-            <div class="bean-field">
-                <label asp-for="Origin" class="bean-label"></label>
-                <input asp-for="Origin" class="bean-input" placeholder="Ej: Huila" />
+    <section class="border border-ink/15 bg-white" aria-labelledby="trazabilidad-title">
+        <div class="border-b border-oat px-4 py-5 sm:px-6">
+            <h2 id="trazabilidad-title" class="text-xl font-extrabold tracking-[-0.03em] text-ink">Trazabilidad y perfil de taza</h2>
+            <p class="mt-2 text-sm leading-6 text-ink/60">Datos opcionales que ayudan a presentar y aprobar el lote.</p>
+        </div>
+        <div class="grid gap-x-6 gap-y-5 p-4 sm:p-6 md:grid-cols-2 xl:grid-cols-3">
+            <div><label asp-for="Origin" class="@labelClass"></label><input asp-for="Origin" class="@inputClass" placeholder="Ej: Huila" /></div>
+            <div><label asp-for="Farm" class="@labelClass"></label><input asp-for="Farm" class="@inputClass" placeholder="Ej: Finca La Victoria" /></div>
+            <div><label asp-for="Altitude" class="@labelClass"></label><input asp-for="Altitude" class="@inputClass" placeholder="Ej: 1.750 msnm" /></div>
+            <div>
+                <label asp-for="Process" class="@labelClass"></label>
+                <select asp-for="Process" class="@selectClass" asp-items="Html.GetEnumSelectList<Web.Models.Enums.CoffeeProcess>()"><option value="">— Sin especificar —</option></select>
             </div>
-            <div class="bean-field">
-                <label asp-for="Farm" class="bean-label"></label>
-                <input asp-for="Farm" class="bean-input" placeholder="Ej: Finca La Victoria" />
-            </div>
-            <div class="bean-field">
-                <label asp-for="Altitude" class="bean-label"></label>
-                <input asp-for="Altitude" class="bean-input" placeholder="Ej: 1.750 msnm" />
-            </div>
-
-            <div class="bean-field">
-                <label asp-for="Process" class="bean-label"></label>
-                <select asp-for="Process" class="bean-select" asp-items="Html.GetEnumSelectList<Web.Models.Enums.CoffeeProcess>()">
-                    <option value="">— Sin especificar —</option>
-                </select>
-            </div>
-            <div class="bean-field">
-                <label asp-for="Variety" class="bean-label"></label>
-                <input asp-for="Variety" class="bean-input" placeholder="Ej: Geisha" />
-            </div>
-            <div class="bean-field">
-                <label asp-for="Lot" class="bean-label"></label>
-                <input asp-for="Lot" class="bean-input" placeholder="Ej: SNG-2026-04" />
-            </div>
-
-            <div class="bean-field">
-                <label asp-for="RoastDate" class="bean-label"></label>
-                <input asp-for="RoastDate" class="bean-input" type="date" asp-format="{0:yyyy-MM-dd}" />
-            </div>
+            <div><label asp-for="Variety" class="@labelClass"></label><input asp-for="Variety" class="@inputClass" placeholder="Ej: Geisha" /></div>
+            <div><label asp-for="Lot" class="@labelClass"></label><input asp-for="Lot" class="@inputClass" placeholder="Ej: SNG-2026-04" /></div>
+            <div><label asp-for="RoastDate" class="@labelClass"></label><input asp-for="RoastDate" class="@inputClass" type="date" asp-format="{0:yyyy-MM-dd}" /></div>
 
             @if (isSuperAdmin)
             {
-                <div class="bean-field">
-                    <label asp-for="Rating" class="bean-label"></label>
-                    <input asp-for="Rating" class="bean-input" type="number" step="0.1" min="0" max="5" />
-                    <span asp-validation-for="Rating" class="bean-form-error"></span>
-                    <span class="bean-field-hint">Solo carga inicial; a futuro se calculará con reseñas reales.</span>
+                <div>
+                    <label asp-for="Rating" class="@labelClass"></label>
+                    <input asp-for="Rating" class="@inputClass" type="number" step="0.1" min="0" max="5" />
+                    <span asp-validation-for="Rating" class="@errorClass" aria-live="polite"></span>
+                    <span class="@hintClass">Solo carga inicial; a futuro se calculará con reseñas reales.</span>
                 </div>
-                <div class="bean-field">
-                    <label asp-for="ReviewCount" class="bean-label"></label>
-                    <input asp-for="ReviewCount" class="bean-input" type="number" min="0" />
-                    <span class="bean-field-hint">Solo carga inicial; a futuro se calculará con reseñas reales.</span>
+                <div>
+                    <label asp-for="ReviewCount" class="@labelClass"></label>
+                    <input asp-for="ReviewCount" class="@inputClass" type="number" min="0" />
+                    <span class="@hintClass">Solo carga inicial; a futuro se calculará con reseñas reales.</span>
                 </div>
             }
 
-            <div class="bean-field col-span-2">
-                <label asp-for="TastingNotes" class="bean-label"></label>
-                <input asp-for="TastingNotes" class="bean-input" placeholder="Ej: Jazmín, Durazno, Bergamota" />
-                <span class="bean-field-hint">Separadas por coma.</span>
+            <div class="md:col-span-2 xl:col-span-3">
+                <label asp-for="TastingNotes" class="@labelClass"></label>
+                <input asp-for="TastingNotes" class="@inputClass" placeholder="Ej: Jazmín, Durazno, Bergamota" />
+                <span class="@hintClass">Separa cada nota con una coma.</span>
             </div>
         </div>
+    </section>
 
-        <h2 class="bean-form-section-title">Empaque y envío (opcional)</h2>
-        <div class="bean-form-grid cols-3">
-            <div class="bean-field">
-                <label asp-for="ShippingWeightGrams" class="bean-label"></label>
-                <input asp-for="ShippingWeightGrams" class="bean-input" type="number" min="1" step="1" placeholder="Ej: 500" />
-                <span asp-validation-for="ShippingWeightGrams" class="bean-form-error"></span>
-                <span class="bean-field-hint">Peso de la bolsa empacada. Si lo dejas vacío se estiman 500 g por unidad.</span>
-            </div>
-            <div class="bean-field">
-                <label asp-for="LengthCm" class="bean-label"></label>
-                <input asp-for="LengthCm" class="bean-input" type="number" min="1" step="0.1" placeholder="Ej: 20" />
-                <span asp-validation-for="LengthCm" class="bean-form-error"></span>
-            </div>
-            <div class="bean-field">
-                <label asp-for="WidthCm" class="bean-label"></label>
-                <input asp-for="WidthCm" class="bean-input" type="number" min="1" step="0.1" placeholder="Ej: 12" />
-                <span asp-validation-for="WidthCm" class="bean-form-error"></span>
-            </div>
-            <div class="bean-field">
-                <label asp-for="HeightCm" class="bean-label"></label>
-                <input asp-for="HeightCm" class="bean-input" type="number" min="1" step="0.1" placeholder="Ej: 8" />
-                <span asp-validation-for="HeightCm" class="bean-form-error"></span>
-            </div>
-            <div class="bean-field col-span-2">
-                <span class="bean-field-hint">Estos datos hacen que la cotización de envío sea más precisa. Sin ellos se usan medidas estándar de una bolsa de 500 g.</span>
-            </div>
+    <section class="border border-ink/15 bg-white" aria-labelledby="empaque-title">
+        <div class="border-b border-oat px-4 py-5 sm:px-6">
+            <h2 id="empaque-title" class="text-xl font-extrabold tracking-[-0.03em] text-ink">Empaque y envío</h2>
+            <p class="mt-2 text-sm leading-6 text-ink/60">Opcional. Sin estos datos se estiman las medidas estándar de una bolsa de 500 g.</p>
         </div>
+        <div class="grid gap-x-6 gap-y-5 p-4 sm:p-6 md:grid-cols-2 xl:grid-cols-4">
+            <div>
+                <label asp-for="ShippingWeightGrams" class="@labelClass"></label>
+                <input asp-for="ShippingWeightGrams" class="@inputClass" type="number" min="1" step="1" placeholder="Ej: 500" />
+                <span asp-validation-for="ShippingWeightGrams" class="@errorClass" aria-live="polite"></span>
+                <span class="@hintClass">Peso de la bolsa empacada.</span>
+            </div>
+            <div><label asp-for="LengthCm" class="@labelClass"></label><input asp-for="LengthCm" class="@inputClass" type="number" min="1" step="0.1" placeholder="Ej: 20" /><span asp-validation-for="LengthCm" class="@errorClass" aria-live="polite"></span></div>
+            <div><label asp-for="WidthCm" class="@labelClass"></label><input asp-for="WidthCm" class="@inputClass" type="number" min="1" step="0.1" placeholder="Ej: 12" /><span asp-validation-for="WidthCm" class="@errorClass" aria-live="polite"></span></div>
+            <div><label asp-for="HeightCm" class="@labelClass"></label><input asp-for="HeightCm" class="@inputClass" type="number" min="1" step="0.1" placeholder="Ej: 8" /><span asp-validation-for="HeightCm" class="@errorClass" aria-live="polite"></span></div>
+        </div>
+    </section>
 
-        <h2 class="bean-form-section-title">Países objetivo</h2>
-        <div class="bean-field">
-            <label asp-for="SelectedCountryIds" class="bean-label"></label>
-            <p class="bean-panel-sub" style="margin:0;">Selecciona los países donde deseas vender este producto.</p>
+    <section class="border border-ink/15 bg-white" aria-labelledby="paises-title">
+        <div class="border-b border-oat px-4 py-5 sm:px-6">
+            <h2 id="paises-title" class="text-xl font-extrabold tracking-[-0.03em] text-ink">Países objetivo</h2>
+            <p class="mt-2 text-sm leading-6 text-ink/60">Selecciona dónde deseas vender este producto.</p>
         </div>
         @if (Model.AvailableCountries != null)
         {
-            <div class="bean-panel-checkgrid">
+            <div class="grid gap-3 p-4 sm:grid-cols-2 sm:p-6 lg:grid-cols-3">
                 @foreach (var country in Model.AvailableCountries)
                 {
-                    <div class="bean-panel-check">
-                        <input class="form-check-input" type="checkbox" name="SelectedCountryIds" value="@country.Value" id="country_@country.Value" />
-                        <label for="country_@country.Value">@country.Text</label>
-                    </div>
+                    <label for="country_@country.Value" class="flex min-h-12 cursor-pointer items-center gap-3 border border-ink/15 bg-cream px-4 py-3 text-sm font-extrabold text-ink transition-colors hover:border-clay">
+                        <input class="size-4 cursor-pointer rounded-none accent-clay focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream" type="checkbox" name="SelectedCountryIds" value="@country.Value" id="country_@country.Value" />
+                        <span>@country.Text</span>
+                    </label>
                 }
             </div>
         }
+    </section>
 
-        <div class="bean-form-actions">
-            <a asp-action="Index" class="bean-btn-pill outline">Cancelar</a>
-            <button type="submit" class="bean-btn-pill primary"><i class="fas fa-save"></i> Guardar Borrador</button>
-        </div>
-    </form>
-</div>
+    <div class="flex flex-col-reverse gap-3 border-t border-ink/15 pt-6 sm:flex-row sm:justify-end">
+        <a asp-action="Index" class="inline-flex min-h-12 cursor-pointer items-center justify-center border border-ink/20 bg-white px-6 py-3 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Cancelar</a>
+        <button type="submit" class="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 bg-clay px-6 py-3 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-4 focus-visible:ring-offset-cream">
+            <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 4h12l2 2v14H5V4Z" /><path d="M8 4v6h8V4M8 20v-6h8v6" /></svg>
+            Guardar borrador
+        </button>
+    </div>
+</form>
 
-@*
-    Las fotos necesitan un lote que ya exista (el identificador del recurso en la nube se
-    firma con el ProductID). Por eso aquí solo va el aviso: al guardar el borrador se
-    redirige a la pantalla de edición, que sí lleva el gestor de fotos.
-*@
-<div class="bean-form-card">
-    <h2 class="bean-form-section-title">Fotos del lote</h2>
-    <div class="bean-panel-note">
-        <i class="fas fa-camera"></i>
+<section class="mt-8 border border-ink/15 bg-ink p-5 text-white sm:p-6" aria-labelledby="fotos-title">
+    <div class="flex items-start gap-4">
+        <svg class="mt-0.5 size-7 shrink-0 text-clay-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="0" /><path d="m3 16 5-5 4 4 3-3 6 6M9 6l1-2h4l1 2" /><circle cx="16.5" cy="10.5" r="1.5" /></svg>
         <div>
-            <strong>Guarda el borrador y te llevamos a la pantalla de fotos.</strong><br />
-            Ahí podrás subir hasta 6 fotos, elegir la portada y ordenarlas. Sin fotos, tu lote se
-            muestra en el catálogo con un patrón de respaldo.
+            <h2 id="fotos-title" class="text-lg font-extrabold">Las fotos se agregan después de guardar</h2>
+            <p class="mt-2 max-w-3xl text-sm leading-6 text-husk">El lote debe existir antes de firmar una subida. Al guardar te llevaremos a edición, donde podrás subir hasta 6 fotos, elegir portada, editar el texto alternativo y ordenarlas.</p>
         </div>
     </div>
-</div>
+</section>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <partial name="_ValidationScriptsPartial" />
 }

@@ -1,27 +1,33 @@
 @model Web.Models.ViewModels.RoleViewModel
 @{
     ViewData["Title"] = "Editar Rol";
+    Layout = "_LayoutAdminTailwind";
 }
 
-<div class="bean-panel-head">
-    <div>
-        <h1 class="bean-panel-title">Editar rol</h1>
-        <p class="bean-panel-sub">Actualiza el nombre del rol del sistema.</p>
+<div class="mx-auto max-w-2xl space-y-6">
+    <div class="border-b border-oat pb-6">
+        <h1 class="text-2xl font-extrabold tracking-[-0.03em] text-ink sm:text-3xl">Editar rol</h1>
+        <p class="mt-2 text-sm leading-6 text-ink/65 sm:text-base">Actualiza el nombre del rol del sistema.</p>
+    </div>
+
+    <div class="border border-oat bg-white">
+        <form asp-action="Edit" method="post">
+            <input type="hidden" asp-for="Id" />
+            <div class="p-5 sm:p-6 lg:p-8">
+                <div asp-validation-summary="ModelOnly" class="mb-5 border border-clay/30 bg-clay/10 px-4 py-3 text-sm font-bold text-clay-dark empty:hidden [&_ul]:list-disc [&_ul]:pl-5"></div>
+                <label asp-for="Name" class="mb-2 block text-sm font-bold text-ink">Nombre del rol</label>
+                <input asp-for="Name" class="min-h-12 w-full border border-ink/20 bg-cream px-4 text-sm text-ink outline-none transition-colors hover:border-ink/40 focus:border-clay focus:ring-2 focus:ring-clay/20" autocomplete="off" />
+                <span asp-validation-for="Name" class="mt-1.5 block text-xs font-bold text-red-700"></span>
+            </div>
+            <div class="flex flex-col-reverse gap-3 border-t border-oat bg-cream/60 p-5 sm:flex-row sm:justify-end sm:p-6">
+                <a asp-action="Index" class="inline-flex min-h-11 cursor-pointer items-center justify-center border border-ink/20 bg-white px-5 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Cancelar</a>
+                <button type="submit" class="inline-flex min-h-11 cursor-pointer items-center justify-center bg-clay px-5 text-sm font-extrabold text-white transition-colors hover:bg-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream">Guardar cambios</button>
+            </div>
+        </form>
     </div>
 </div>
 
-<div class="bean-form-card narrow">
-    <form asp-action="Edit">
-        <input type="hidden" asp-for="Id" />
-        <div asp-validation-summary="ModelOnly" class="bean-form-summary"></div>
-        <div class="bean-field">
-            <label asp-for="Name" class="bean-label">Nombre del Rol</label>
-            <input asp-for="Name" class="bean-input" />
-            <span asp-validation-for="Name" class="bean-form-error"></span>
-        </div>
-        <div class="bean-form-actions">
-            <a asp-action="Index" class="bean-btn-pill outline">Cancelar</a>
-            <button type="submit" class="bean-btn-pill primary">Guardar cambios</button>
-        </div>
-    </form>
-</div>
+@section Scripts {
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <partial name="_ValidationScriptsPartial" />
+}

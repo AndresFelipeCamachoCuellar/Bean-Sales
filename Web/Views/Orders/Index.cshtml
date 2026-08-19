@@ -3,155 +3,193 @@
 
 @{
     ViewData["Title"] = "Mis pedidos";
-    Layout = "_LayoutStore";
+    Layout = "_LayoutHome";
     var co = new System.Globalization.CultureInfo("es-CO");
     var nombre = ViewBag.FirstName as string ?? "";
 
-    // Mapeo de estado -> etiqueta, clase de badge y categoría de filtro.
-    // Categorías de filtro: "por-pagar" | "en-camino" | "entregado" | "cancelado".
-    // El PAGO manda sobre la logística: un pedido sin pagar no "va en camino".
-    (string Label, string BadgeClass, string Filter) EstadoUi(Web.Models.Order o)
+    // El pago manda sobre la logística: un pedido sin pagar no "va en camino".
+    (string Label, string Tone, string Filter) EstadoUi(Web.Models.Order o)
     {
         if (o.OrderStatus == OrderStatus.Pending)
         {
             if (o.PaymentStatus == PaymentStatus.Declined || o.PaymentStatus == PaymentStatus.Error)
             {
-                return ("Pago rechazado", "bean-badge-failed", "por-pagar");
+                return ("Pago rechazado", "border-clay/30 bg-clay/10 text-clay-dark", "por-pagar");
             }
 
-            return ("Pendiente de pago", "bean-badge-pending", "por-pagar");
+            return ("Pendiente de pago", "border-honey/40 bg-honey/10 text-ink", "por-pagar");
         }
 
         if (o.OrderStatus == OrderStatus.Cancelled)
         {
             var sinPagar = o.PaymentStatus != PaymentStatus.Approved;
-            return (sinPagar ? "Pago no completado" : "Cancelado", "bean-badge-cancelled", "cancelado");
+            return (sinPagar ? "Pago no completado" : "Cancelado", "border-ink/20 bg-ink/5 text-ink/60", "cancelado");
         }
 
         if (o.OrderStatus == OrderStatus.Delivered)
         {
-            return ("Entregado", "bean-badge-delivered", "entregado");
+            return ("Entregado", "border-leaf/30 bg-leaf/10 text-leaf", "entregado");
         }
 
-        return ("En camino", "bean-badge-shipping", "en-camino");
+        return ("En camino", "border-clay/30 bg-clay/10 text-clay-dark", "en-camino");
     }
 }
 
-<section class="bean-account">
-    <div class="bean-container bean-account-grid">
+<section class="min-h-[72svh] bg-cream px-4 pb-20 pt-10 sm:px-6 sm:pb-24 sm:pt-14 lg:px-10 lg:pb-32">
+    <div class="mx-auto max-w-[90rem]">
+        <header class="grid gap-7 border-b border-ink/15 pb-8 lg:grid-cols-12 lg:items-end">
+            <div class="lg:col-span-8">
+                <h1 class="font-display text-4xl leading-[0.92] tracking-[-0.045em] sm:text-5xl lg:text-6xl">Mis pedidos</h1>
+                <p class="mt-4 max-w-2xl text-base leading-7 text-ink/60">Consulta pagos, despachos y entregas de todos los lotes que han pasado por tu patio.</p>
+            </div>
+            <div class="lg:col-span-4 lg:text-right">
+                <p class="font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-clay-dark">Hola, @nombre</p>
+                <p class="mt-2 text-sm font-bold text-ink/50">@Model.Count @(Model.Count == 1 ? "pedido registrado" : "pedidos registrados")</p>
+            </div>
+        </header>
 
-        <!-- ===== Sidebar de cuenta ===== -->
-        <aside class="bean-account-side">
-            <div class="bean-account-hi">Hola, <strong>@nombre</strong></div>
-            <nav class="bean-account-nav">
-                <a class="bean-account-link active" asp-controller="Orders" asp-action="Index">Mis pedidos</a>
-                <a class="bean-account-link is-soon" href="#" title="Próximamente">Direcciones</a>
-                <a class="bean-account-link is-soon" href="#" title="Próximamente">Métodos de pago</a>
-                <a class="bean-account-link is-soon" href="#" title="Próximamente">Mis reseñas</a>
-                <form asp-controller="Account" asp-action="Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" method="post">
-                    <button type="submit" class="bean-account-link bean-account-logout">Cerrar sesión</button>
-                </form>
-            </nav>
-        </aside>
+        <div class="mt-10 grid gap-10 lg:grid-cols-12 lg:items-start">
+            <aside class="border border-ink/15 bg-white lg:sticky lg:top-28 lg:col-span-3" aria-label="Cuenta">
+                <div class="border-b border-ink/15 bg-ink px-5 py-5 text-white">
+                    <p class="font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-clay-light">Tu cuenta</p>
+                    <p class="mt-2 text-base font-extrabold">@nombre</p>
+                </div>
+                <nav class="grid text-sm font-bold">
+                    <a asp-controller="Orders" asp-action="Index" aria-current="page" class="flex min-h-12 cursor-pointer items-center justify-between border-b border-ink/10 bg-oat/60 px-5 py-3 text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-clay">
+                        Mis pedidos
+                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+                    </a>
+                    <a href="#" title="Próximamente" aria-disabled="true" class="flex min-h-12 cursor-not-allowed items-center justify-between border-b border-ink/10 px-5 py-3 text-ink/35 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-clay">
+                        Direcciones
+                        <span class="font-data text-[10px] uppercase tracking-[0.12em]">Pronto</span>
+                    </a>
+                    <a href="#" title="Próximamente" aria-disabled="true" class="flex min-h-12 cursor-not-allowed items-center justify-between border-b border-ink/10 px-5 py-3 text-ink/35 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-clay">
+                        Métodos de pago
+                        <span class="font-data text-[10px] uppercase tracking-[0.12em]">Pronto</span>
+                    </a>
+                    <a href="#" title="Próximamente" aria-disabled="true" class="flex min-h-12 cursor-not-allowed items-center justify-between border-b border-ink/10 px-5 py-3 text-ink/35 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-clay">
+                        Mis reseñas
+                        <span class="font-data text-[10px] uppercase tracking-[0.12em]">Pronto</span>
+                    </a>
+                    <form asp-controller="Account" asp-action="Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" method="post">
+                        <button type="submit" class="flex min-h-12 w-full cursor-pointer items-center justify-between px-5 py-3 text-left text-clay-dark transition-colors hover:bg-oat/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-clay">
+                            Cerrar sesión
+                            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10" /></svg>
+                        </button>
+                    </form>
+                </nav>
+            </aside>
 
-        <!-- ===== Contenido ===== -->
-        <div class="bean-account-main">
-            <div class="bean-account-head">
-                <h1 class="bean-h1">Mis pedidos</h1>
+            <div class="min-w-0 lg:col-span-9">
                 @if (Model.Any())
                 {
-                    <div class="bean-order-filters" role="tablist">
-                        <button type="button" class="bean-filter-pill active" data-filter="all">Todos</button>
-                        <button type="button" class="bean-filter-pill" data-filter="por-pagar">Por pagar</button>
-                        <button type="button" class="bean-filter-pill" data-filter="en-camino">En camino</button>
-                        <button type="button" class="bean-filter-pill" data-filter="entregado">Entregados</button>
+                    <div class="flex gap-2 overflow-x-auto border-b border-ink/15 pb-5" role="tablist" aria-label="Filtrar pedidos">
+                        <button type="button" role="tab" aria-selected="true" aria-controls="order-list" data-order-filter data-filter="all" class="min-h-11 shrink-0 cursor-pointer rounded-full border border-ink/20 px-4 py-2 text-xs font-extrabold text-ink transition-colors hover:border-ink/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay aria-selected:border-ink aria-selected:bg-ink aria-selected:text-white">Todos</button>
+                        <button type="button" role="tab" aria-selected="false" aria-controls="order-list" data-order-filter data-filter="por-pagar" class="min-h-11 shrink-0 cursor-pointer rounded-full border border-ink/20 px-4 py-2 text-xs font-extrabold text-ink transition-colors hover:border-ink/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay aria-selected:border-ink aria-selected:bg-ink aria-selected:text-white">Por pagar</button>
+                        <button type="button" role="tab" aria-selected="false" aria-controls="order-list" data-order-filter data-filter="en-camino" class="min-h-11 shrink-0 cursor-pointer rounded-full border border-ink/20 px-4 py-2 text-xs font-extrabold text-ink transition-colors hover:border-ink/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay aria-selected:border-ink aria-selected:bg-ink aria-selected:text-white">En camino</button>
+                        <button type="button" role="tab" aria-selected="false" aria-controls="order-list" data-order-filter data-filter="entregado" class="min-h-11 shrink-0 cursor-pointer rounded-full border border-ink/20 px-4 py-2 text-xs font-extrabold text-ink transition-colors hover:border-ink/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay aria-selected:border-ink aria-selected:bg-ink aria-selected:text-white">Entregados</button>
                     </div>
-                }
-            </div>
 
-            @if (!Model.Any())
-            {
-                <div class="bean-empty">
-                    <div class="bean-empty-circle"><i class="fas fa-mug-hot"></i></div>
-                    <h2 class="bean-empty-title">Aún no tienes pedidos</h2>
-                    <p class="bean-empty-text">Cuando hagas tu primera compra, aquí verás su estado y podrás volver a pedir en un clic.</p>
-                    <a class="btn-bean" asp-controller="Home" asp-action="Index">Explorar catálogo</a>
-                </div>
-            }
-            else
-            {
-                <div class="bean-order-list">
-                    @foreach (var order in Model)
-                    {
-                        var ui = EstadoUi(order);
-                        var idCorto = order.OrderID.ToString().Substring(0, 8).ToUpper();
-                        var bolsas = order.Items.Sum(i => i.Quantity);
-                        var lotes = order.Items.Count;
-                        // Primeras 2 miniaturas solapadas.
-                        var thumbs = order.Items.Take(2).ToList();
+                    <div id="order-list" class="mt-6 border-t border-ink/15" aria-live="polite">
+                        @foreach (var order in Model)
+                        {
+                            var ui = EstadoUi(order);
+                            var idCorto = order.OrderID.ToString().Substring(0, 8).ToUpper();
+                            var bolsas = order.Items.Sum(i => i.Quantity);
+                            var lotes = order.Items.Count;
+                            var thumbs = order.Items.Take(2).ToList();
 
-                        <div class="bean-order-row" data-filter="@ui.Filter">
-                            <!-- Miniaturas solapadas + info (enlazan al detalle/seguimiento) -->
-                            <a class="bean-order-idcol" asp-controller="Cart" asp-action="Confirmation" asp-route-id="@order.OrderID">
-                                <div class="bean-order-thumbs">
-                                    @if (thumbs.Any())
-                                    {
-                                        var oi = 1;
-                                        foreach (var it in thumbs)
+                            <article class="grid gap-6 border-b border-ink/15 bg-white px-5 py-6 sm:px-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(8rem,.65fr)_minmax(9rem,.75fr)] lg:items-center" data-order-row data-filter="@ui.Filter">
+                                <a asp-controller="Cart" asp-action="Confirmation" asp-route-id="@order.OrderID" class="group flex min-w-0 cursor-pointer items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">
+                                    <span class="flex w-[5.25rem] shrink-0 items-center" aria-hidden="true">
+                                        @if (thumbs.Any())
                                         {
-                                            var img = it.Product?.ImageUrl;
-                                            var style = string.IsNullOrEmpty(img)
-                                                ? ""
-                                                : $"background-image:url('{img}');background-size:cover;background-position:center;";
-                                            <span class="bean-order-thumb bean-img o@(oi)" style="@style"></span>
-                                            oi++;
+                                            var oi = 0;
+                                            foreach (var it in thumbs)
+                                            {
+                                                var img = it.Product?.ImageUrl;
+                                                var productName = string.IsNullOrWhiteSpace(it.ProductName) ? "B" : it.ProductName;
+                                                var initial = productName.Trim()[..1].ToUpperInvariant();
+                                                <span class="relative grid size-13 shrink-0 place-items-center overflow-hidden border-2 border-white bg-clay-dark font-display text-lg text-cream @(oi > 0 ? "-ml-4" : "")">
+                                                    @if (!string.IsNullOrWhiteSpace(img))
+                                                    {
+                                                        <img src="@img" alt="" class="h-full w-full object-cover" loading="lazy" />
+                                                    }
+                                                    else
+                                                    {
+                                                        @initial
+                                                    }
+                                                </span>
+                                                oi++;
+                                            }
                                         }
+                                        else
+                                        {
+                                            <span class="grid size-13 place-items-center bg-clay-dark text-cream">
+                                                <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8Z" /><path d="M8 8a4 4 0 0 1 8 0" /></svg>
+                                            </span>
+                                        }
+                                    </span>
+                                    <span class="min-w-0">
+                                        <span class="block truncate text-base font-extrabold tracking-[-0.025em] transition-colors group-hover:text-clay-dark">Pedido #@idCorto</span>
+                                        <span class="mt-1 block font-data text-[10px] font-semibold uppercase leading-5 tracking-[0.1em] text-ink/45">@order.OrderDate.ToString("d MMM yyyy", co) · @bolsas @(bolsas == 1 ? "bolsa" : "bolsas") · @lotes @(lotes == 1 ? "lote" : "lotes")</span>
+                                    </span>
+                                </a>
+
+                                <div class="flex items-center justify-between gap-4 border-y border-ink/10 py-4 sm:border-y-0 sm:py-0 lg:block">
+                                    <span class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/40">Total</span>
+                                    <span class="text-right text-lg font-extrabold tabular-nums tracking-[-0.025em] lg:mt-1 lg:block lg:text-left">$@order.TotalAmount.ToString("#,##0", co) <small class="font-data text-[10px] tracking-[0.1em] text-ink/40">@order.CurrencyCode</small></span>
+                                </div>
+
+                                <div class="flex flex-wrap items-center justify-between gap-3 lg:justify-end">
+                                    <span class="inline-flex min-h-8 items-center rounded-full border px-3 py-1 font-data text-[10px] font-semibold uppercase tracking-[0.1em] @ui.Tone">@ui.Label</span>
+                                    @if (ui.Filter == "por-pagar")
+                                    {
+                                        @if (ui.Label == "Pago rechazado")
+                                        {
+                                            <form asp-controller="Cart" asp-action="RetryPayment" asp-route-id="@order.OrderID" method="post">
+                                                <button type="submit" class="inline-flex min-h-11 cursor-pointer items-center justify-center bg-clay px-5 py-3 text-xs font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-white">Reintentar</button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <a asp-controller="Cart" asp-action="Pay" asp-route-id="@order.OrderID" class="inline-flex min-h-11 cursor-pointer items-center justify-center bg-clay px-5 py-3 text-xs font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-white">Pagar</a>
+                                        }
+                                    }
+                                    else if (ui.Filter == "entregado" || ui.Filter == "cancelado")
+                                    {
+                                        <a asp-controller="Home" asp-action="Index" asp-fragment="lotes" class="inline-flex min-h-11 cursor-pointer items-center justify-center border border-ink/25 px-5 py-3 text-xs font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Volver a pedir</a>
                                     }
                                     else
                                     {
-                                        <span class="bean-order-thumb bean-img o1"></span>
+                                        <a asp-controller="Cart" asp-action="Confirmation" asp-route-id="@order.OrderID" class="inline-flex min-h-11 cursor-pointer items-center justify-center border border-ink/25 px-5 py-3 text-xs font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Seguir envío</a>
                                     }
                                 </div>
-                                <div class="bean-order-info">
-                                    <div class="bean-order-id">Pedido #@idCorto</div>
-                                    <div class="bean-order-meta">
-                                        @order.OrderDate.ToString("d MMM yyyy", co) · @bolsas @(bolsas == 1 ? "bolsa" : "bolsas") · @lotes @(lotes == 1 ? "lote" : "lotes")
-                                    </div>
-                                </div>
+                            </article>
+                        }
+                    </div>
+
+                    <div id="filtered-orders-empty" class="mt-6 hidden border border-ink/15 bg-white px-6 py-14 text-center" role="status">
+                        <svg class="mx-auto size-11 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8Z" /><path d="M8 8a4 4 0 0 1 8 0M9 14h6" /></svg>
+                        <h2 class="mt-5 text-xl font-extrabold tracking-[-0.03em]">No hay pedidos en este estado</h2>
+                        <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-ink/55">Elige otro filtro para consultar el resto de tu historial.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="grid min-h-[30rem] place-items-center border border-ink/15 bg-white px-6 py-16 text-center">
+                        <div class="max-w-lg">
+                            <svg class="mx-auto size-16 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8Z" /><path d="M8 8a4 4 0 0 1 8 0M9 14h6" /></svg>
+                            <h2 class="mt-7 text-balance font-display text-3xl leading-[0.95] tracking-[-0.04em] sm:text-4xl">Tu primer lote aún está en el patio.</h2>
+                            <p class="mx-auto mt-5 max-w-md text-base leading-7 text-ink/60">Cuando hagas una compra, aquí verás su pago, preparación y recorrido hasta tu puerta.</p>
+                            <a asp-controller="Home" asp-action="Index" asp-fragment="lotes" class="mt-8 inline-flex min-h-13 cursor-pointer items-center justify-center gap-3 bg-clay px-7 py-4 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-4 focus-visible:ring-offset-white">
+                                Explorar catálogo
+                                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
                             </a>
-
-                            <!-- Total -->
-                            <div class="bean-order-total">
-                                <div class="bean-order-total-lbl">Total</div>
-                                <div class="bean-order-total-amt">$@order.TotalAmount.ToString("#,##0", co) <small>@order.CurrencyCode</small></div>
-                            </div>
-
-                            <!-- Badge de estado -->
-                            <div class="bean-order-badge">
-                                <span class="bean-badge @ui.BadgeClass">@ui.Label</span>
-                            </div>
-
-                            <!-- Acción según estado -->
-                            <div class="bean-order-action">
-                                @if (ui.Filter == "por-pagar")
-                                {
-                                    <a class="btn-bean btn-bean-sm" asp-controller="Cart" asp-action="Pay" asp-route-id="@order.OrderID">
-                                        @(ui.Label == "Pago rechazado" ? "Reintentar" : "Pagar")
-                                    </a>
-                                }
-                                else if (ui.Filter == "entregado" || ui.Filter == "cancelado")
-                                {
-                                    <a class="btn-bean-outline btn-bean-sm" asp-controller="Home" asp-action="Index">Volver a pedir</a>
-                                }
-                                else
-                                {
-                                    <a class="btn-bean-outline btn-bean-sm" asp-controller="Cart" asp-action="Confirmation" asp-route-id="@order.OrderID">Seguir envío</a>
-                                }
-                            </div>
                         </div>
-                    }
-                </div>
-            }
+                    </div>
+                }
+            </div>
         </div>
     </div>
 </section>
@@ -160,17 +198,25 @@
     <script>
         // Filtro visual por estado (client-side, sin recargar).
         (function () {
-            var pills = document.querySelectorAll('.bean-filter-pill');
-            var rows = document.querySelectorAll('.bean-order-row');
-            pills.forEach(function (pill) {
-                pill.addEventListener('click', function () {
-                    pills.forEach(function (p) { p.classList.remove('active'); });
-                    pill.classList.add('active');
-                    var f = pill.getAttribute('data-filter');
-                    rows.forEach(function (row) {
-                        var show = (f === 'all') || (row.getAttribute('data-filter') === f);
-                        row.style.display = show ? '' : 'none';
+            var filters = document.querySelectorAll('[data-order-filter]');
+            var rows = document.querySelectorAll('[data-order-row]');
+            var empty = document.getElementById('filtered-orders-empty');
+
+            Array.prototype.forEach.call(filters, function (filter) {
+                filter.addEventListener('click', function () {
+                    Array.prototype.forEach.call(filters, function (item) {
+                        item.setAttribute('aria-selected', item === filter ? 'true' : 'false');
                     });
+
+                    var selected = filter.getAttribute('data-filter');
+                    var visible = 0;
+                    Array.prototype.forEach.call(rows, function (row) {
+                        var show = selected === 'all' || row.getAttribute('data-filter') === selected;
+                        row.hidden = !show;
+                        if (show) { visible++; }
+                    });
+
+                    if (empty) { empty.classList.toggle('hidden', visible !== 0); }
                 });
             });
         })();

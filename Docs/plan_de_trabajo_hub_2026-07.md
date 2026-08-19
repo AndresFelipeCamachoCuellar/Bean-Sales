@@ -2,6 +2,8 @@
 **Fecha:** 21 de julio de 2026 · **PM:** Claude · **PO:** Andrés
 **Reemplaza el diagnóstico del 8-jul-2026** (`project_status_and_roadmap.md`), corregido tras revisar las entregas de Google Drive.
 
+> **Actualización UI (19-ago-2026):** la migración visual completa a Tailwind 4.3 y su validación técnica desktop/móvil están documentadas en `Docs/plan_migracion_ui_tailwind_2026-08.md`. La dirección normativa es `Patio de origen` y sus tokens/componentes están en `DESIGN.md`; queda la aceptación visual final del PO y los E2E externos indicados en ese plan.
+
 ---
 
 ## 1. Resumen ejecutivo

@@ -1,144 +1,235 @@
 @model Web.Models.ViewModels.DashboardViewModel
 @{
     ViewData["Title"] = "Dashboard";
-    Layout = "_Layout";
+    Layout = "_LayoutAdminTailwind";
 }
 
-<div class="bean-panel-head">
-    <div>
-        <h1 class="bean-panel-title">@Model.Greeting</h1>
-        <p class="bean-panel-sub" style="text-transform:capitalize;">@Model.TodayLabel</p>
-    </div>
-</div>
+<div class="space-y-6 sm:space-y-8">
+    <header class="border-b border-ink/15 pb-6 sm:pb-8">
+        <div class="min-w-0">
+            <h1 class="max-w-4xl text-balance font-display text-3xl leading-[0.98] tracking-[-0.04em] text-ink sm:text-4xl lg:text-5xl">
+                @Model.Greeting
+            </h1>
+            <p class="mt-3 font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-clay-dark">
+                @Model.TodayLabel
+            </p>
+        </div>
+    </header>
 
-@* ---- 4 KPI cards ---- *@
-<div class="bean-kpi-grid">
-    @{ var kpiDelay = 0.0; }
-    @foreach (var kpi in Model.Kpis)
-    {
-        <div class="bean-kpi-card bean-fadeup" style="animation-delay:@(kpiDelay.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))s;">
-            <div class="bean-kpi-label">@kpi.Label</div>
-            <div class="bean-kpi-value">@kpi.Value</div>
-            @if (kpi.HasTrend)
+    <section aria-label="Indicadores clave" class="grid grid-cols-1 border-l border-t border-ink/15 sm:grid-cols-2 xl:grid-cols-4">
+        @foreach (var kpi in Model.Kpis)
+        {
+            <article class="flex min-h-40 flex-col border-b border-r border-ink/15 bg-white p-5 sm:p-6">
+                <p class="font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-clay-dark">@kpi.Label</p>
+                <p class="mt-4 break-words text-3xl font-extrabold tracking-[-0.04em] text-ink sm:text-4xl">@kpi.Value</p>
+                <div class="mt-auto pt-5">
+                    @if (kpi.HasTrend)
+                    {
+                        <div class="inline-flex items-center gap-1.5 text-xs font-extrabold @(kpi.TrendUp ? "text-leaf" : "text-clay-dark")">
+                            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                @if (kpi.TrendUp)
+                                {
+                                    <path d="M12 19V5m0 0-6 6m6-6 6 6" />
+                                }
+                                else
+                                {
+                                    <path d="M12 5v14m0 0 6-6m-6 6-6-6" />
+                                }
+                            </svg>
+                            <span>@kpi.TrendLabel</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">Sin variación registrada</span>
+                    }
+                </div>
+            </article>
+        }
+    </section>
+
+    <div class="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(22rem,0.85fr)]">
+        <section class="border border-ink/15 bg-white" aria-labelledby="weekly-sales-title">
+            <div class="flex flex-wrap items-center justify-between gap-4 border-b border-oat px-5 py-4 sm:px-6">
+                <h2 id="weekly-sales-title" class="text-lg font-extrabold tracking-[-0.03em] text-ink sm:text-xl">Ventas por semana</h2>
+                <div class="inline-flex border border-ink/15 font-data text-[10px] font-semibold uppercase tracking-[0.14em]" aria-label="Moneda de la gráfica">
+                    <span class="bg-ink px-3 py-2 text-white">COP</span>
+                    <span class="px-3 py-2 text-ink/45">CAD</span>
+                </div>
+            </div>
+
+            @if (Model.WeeklySales.Count == 0)
             {
-                <div class="bean-kpi-trend @(kpi.TrendUp ? "up" : "down")">
-                    <i class="fas fa-@(kpi.TrendUp ? "arrow-up" : "arrow-down")"></i>
-                    <span>@kpi.TrendLabel</span>
+                <div class="grid min-h-72 place-items-center px-6 py-12 text-center">
+                    <div class="max-w-sm">
+                        <svg class="mx-auto size-10 text-clay-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                            <path d="M4 20V10m6 10V4m6 16v-7m4 7H2" />
+                        </svg>
+                        <h3 class="mt-4 text-base font-extrabold text-ink">Aún no hay ventas semanales</h3>
+                        <p class="mt-2 text-sm leading-6 text-ink/65">La gráfica se completará cuando se registren pedidos pagados.</p>
+                    </div>
                 </div>
             }
             else
             {
-                <div class="bean-kpi-trend neutral"><span>&nbsp;</span></div>
-            }
-        </div>
-        kpiDelay += 0.07;
-    }
-</div>
-
-@* ---- Gráfica + Por aprobar ---- *@
-<div class="bean-dash-cols">
-    <div class="bean-dash-card">
-        <div class="bean-dash-cardhead">
-            <h2 class="bean-dash-cardtitle">Ventas por semana</h2>
-            <div class="bean-cur-toggle" role="group" aria-label="Moneda">
-                <span class="bean-cur active">COP</span>
-                <span class="bean-cur">CAD</span>
-            </div>
-        </div>
-
-        <div class="bean-bars">
-            @foreach (var bar in Model.WeeklySales)
-            {
-                <div class="bean-bar-col">
-                    <div class="bean-bar @(bar.IsCurrent ? "current" : "")"
-                         style="height:@(bar.HeightPercent)%;"
-                         title="@bar.Label: @bar.ValueLabel"></div>
-                    <span class="bean-bar-label">@bar.Label</span>
+                <div class="px-4 pb-2 pt-8 sm:px-6">
+                    <div class="flex h-64 items-end gap-2 border-b border-ink/15 sm:gap-4" role="img" aria-label="Ventas de las últimas ocho semanas">
+                        @foreach (var bar in Model.WeeklySales)
+                        {
+                            <div class="group flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2">
+                                <span class="sr-only">@bar.Label: @bar.ValueLabel</span>
+                                <div class="relative flex w-full flex-1 items-end justify-center">
+                                    <div class="w-full max-w-12 @(bar.IsCurrent ? "bg-clay" : "bg-husk") transition-colors group-hover:bg-clay-light"
+                                         style="height:@(bar.HeightPercent)%;"
+                                         title="@bar.Label: @bar.ValueLabel" aria-hidden="true"></div>
+                                </div>
+                                <span class="min-h-8 text-center font-data text-[10px] font-semibold uppercase leading-4 tracking-[0.08em] @(bar.IsCurrent ? "text-clay-dark" : "text-ink/55")">@bar.Label</span>
+                            </div>
+                        }
+                    </div>
                 </div>
             }
-        </div>
 
-        <div class="bean-chart-totals">
-            <div><strong>@Model.MonthSalesLabel</strong> <span>COP este mes</span></div>
-            <div><strong>@Model.MonthBagsLabel</strong> <span>bolsas vendidas</span></div>
-            <div><strong>@Model.MonthOrdersLabel</strong> <span>pedidos del mes</span></div>
-        </div>
+            <dl class="grid border-t border-oat sm:grid-cols-3">
+                <div class="border-b border-oat px-5 py-4 sm:border-b-0 sm:border-r sm:px-6">
+                    <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/55">COP este mes</dt>
+                    <dd class="mt-1 text-lg font-extrabold tabular-nums text-ink">@Model.MonthSalesLabel</dd>
+                </div>
+                <div class="border-b border-oat px-5 py-4 sm:border-b-0 sm:border-r sm:px-6">
+                    <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/55">Bolsas vendidas</dt>
+                    <dd class="mt-1 text-lg font-extrabold tabular-nums text-ink">@Model.MonthBagsLabel</dd>
+                </div>
+                <div class="px-5 py-4 sm:px-6">
+                    <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/55">Pedidos del mes</dt>
+                    <dd class="mt-1 text-lg font-extrabold tabular-nums text-ink">@Model.MonthOrdersLabel</dd>
+                </div>
+            </dl>
+        </section>
+
+        <section class="flex min-h-96 flex-col border border-ink/15 bg-white" aria-labelledby="pending-products-title">
+            <div class="flex items-center justify-between gap-4 border-b border-oat px-5 py-4 sm:px-6">
+                <h2 id="pending-products-title" class="text-lg font-extrabold tracking-[-0.03em] text-ink sm:text-xl">Por aprobar</h2>
+                <a class="inline-flex min-h-11 cursor-pointer items-center gap-2 text-sm font-extrabold text-clay-dark underline decoration-clay/35 underline-offset-4 transition-colors hover:text-clay focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-4"
+                   asp-controller="ProductApproval" asp-action="Index">
+                    Ver todo
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <path d="M5 12h14m-5-5 5 5-5 5" />
+                    </svg>
+                </a>
+            </div>
+
+            @if (Model.PendingProducts.Count == 0)
+            {
+                <div class="grid flex-1 place-items-center px-6 py-12 text-center">
+                    <div class="max-w-xs">
+                        <span class="mx-auto grid size-12 place-items-center border border-leaf/30 bg-leaf/10 text-leaf">
+                            <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                <path d="m5 12 4 4L19 6" />
+                            </svg>
+                        </span>
+                        <h3 class="mt-4 text-base font-extrabold text-ink">Bandeja al día</h3>
+                        <p class="mt-2 text-sm leading-6 text-ink/65">No hay productos pendientes de aprobación.</p>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="divide-y divide-oat">
+                    @foreach (var p in Model.PendingProducts)
+                    {
+                        <article class="grid grid-cols-[2.75rem_minmax(0,1fr)] gap-3 px-5 py-4 sm:grid-cols-[2.75rem_minmax(0,1fr)_auto] sm:items-center sm:px-6">
+                            <span class="grid size-11 place-items-center bg-cream text-clay-dark" aria-hidden="true">
+                                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                                    <path d="M12 21v-8m0 0c0-4 2.5-7 7-8 0 4.5-2.5 7-7 8Zm0 2c0-3.5-2.5-6-7-7 0 4.5 2.5 7 7 7Z" />
+                                </svg>
+                            </span>
+                            <div class="min-w-0">
+                                <h3 class="truncate text-sm font-extrabold text-ink">@p.Name</h3>
+                                <p class="mt-1 truncate text-xs text-ink/60">@p.ProviderName · @p.AgeLabel</p>
+                            </div>
+                            <span class="col-start-2 inline-flex w-fit items-center gap-2 rounded-full bg-honey/15 px-2.5 py-1 font-data text-[10px] font-semibold uppercase tracking-[0.1em] text-ink sm:col-start-auto">
+                                <span class="size-1.5 rounded-full bg-honey" aria-hidden="true"></span>
+                                Pendiente
+                            </span>
+                        </article>
+                    }
+                </div>
+
+                @if (Model.OldestPendingAge != null)
+                {
+                    <div class="mt-auto border-t border-clay/25 bg-clay/10 px-5 py-4 text-sm leading-6 text-ink sm:px-6">
+                        <strong>@Model.PendingApprovalsTotal producto@(Model.PendingApprovalsTotal == 1 ? "" : "s")</strong>
+                        espera@(Model.PendingApprovalsTotal == 1 ? "" : "n") revisión. El más antiguo lleva
+                        <strong>@Model.OldestPendingAge</strong> en cola.
+                    </div>
+                }
+            }
+        </section>
     </div>
 
-    <div class="bean-dash-card">
-        <div class="bean-dash-cardhead">
-            <h2 class="bean-dash-cardtitle">Por aprobar</h2>
-            <a class="bean-dash-seeall" asp-controller="ProductApproval" asp-action="Index">Ver todo &rarr;</a>
+    <section class="border border-ink/15 bg-white" aria-labelledby="recent-activity-title">
+        <div class="flex items-center justify-between gap-4 border-b border-oat px-5 py-4 sm:px-6">
+            <h2 id="recent-activity-title" class="text-lg font-extrabold tracking-[-0.03em] text-ink sm:text-xl">Actividad reciente</h2>
+            <a class="inline-flex min-h-11 cursor-pointer items-center gap-2 text-sm font-extrabold text-clay-dark underline decoration-clay/35 underline-offset-4 transition-colors hover:text-clay focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-4"
+               asp-controller="OrderManagement" asp-action="Index">
+                Ver pedidos
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path d="M5 12h14m-5-5 5 5-5 5" />
+                </svg>
+            </a>
         </div>
 
-        @if (Model.PendingProducts.Count == 0)
+        @if (Model.RecentActivity.Count == 0)
         {
-            <div class="bean-dash-empty">
-                <i class="fas fa-check-circle"></i>
-                <p>No hay productos pendientes de aprobación.</p>
+            <div class="grid min-h-48 place-items-center px-6 py-10 text-center">
+                <div class="max-w-sm">
+                    <svg class="mx-auto size-9 text-clay-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                        <path d="M4 7h10M4 12h16M4 17h8" />
+                    </svg>
+                    <h3 class="mt-3 text-base font-extrabold text-ink">Sin movimientos recientes</h3>
+                    <p class="mt-1 text-sm leading-6 text-ink/65">Aún no hay actividad para mostrar.</p>
+                </div>
             </div>
         }
         else
         {
-            <div class="bean-pending-list">
-                @foreach (var p in Model.PendingProducts)
+            <div class="divide-y divide-oat">
+                @foreach (var a in Model.RecentActivity)
                 {
-                    <div class="bean-pending-row">
-                        <span class="bean-pending-thumb"><i class="fas fa-seedling"></i></span>
-                        <div class="bean-pending-info">
-                            <div class="nm">@p.Name</div>
-                            <div class="mt">@p.ProviderName · @p.AgeLabel</div>
-                        </div>
-                        <span class="bean-status pending"><span class="dot"></span>Pendiente</span>
-                    </div>
+                    var activityColor = a.Type switch
+                    {
+                        "approval" => "bg-leaf/10 text-leaf",
+                        "order" => "bg-clay/10 text-clay-dark",
+                        "alert" => "bg-honey/15 text-ink",
+                        "user" => "bg-ink/10 text-ink",
+                        _ => "bg-cream text-clay-dark"
+                    };
+                    <article class="grid grid-cols-[2.5rem_minmax(0,1fr)] items-center gap-3 px-5 py-4 sm:grid-cols-[2.5rem_minmax(0,1fr)_auto] sm:px-6">
+                        <span class="grid size-10 place-items-center @activityColor" aria-hidden="true">
+                            @switch (a.Type)
+                            {
+                                case "approval":
+                                    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m5 12 4 4L19 6" /></svg>
+                                    break;
+                                case "order":
+                                    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m4 7 8-4 8 4-8 4-8-4Zm0 0v10l8 4 8-4V7m-8 4v10" /></svg>
+                                    break;
+                                case "alert":
+                                    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4 3 20h18L12 4Zm0 5v5m0 3h.01" /></svg>
+                                    break;
+                                case "user":
+                                    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4" /><path d="M4 21c.8-4.2 3.5-6 8-6s7.2 1.8 8 6" /></svg>
+                                    break;
+                                default:
+                                    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="7" /></svg>
+                                    break;
+                            }
+                        </span>
+                        <p class="min-w-0 text-sm font-semibold leading-6 text-ink">@a.Text</p>
+                        <time class="col-start-2 font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-ink/50 sm:col-start-auto">@a.TimeLabel</time>
+                    </article>
                 }
             </div>
-
-            @if (Model.OldestPendingAge != null)
-            {
-                <div class="bean-dash-callout">
-                    <strong>@Model.PendingApprovalsTotal producto@(Model.PendingApprovalsTotal == 1 ? "" : "s")</strong>
-                    espera@(Model.PendingApprovalsTotal == 1 ? "" : "n") revisión.
-                    El más antiguo lleva <strong>@Model.OldestPendingAge</strong> en cola.
-                </div>
-            }
         }
-    </div>
-</div>
-
-@* ---- Actividad reciente ---- *@
-<div class="bean-dash-card" style="margin-top:20px;">
-    <div class="bean-dash-cardhead">
-        <h2 class="bean-dash-cardtitle">Actividad reciente</h2>
-        <a class="bean-dash-seeall" asp-controller="OrderManagement" asp-action="Index">Ver pedidos &rarr;</a>
-    </div>
-
-    @if (Model.RecentActivity.Count == 0)
-    {
-        <div class="bean-dash-empty">
-            <i class="fas fa-stream"></i>
-            <p>Aún no hay actividad para mostrar.</p>
-        </div>
-    }
-    else
-    {
-        <div class="bean-activity">
-            @foreach (var a in Model.RecentActivity)
-            {
-                var ico = a.Type switch
-                {
-                    "approval" => "fa-check",
-                    "order" => "fa-box",
-                    "alert" => "fa-exclamation-triangle",
-                    "user" => "fa-user",
-                    _ => "fa-circle"
-                };
-                <div class="bean-act-row">
-                    <span class="bean-act-ico @a.Type"><i class="fas @ico"></i></span>
-                    <span class="bean-act-text">@a.Text</span>
-                    <span class="bean-act-time">@a.TimeLabel</span>
-                </div>
-            }
-        </div>
-    }
+    </section>
 </div>

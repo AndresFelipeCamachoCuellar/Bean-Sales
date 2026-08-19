@@ -9,7 +9,7 @@
 
 @{
     ViewData["Title"] = "Histórico de precios";
-    Layout = "_Layout";
+    Layout = "_LayoutAdminTailwind";
 
     var co = System.Globalization.CultureInfo.GetCultureInfo("es-CO");
 
@@ -19,9 +19,6 @@
 
     var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
     var margin = Model.Margin;
-
-    // Se precalcula el texto: interpolaciones con comillas anidadas dentro de Razor son
-    // frágiles de parsear, y aquí no aportan nada.
     var marginText = margin.IsCalculable
         ? margin.Percent.ToString("N2") + " % (" + margin.Amount.ToString("C0", co) + ")"
         : "—";
@@ -29,109 +26,112 @@
     var suggestedText = Model.Suggested > 0 ? Model.Suggested.ToString("C0", co) : "—";
 }
 
-<div class="bean-panel-head">
-    <div>
-        <h1 class="bean-panel-title">@Model.ProductName</h1>
-        <p class="bean-panel-sub">
-            @(Model.ProviderName ?? "Sin proveedor") · histórico de costo y precio de venta.
-        </p>
+<header class="flex flex-col gap-6 border-b border-ink/15 pb-7 lg:flex-row lg:items-end lg:justify-between">
+    <div class="min-w-0 max-w-3xl">
+        <h1 class="text-balance font-display text-3xl leading-none tracking-[-0.04em] text-ink sm:text-4xl">@Model.ProductName</h1>
+        <p class="mt-3 text-sm font-semibold leading-6 text-ink/60 sm:text-base">@(Model.ProviderName ?? "Sin proveedor") · histórico de costo y precio de venta.</p>
     </div>
-    <a asp-action="Index" class="bean-btn-pill outline"><i class="fas fa-arrow-left"></i> Volver</a>
-</div>
+    <a asp-action="Index" class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 self-start border border-ink/20 bg-white px-5 py-3 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream lg:self-auto">
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5m6 6-6-6 6-6"/></svg>
+        Volver
+    </a>
+</header>
 
 @if (TempData["PricingOk"] != null)
 {
-    <div class="bean-panel-note" style="margin-top:16px;">
-        <i class="fas fa-check-circle"></i>
+    <div class="mt-6 flex items-start gap-3 border border-leaf/30 bg-leaf/10 px-4 py-3 text-sm font-semibold leading-6 text-leaf" role="status">
+        <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg>
         <div>@TempData["PricingOk"]</div>
     </div>
 }
 @if (TempData["PricingError"] != null)
 {
-    <div class="bean-panel-note danger" style="margin-top:16px;">
-        <i class="fas fa-exclamation-triangle"></i>
+    <div class="mt-6 flex items-start gap-3 border border-clay/35 bg-clay/10 px-4 py-3 text-sm font-semibold leading-6 text-clay-dark" role="alert">
+        <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5M12 17h.01"/></svg>
         <div>@TempData["PricingError"]</div>
     </div>
 }
 
-<div class="bean-form-card" style="margin-top:16px;">
-    <h2 class="bean-form-section-title">Situación actual</h2>
-    <div class="bean-panel-note @(Model.MarginAlert ? "danger" : "")">
-        <i class="fas fa-percentage"></i>
-        <div>
-            <strong>Costo:</strong> @Model.SupplierPrice.ToString("C0", co) &nbsp;·&nbsp;
-            <strong>PVP:</strong> @priceText &nbsp;·&nbsp;
-            <strong>Margen:</strong> @marginText
-            <br />
-            Objetivo @Model.TargetMarginPercent.ToString("N0") % · mínimo @Model.MinimumMarginPercent.ToString("N0") % ·
-            precio sugerido @suggestedText
-        </div>
+<section class="mt-8 border border-ink/15 bg-white" aria-labelledby="situacion-title">
+    <div class="border-b border-oat px-4 py-5 sm:px-6">
+        <h2 id="situacion-title" class="text-xl font-extrabold tracking-[-0.03em] text-ink">Situación actual</h2>
     </div>
-
-    @if (canUpdate)
-    {
-        <form asp-action="SetPrice" method="post" class="bean-form-grid" style="margin-top:14px;">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="id" value="@Model.ProductID" />
-            <input type="hidden" name="returnUrl" value="@returnUrl" />
-
-            <div class="bean-field">
-                <label class="bean-label">Nuevo precio de venta (COP)</label>
-                <input type="number" name="price" step="0.01" min="0" class="bean-input"
-                       value="@(Model.Price > 0 ? Model.Price : Model.Suggested)" />
+    <div class="p-4 sm:p-6">
+        <div class="flex items-start gap-3 border px-4 py-4 text-sm font-semibold leading-7 @(Model.MarginAlert ? "border-clay/35 bg-clay/10 text-clay-dark" : "border-leaf/30 bg-leaf/10 text-ink")" role="status">
+            <svg class="mt-1 size-5 shrink-0 @(Model.MarginAlert ? "text-clay-dark" : "text-leaf")" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.5 15.5 7-7M9 9h.01M15 15h.01"/></svg>
+            <div>
+                <strong>Costo:</strong> @Model.SupplierPrice.ToString("C0", co) · <strong>PVP:</strong> @priceText · <strong>Margen:</strong> @marginText<br />
+                Objetivo @Model.TargetMarginPercent.ToString("N0") % · mínimo @Model.MinimumMarginPercent.ToString("N0") % · precio sugerido @suggestedText
             </div>
-            <div class="bean-field">
-                <label class="bean-label">Motivo (obligatorio si baja del mínimo)</label>
-                <input type="text" name="reason" class="bean-input" maxlength="300"
-                       placeholder="Ej: promoción de lanzamiento" />
-            </div>
-            <div class="bean-form-actions col-span-2">
-                <button type="submit" class="bean-btn-pill primary"><i class="fas fa-save"></i> Fijar precio</button>
-            </div>
-        </form>
-    }
-</div>
+        </div>
 
-<div class="bean-panel-tablewrap" style="margin-top:16px;">
-    <table class="bean-panel-table">
-        <thead>
-            <tr>
-                <th>Fecha</th>
-                <th>Qué cambió</th>
-                <th>Antes</th>
-                <th>Después</th>
-                <th>Margen</th>
-                <th>Quién</th>
-                <th>Motivo</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (Model.Changes.Count == 0)
-            {
+        @if (canUpdate)
+        {
+            <form asp-action="SetPrice" method="post" class="mt-6 grid gap-5 lg:grid-cols-2">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.ProductID" />
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+                <div>
+                    <label for="history-price" class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/65">Nuevo precio de venta (COP)</label>
+                    <input id="history-price" type="number" name="price" step="0.01" min="0" class="mt-2 min-h-12 w-full border border-ink/25 bg-cream px-4 py-2 text-base text-ink caret-clay outline-none transition-colors hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25" value="@(Model.Price > 0 ? Model.Price : Model.Suggested)" />
+                </div>
+                <div>
+                    <label for="history-reason" class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/65">Motivo (obligatorio si baja del mínimo)</label>
+                    <input id="history-reason" type="text" name="reason" class="mt-2 min-h-12 w-full border border-ink/25 bg-cream px-4 py-2 text-base text-ink caret-clay outline-none transition-colors placeholder:text-ink/45 hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25" maxlength="300" placeholder="Ej: promoción de lanzamiento" />
+                </div>
+                <div class="flex justify-end border-t border-oat pt-5 lg:col-span-2">
+                    <button type="submit" class="inline-flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 bg-clay px-6 py-3 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-white sm:w-auto">
+                        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 4h12l2 2v14H5V4Z"/><path d="M8 4v6h8V4M8 20v-6h8v6"/></svg>
+                        Fijar precio
+                    </button>
+                </div>
+            </form>
+        }
+    </div>
+</section>
+
+<section class="mt-8 overflow-hidden border border-ink/15 bg-white" aria-labelledby="historial-title">
+    <div class="border-b border-oat px-4 py-5 sm:px-6">
+        <h2 id="historial-title" class="text-xl font-extrabold tracking-[-0.03em] text-ink">Cambios registrados</h2>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-[980px] w-full border-collapse text-left text-sm tabular-nums">
+            <caption class="sr-only">Histórico de costos y precios del lote</caption>
+            <thead class="bg-ink font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
                 <tr>
-                    <td colspan="7" style="color:var(--bean-muted);">Todavía no hay cambios registrados para este lote.</td>
+                    <th scope="col" class="px-4 py-4 sm:pl-6">Fecha</th>
+                    <th scope="col" class="px-4 py-4">Qué cambió</th>
+                    <th scope="col" class="px-4 py-4 text-right">Antes</th>
+                    <th scope="col" class="px-4 py-4 text-right">Después</th>
+                    <th scope="col" class="px-4 py-4">Margen</th>
+                    <th scope="col" class="px-4 py-4">Quién</th>
+                    <th scope="col" class="min-w-64 px-4 py-4 sm:pr-6">Motivo</th>
                 </tr>
-            }
-            else
-            {
-                @* Ya estamos en contexto C# dentro del else: el foreach NO lleva "@". *@
-                foreach (var change in Model.Changes)
+            </thead>
+            <tbody class="divide-y divide-oat">
+                @if (Model.Changes.Count == 0)
                 {
-                    var etiqueta = change.ChangeType == PriceChangeType.SupplierPrice
-                        ? "Costo del proveedor"
-                        : "Precio de venta";
-
-                    <tr>
-                        <td>@change.ChangedOn.ToString("d MMM yyyy '·' HH:mm", co)</td>
-                        <td>@etiqueta</td>
-                        <td>@change.OldValue.ToString("C0", co)</td>
-                        <td style="font-weight:700; color:var(--bean-ink);">@change.NewValue.ToString("C0", co)</td>
-                        <td>@change.MarginBefore.ToString("N2") % &rarr; @change.MarginAfter.ToString("N2") %</td>
-                        <td>@change.ChangedBy</td>
-                        <td>@(string.IsNullOrWhiteSpace(change.Reason) ? "—" : change.Reason)</td>
-                    </tr>
+                    <tr><td colspan="7" class="px-4 py-10 text-center text-sm font-semibold text-ink/55 sm:px-6">Todavía no hay cambios registrados para este lote.</td></tr>
                 }
-            }
-        </tbody>
-    </table>
-</div>
+                else
+                {
+                    foreach (var change in Model.Changes)
+                    {
+                        var etiqueta = change.ChangeType == PriceChangeType.SupplierPrice ? "Costo del proveedor" : "Precio de venta";
+
+                        <tr class="hover:bg-cream/70">
+                            <td class="whitespace-nowrap px-4 py-4 sm:pl-6">@change.ChangedOn.ToString("d MMM yyyy '·' HH:mm", co)</td>
+                            <td class="px-4 py-4"><span class="inline-flex rounded-full bg-oat px-3 py-1 font-data text-[10px] font-semibold uppercase tracking-[0.08em] text-ink/75">@etiqueta</span></td>
+                            <td class="whitespace-nowrap px-4 py-4 text-right">@change.OldValue.ToString("C0", co)</td>
+                            <td class="whitespace-nowrap px-4 py-4 text-right font-extrabold text-ink">@change.NewValue.ToString("C0", co)</td>
+                            <td class="whitespace-nowrap px-4 py-4 font-data text-xs">@change.MarginBefore.ToString("N2") % → @change.MarginAfter.ToString("N2") %</td>
+                            <td class="px-4 py-4 text-xs font-semibold text-ink/55">@change.ChangedBy</td>
+                            <td class="px-4 py-4 leading-6 text-ink/70 sm:pr-6">@(string.IsNullOrWhiteSpace(change.Reason) ? "—" : change.Reason)</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

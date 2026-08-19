@@ -1,6 +1,36 @@
-﻿@{
+@{
+    Layout = "_LayoutHome";
     ViewData["Title"] = "Privacy Policy";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<section class="bg-ink text-white">
+    <div class="mx-auto grid max-w-[90rem] lg:min-h-[30rem] lg:grid-cols-12">
+        <div class="flex flex-col justify-center px-4 py-16 sm:px-6 sm:py-20 lg:col-span-8 lg:border-r lg:border-white/10 lg:px-10 lg:py-24 xl:px-16">
+            <h1 class="max-w-4xl text-balance font-display text-[clamp(3.4rem,8vw,6.5rem)] leading-[0.86] tracking-[-0.04em]">@ViewData["Title"]</h1>
+        </div>
+        <div class="relative min-h-56 overflow-hidden bg-roast lg:col-span-4 lg:min-h-full">
+            <svg class="absolute inset-0 h-full w-full text-clay-light/25" viewBox="0 0 500 500" fill="none" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M-40 65C90 0 225 135 535 30M-50 165C100 65 285 245 550 125M-45 280C125 155 315 380 555 245M-30 405C145 280 335 520 545 370M-20 505C165 395 350 590 540 475" stroke="currentColor" stroke-width="1.5" />
+            </svg>
+            <div class="absolute inset-0 grid place-items-center">
+                <svg class="size-24 text-clay-light" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path d="M14 29h36v28H14V29Z" />
+                    <path d="M21 29v-8c0-7 5-13 11-13s11 6 11 13v8" />
+                    <circle cx="32" cy="42" r="3" />
+                    <path d="M32 45v5" />
+                </svg>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="bg-cream px-4 py-20 sm:px-6 sm:py-24 lg:px-10 lg:py-32">
+    <div class="mx-auto grid max-w-[90rem] gap-10 lg:grid-cols-12">
+        <div class="lg:col-span-3">
+            <p class="font-data text-[10px] font-semibold uppercase tracking-[0.18em] text-clay-dark">Bean · Legal</p>
+        </div>
+        <div class="border-t border-ink/20 pt-8 lg:col-span-7 lg:col-start-5">
+            <p class="max-w-[70ch] text-lg leading-8 text-ink/70">Use this page to detail your site's privacy policy.</p>
+        </div>
+    </div>
+</section>

@@ -3,14 +3,13 @@
 
 @{
     ViewData["Title"] = "Pedidos entrantes";
-    Layout = "_Layout";
+    Layout = "_LayoutAdminTailwind";
 
     var rows = Model.ToList();
     int nPreparar = rows.Count(r => r.Group == "preparar");
     int nListos = rows.Count(r => r.Group == "listos");
     int nCompletados = rows.Count(r => r.Group == "completados");
 
-    // Antigüedad legible ("hace 2 h", "ayer", ...) a partir de la fecha del pedido.
     string Ago(DateTime dt)
     {
         var span = DateTime.Now - dt;
@@ -21,131 +20,177 @@
         if (span.TotalDays < 30) return $"hace {(int)span.TotalDays} días";
         return dt.ToString("dd MMM yyyy");
     }
+
+    (string Label, string Tone, string Dot) StatusUi(OrderStatus status) => status switch
+    {
+        OrderStatus.Pending => ("Por preparar", "border-honey/40 bg-honey/10 text-ink", "bg-honey"),
+        OrderStatus.Confirmed => ("Por preparar", "border-honey/40 bg-honey/10 text-ink", "bg-honey"),
+        OrderStatus.Processing => ("Por preparar", "border-clay/30 bg-clay/10 text-clay-dark", "bg-clay"),
+        OrderStatus.Shipped => ("Listo para recogida", "border-clay/30 bg-clay/10 text-clay-dark", "bg-clay"),
+        OrderStatus.Delivered => ("Entregado", "border-leaf/30 bg-leaf/10 text-leaf", "bg-leaf"),
+        OrderStatus.Cancelled => ("Cancelado", "border-ink/20 bg-ink/5 text-ink/60", "bg-ink/35"),
+        _ => (status.ToString(), "border-ink/20 bg-ink/5 text-ink/60", "bg-ink/35")
+    };
 }
 
-<div class="bean-panel-head">
-    <div>
-        <h1 class="bean-panel-title">Pedidos entrantes</h1>
-        <p class="bean-panel-sub">
+<header class="grid gap-6 border-b border-ink/15 pb-7 xl:grid-cols-12 xl:items-end">
+    <div class="xl:col-span-6">
+        <h1 class="font-display text-4xl leading-[0.94] tracking-[-0.04em] sm:text-5xl">Pedidos entrantes</h1>
+        <p class="mt-3 max-w-2xl text-sm leading-6 text-ink/60 sm:text-base sm:leading-7">
             @nPreparar por preparar · @nListos listo@(nListos == 1 ? "" : "s") para recogida · @nCompletados completado@(nCompletados == 1 ? "" : "s")
         </p>
     </div>
-    <div class="bean-tabs" role="tablist">
-        <button type="button" class="bean-tab active" data-tab="preparar" onclick="beanSoFilter('preparar', this)">
-            Por preparar <span class="cnt">· @nPreparar</span>
+
+    <div class="flex gap-2 overflow-x-auto pb-2 xl:col-span-6 xl:justify-end" role="tablist" aria-label="Filtrar pedidos entrantes">
+        <button id="supplier-tab-preparar" type="button" role="tab" aria-selected="true" aria-controls="supplier-orders-list"
+                data-supplier-filter="preparar"
+                class="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2 rounded-full border border-ink/20 px-4 py-2 text-xs font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay aria-selected:border-ink aria-selected:bg-ink aria-selected:text-white">
+            Por preparar <span class="font-data text-[10px] tabular-nums opacity-70">@nPreparar</span>
         </button>
-        <button type="button" class="bean-tab" data-tab="listos" onclick="beanSoFilter('listos', this)">
-            Listos <span class="cnt">· @nListos</span>
+        <button id="supplier-tab-listos" type="button" role="tab" aria-selected="false" aria-controls="supplier-orders-list"
+                data-supplier-filter="listos" tabindex="-1"
+                class="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2 rounded-full border border-ink/20 px-4 py-2 text-xs font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay aria-selected:border-ink aria-selected:bg-ink aria-selected:text-white">
+            Listos <span class="font-data text-[10px] tabular-nums opacity-70">@nListos</span>
         </button>
-        <button type="button" class="bean-tab" data-tab="completados" onclick="beanSoFilter('completados', this)">
-            Completados <span class="cnt">· @nCompletados</span>
+        <button id="supplier-tab-completados" type="button" role="tab" aria-selected="false" aria-controls="supplier-orders-list"
+                data-supplier-filter="completados" tabindex="-1"
+                class="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2 rounded-full border border-ink/20 px-4 py-2 text-xs font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay aria-selected:border-ink aria-selected:bg-ink aria-selected:text-white">
+            Completados <span class="font-data text-[10px] tabular-nums opacity-70">@nCompletados</span>
         </button>
     </div>
-</div>
+</header>
 
-<div class="bean-so-list" id="beanSoList">
+<div id="supplier-orders-list" class="mt-7 border-t border-ink/15" role="tabpanel" aria-labelledby="supplier-tab-preparar" aria-live="polite">
     @foreach (var r in rows)
     {
         var o = r.Order;
-        var isCompany = o.User?.ProviderID != null; // comprador B2B si su usuario pertenece a una empresa
+        var isCompany = o.User?.ProviderID != null;
         var buyerName = $"{o.FirstName} {o.LastName}".Trim();
         if (string.IsNullOrWhiteSpace(buyerName)) { buyerName = o.User?.UserName ?? "Cliente"; }
         var shortId = "#" + o.OrderID.ToString("N").Substring(0, 8).ToUpper();
         var dest = string.Join(", ", new[] { o.State, o.ShippingCountry }.Where(x => !string.IsNullOrWhiteSpace(x)));
         var contents = string.Join(" · ", r.ProviderItems.Select(i => $"{i.Quantity}× {i.ProductName}"));
+        var status = StatusUi(o.OrderStatus);
 
-        <div class="bean-so-card@(r.Group == "preparar" ? " first" : "")" data-group="@r.Group">
-            <div class="bean-so-avatar @(isCompany ? "company" : "client")">@(isCompany ? "🏪" : "👤")</div>
-
-            <div class="bean-so-buyer">
-                <div class="nm">@shortId · @buyerName</div>
-                <div class="meta">@(string.IsNullOrWhiteSpace(dest) ? "Sin destino" : dest) · @Ago(o.OrderDate)</div>
+        <article data-supplier-order data-group="@r.Group" hidden="@(r.Group != "preparar")"
+                 class="grid gap-5 border-b border-ink/15 bg-white px-5 py-6 transition-colors hover:bg-cream/60 sm:px-6 xl:grid-cols-[minmax(14rem,1.25fr)_minmax(12rem,1.2fr)_minmax(7rem,.55fr)_minmax(11rem,.8fr)_minmax(8rem,.55fr)] xl:items-center">
+            <div class="flex min-w-0 items-center gap-4">
+                <span class="grid size-12 shrink-0 place-items-center @(isCompany ? "bg-ink text-white" : "bg-clay text-white")" aria-hidden="true">
+                    @if (isCompany)
+                    {
+                        <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 21V8l8-5 8 5v13M8 21v-8h8v8M8 9h.01M12 9h.01M16 9h.01" /></svg>
+                    }
+                    else
+                    {
+                        <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
+                    }
+                </span>
+                <div class="min-w-0">
+                    <h2 class="truncate text-sm font-extrabold tracking-[-0.02em] text-ink">@shortId · @buyerName</h2>
+                    <p class="mt-1 truncate font-data text-[10px] font-semibold uppercase leading-5 tracking-[0.08em] text-ink/45">@(string.IsNullOrWhiteSpace(dest) ? "Sin destino" : dest) · @Ago(o.OrderDate)</p>
+                </div>
             </div>
 
-            <div class="bean-so-col">
-                <div class="k">Contenido</div>
-                <div class="v">@(string.IsNullOrWhiteSpace(contents) ? "—" : contents)</div>
+            <div class="min-w-0 border-t border-ink/10 pt-4 xl:border-t-0 xl:pt-0">
+                <p class="font-data text-[10px] font-semibold uppercase tracking-[0.13em] text-ink/40">Contenido</p>
+                <p class="mt-2 text-sm font-bold leading-6 text-ink/70">@(string.IsNullOrWhiteSpace(contents) ? "Sin líneas registradas" : contents)</p>
             </div>
 
-            <div class="bean-so-col">
-                <div class="k">Tu pago</div>
-                <div class="bean-so-payout">@r.Payout.ToString("C0")</div>
+            <div class="flex items-end justify-between gap-4 xl:block">
+                <p class="font-data text-[10px] font-semibold uppercase tracking-[0.13em] text-ink/40">Tu pago</p>
+                <p class="mt-1 text-lg font-extrabold tabular-nums tracking-[-0.03em] text-ink">@r.Payout.ToString("C0")</p>
             </div>
 
-            <div class="bean-so-statuscell">
-                @switch (o.OrderStatus)
-                {
-                    case OrderStatus.Pending:
-                    case OrderStatus.Confirmed:
-                    case OrderStatus.Processing:
-                        <span class="bean-status pending"><span class="dot"></span>Por preparar</span>
-                        break;
-                    case OrderStatus.Shipped:
-                        <span class="bean-status active"><span class="dot"></span>Listo para recogida</span>
-                        break;
-                    case OrderStatus.Delivered:
-                        <span class="bean-status ship"><span class="dot"></span>Entregado</span>
-                        break;
-                    case OrderStatus.Cancelled:
-                        <span class="bean-status rejected"><span class="dot"></span>Cancelado</span>
-                        break;
-                }
+            <div>
+                <span class="inline-flex min-h-8 items-center gap-2 rounded-full border px-3 py-1 font-data text-[10px] font-semibold uppercase tracking-[0.08em] @status.Tone">
+                    <span class="size-1.5 rounded-full @status.Dot" aria-hidden="true"></span>@status.Label
+                </span>
             </div>
 
-            <div class="bean-so-ctacell">
-                @* CTA visual por estado. PLACEHOLDER: aún no hay una transición de estado
-                   por-proveedor (el estado es del pedido completo). Estos botones no postean;
-                   quedan listos para cablear cuando exista el hand-off proveedor→bodega. *@
+            <div class="xl:text-right">
+                @* PLACEHOLDER: el estado sigue siendo del pedido completo. Estos controles no
+                   postean hasta que exista el hand-off proveedor-bodega por proveedor. *@
                 @if (r.Group == "preparar")
                 {
-                    <button type="button" class="bean-so-cta primary" title="Próximamente: marcar el pedido como listo para recogida">
+                    <button type="button" disabled aria-disabled="true"
+                            class="inline-flex min-h-11 w-full cursor-not-allowed items-center justify-center bg-clay/55 px-4 py-2 text-xs font-extrabold text-white sm:w-auto"
+                            title="Próximamente: marcar el pedido como listo para recogida">
                         Marcar listo
                     </button>
                 }
                 else if (r.Group == "listos")
                 {
-                    <button type="button" class="bean-so-cta outline" title="Próximamente: ver la guía de la transportadora">
+                    <button type="button" disabled aria-disabled="true"
+                            class="inline-flex min-h-11 w-full cursor-not-allowed items-center justify-center border border-ink/15 px-4 py-2 text-xs font-extrabold text-ink/40 sm:w-auto"
+                            title="Próximamente: ver la guía de la transportadora">
                         Ver guía
                     </button>
                 }
                 else
                 {
-                    <span class="bean-so-done">Completado</span>
+                    <span class="inline-flex min-h-8 items-center font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-leaf">Completado</span>
                 }
             </div>
-        </div>
+        </article>
     }
 </div>
 
-<div class="bean-appr-empty" id="beanSoEmpty" style="display:none;">
-    <div class="ico"><i class="fas fa-inbox"></i></div>
-    <h3>No hay pedidos en esta pestaña</h3>
-    <p>Cuando lleguen pedidos con tus lotes aparecerán aquí para que los prepares.</p>
-</div>
+<section id="supplier-orders-empty" class="@(nPreparar == 0 ? "" : "hidden") mt-7 grid min-h-80 place-items-center border border-ink/15 bg-white px-6 py-14 text-center" aria-labelledby="supplier-empty-title">
+    <div class="max-w-md">
+        <svg class="mx-auto size-14 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 5h16v14H4V5Z" /><path d="M4 13h5l2 3h2l2-3h5" /></svg>
+        <h2 id="supplier-empty-title" class="mt-6 text-xl font-extrabold tracking-[-0.03em]">No hay pedidos en esta pestaña</h2>
+        <p class="mt-2 text-sm leading-6 text-ink/55">Cuando lleguen pedidos con tus lotes aparecerán aquí para que los prepares.</p>
+    </div>
+</section>
 
-<div class="bean-panel-note" style="margin-top:20px;">
-    <i class="fas fa-truck"></i>
-    <span>La transportadora recoge <strong>lunes y jueves a las 9:00</strong>. Los pedidos marcados “Listo” antes de las 8:00 salen ese mismo día.</span>
-</div>
+<aside class="mt-6 flex gap-3 border border-honey/35 bg-honey/10 px-4 py-4 text-sm leading-6 text-ink/70">
+    <svg class="mt-0.5 size-5 shrink-0 text-honey" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 7h11v10H3V7Zm11 3h4l3 3v4h-7v-7Z" /><circle cx="7" cy="18" r="2" /><circle cx="18" cy="18" r="2" /></svg>
+    <p>La transportadora recoge <strong class="text-ink">lunes y jueves a las 9:00</strong>. Los pedidos marcados “Listo” antes de las 8:00 salen ese mismo día.</p>
+</aside>
 
 @section Scripts {
     <script>
-        function beanSoFilter(group, el) {
-            document.querySelectorAll('.bean-tabs .bean-tab').forEach(function (t) { t.classList.remove('active'); });
-            if (el) { el.classList.add('active'); }
+        (function () {
+            var tabs = Array.prototype.slice.call(document.querySelectorAll('[data-supplier-filter]'));
+            var orders = document.querySelectorAll('[data-supplier-order]');
+            var empty = document.getElementById('supplier-orders-empty');
+            var panel = document.getElementById('supplier-orders-list');
 
-            var rows = document.querySelectorAll('#beanSoList .bean-so-card');
-            var visible = 0;
-            rows.forEach(function (r) {
-                var show = r.getAttribute('data-group') === group;
-                r.style.display = show ? '' : 'none';
-                if (show) { visible++; }
+            function activate(tab, moveFocus) {
+                var selected = tab.getAttribute('data-supplier-filter');
+                var visible = 0;
+
+                tabs.forEach(function (item) {
+                    var active = item === tab;
+                    item.setAttribute('aria-selected', active ? 'true' : 'false');
+                    item.tabIndex = active ? 0 : -1;
+                });
+
+                Array.prototype.forEach.call(orders, function (order) {
+                    var show = order.getAttribute('data-group') === selected;
+                    order.hidden = !show;
+                    if (show) visible++;
+                });
+
+                if (empty) empty.classList.toggle('hidden', visible !== 0);
+                if (panel) panel.setAttribute('aria-labelledby', tab.id);
+                if (moveFocus) tab.focus();
+            }
+
+            tabs.forEach(function (tab, index) {
+                tab.addEventListener('click', function () { activate(tab, false); });
+                tab.addEventListener('keydown', function (event) {
+                    var nextIndex;
+                    if (event.key === 'ArrowRight') nextIndex = (index + 1) % tabs.length;
+                    else if (event.key === 'ArrowLeft') nextIndex = (index - 1 + tabs.length) % tabs.length;
+                    else if (event.key === 'Home') nextIndex = 0;
+                    else if (event.key === 'End') nextIndex = tabs.length - 1;
+                    else return;
+
+                    event.preventDefault();
+                    activate(tabs[nextIndex], true);
+                });
             });
-            document.getElementById('beanSoEmpty').style.display = visible === 0 ? '' : 'none';
-        }
-        // Estado inicial: pestaña "Por preparar".
-        document.addEventListener('DOMContentLoaded', function () {
-            beanSoFilter('preparar', document.querySelector('.bean-tabs .bean-tab[data-tab="preparar"]'));
-        });
+        })();
     </script>
 }

@@ -3,198 +3,324 @@
 @using Web.Services.Media
 
 @{
+    Layout = "_LayoutHome";
     ViewData["Title"] = Model.Name;
     var co = new System.Globalization.CultureInfo("es-CO");
 
-    // Galería real (viene del Include filtrado de HomeController.Details). Si el lote no
-    // tiene fotos, todo degrada al patrón de granos exactamente como antes.
-    var gallery = ProductImageUrls.Gallery(Model.Images);
-    var coverImage = ProductImageUrls.Cover(gallery);
-    var mainUrl = ProductImageUrls.For(coverImage, ImageVariant.Main) ?? Model.ImageUrl;
-    var mainAlt = ProductImageUrls.AltFor(coverImage, Model.Name);
+    var gallery = ProductImageUrls.Gallery(Model.Images)
+        .Select(image => new
+        {
+            Image = image,
+            MainUrl = ProductImageUrls.For(image, ImageVariant.Main),
+            ThumbUrl = ProductImageUrls.For(image, ImageVariant.Thumb)
+        })
+        .Where(item => !string.IsNullOrWhiteSpace(item.MainUrl))
+        .ToList();
+    var coverImage = ProductImageUrls.Cover(Model.Images);
+    var mainItem = gallery.FirstOrDefault(item => coverImage != null && item.Image.ProductImageID == coverImage.ProductImageID)
+        ?? gallery.FirstOrDefault();
+    var mainUrl = mainItem?.MainUrl ?? Model.ImageUrl;
+    var mainAlt = ProductImageUrls.AltFor(mainItem?.Image, Model.Name);
 
-    Func<CoffeeProcess, string> procLabel = p => p switch
+    Func<CoffeeProcess, string> processLabel = process => process switch
     {
         CoffeeProcess.Washed => "Lavado",
         CoffeeProcess.Honey => "Honey",
         CoffeeProcess.Natural => "Natural",
-        _ => p.ToString()
+        _ => process.ToString()
     };
 
-    // Datos reales del producto (null-safe).
     var origin = string.IsNullOrWhiteSpace(Model.Origin) ? "Colombia" : Model.Origin;
-    var eyebrow = string.IsNullOrWhiteSpace(Model.Altitude) ? origin : $"{origin} · {Model.Altitude}";
+    var originLine = string.IsNullOrWhiteSpace(Model.Altitude) ? origin : $"{origin} · {Model.Altitude}";
+    var providerName = Model.Provider?.Name ?? "Productor colombiano";
+    var productInitial = string.IsNullOrWhiteSpace(Model.Name) ? "B" : Model.Name.Trim()[..1].ToUpperInvariant();
+    var lotCode = string.IsNullOrWhiteSpace(Model.Lot) ? "Lote por registrar" : $"Lote {Model.Lot}";
     var notes = string.IsNullOrWhiteSpace(Model.TastingNotes)
         ? Array.Empty<string>()
         : Model.TastingNotes.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    var availableCountries = Model.ProductCountries
+        .Where(country => country.IsAvailable && country.Country != null)
+        .OrderBy(country => country.Country!.Name)
+        .ToList();
+    var inStock = Model.Stock > 0;
+    var maxQuantity = Math.Max(1, Math.Min(Model.Stock, 99));
 
-    // Fecha de tueste como texto relativo ("Hace N días"), con fallback a "—".
-    string roastText = "—";
+    var roastText = "Por registrar";
     if (Model.RoastDate.HasValue)
     {
         var days = (DateTime.Now.Date - Model.RoastDate.Value.Date).Days;
-        roastText = days <= 0 ? "Hoy" : days == 1 ? "Ayer" : days < 45 ? $"Hace {days} días" : Model.RoastDate.Value.ToString("dd MMM yyyy", co);
+        roastText = days <= 0
+            ? "Hoy"
+            : days == 1
+                ? "Ayer"
+                : days < 45
+                    ? $"Hace {days} días"
+                    : Model.RoastDate.Value.ToString("dd MMM yyyy", co);
     }
 }
 
-<section class="bean-detail">
-    <div class="bean-container">
-        <nav class="bean-breadcrumb" aria-label="breadcrumb">
-            <a asp-action="Index">Catálogo</a> / <span>@Model.Name</span>
+<section class="bg-cream px-4 pb-20 pt-8 sm:px-6 sm:pb-24 sm:pt-10 lg:px-10 lg:pb-32">
+    <div class="mx-auto max-w-[90rem]">
+        <nav class="flex items-center gap-2 font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/55" aria-label="Ruta de navegación">
+            <a asp-action="Index" asp-fragment="lotes" class="cursor-pointer border-b border-transparent py-1 transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Catálogo</a>
+            <svg class="size-3.5 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+            <span class="truncate text-ink">@Model.Name</span>
         </nav>
 
-        <div class="bean-detail-grid">
-            <!-- ===== Media ===== -->
-            <div class="bean-detail-media">
-                <div id="beanMainFrame" class="bean-detail-frame bean-img o1" role="img" aria-label="@mainAlt"
-                     style="@(string.IsNullOrEmpty(mainUrl) ? "" : $"background-image:url('{mainUrl}');background-size:cover;background-position:center;")">
-                    <span class="bean-badge bean-badge-stock badge-tl">● En stock · @Model.Stock bolsas</span>
-                    @if (!string.IsNullOrWhiteSpace(Model.Lot))
+        <div class="mt-8 grid gap-12 lg:grid-cols-12 lg:gap-10 xl:gap-16">
+            <div class="min-w-0 lg:col-span-7">
+                <figure class="relative aspect-[4/5] overflow-hidden bg-clay-dark shadow-tray sm:aspect-[6/5] lg:aspect-[5/6] xl:aspect-[6/5]">
+                    @if (!string.IsNullOrWhiteSpace(mainUrl))
                     {
-                        <span class="bean-badge bean-badge-lot badge-tr">Lote #@Model.Lot</span>
+                        <img id="bean-main-image" src="@mainUrl" alt="@mainAlt" class="h-full w-full object-cover" fetchpriority="high" />
                     }
-                    @if (string.IsNullOrEmpty(mainUrl))
+                    else
                     {
-                        <span class="foto-tag">[ foto del producto ]</span>
+                        <div class="relative grid h-full place-items-center overflow-hidden p-10">
+                            <svg class="absolute inset-0 h-full w-full text-clay-light/30" viewBox="0 0 700 700" fill="none" preserveAspectRatio="none" aria-hidden="true">
+                                <path d="M-50 90C120 0 320 190 750 40M-80 230C130 90 380 330 760 170M-60 390C180 200 430 520 770 340M-40 560C190 390 470 720 760 500M-30 710C210 520 500 820 750 650" stroke="currentColor" stroke-width="2" />
+                            </svg>
+                            <span class="relative font-display text-[clamp(5rem,18vw,11rem)] leading-none tracking-[-0.08em] text-cream/90">@productInitial</span>
+                            <span class="absolute bottom-6 font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-cream/70">Fotografía por registrar</span>
+                        </div>
                     }
-                </div>
 
-                @* Miniaturas reales: solo tienen sentido si hay más de una foto. *@
+                    <div class="absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-4 sm:p-6">
+                        <span class="flex items-center gap-2 bg-cream px-3 py-2 font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-ink">
+                            <span class="size-2 rounded-full @(inStock ? "bg-leaf" : "bg-clay")"></span>
+                            @(inStock ? $"En stock · {Model.Stock} bolsas" : "Agotado")
+                        </span>
+                        <span class="bg-ink/90 px-3 py-2 font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-white">@lotCode</span>
+                    </div>
+                </figure>
+
                 @if (gallery.Count > 1)
                 {
-                    <div class="bean-thumbs">
-                        @foreach (var image in gallery)
+                    <div class="mt-4 grid grid-cols-4 gap-3 sm:grid-cols-6" aria-label="Galería del lote">
+                        @foreach (var item in gallery)
                         {
-                            var thumbUrl = ProductImageUrls.For(image, ImageVariant.Thumb);
-                            var largeUrl = ProductImageUrls.For(image, ImageVariant.Main);
-                            var isActive = coverImage != null && image.ProductImageID == coverImage.ProductImageID;
-                            var thumbAlt = ProductImageUrls.AltFor(image, Model.Name);
-                            // La URL grande viaja en un data-* (no dentro de un literal de JS
-                            // en línea): el atributo se codifica y no hay contexto de script
-                            // del que escapar.
+                            var isActive = mainItem != null && item.Image.ProductImageID == mainItem.Image.ProductImageID;
+                            var itemAlt = ProductImageUrls.AltFor(item.Image, Model.Name);
                             <button type="button"
-                                    class="bean-thumb bean-img o1 @(isActive ? "active" : "")"
-                                    title="@thumbAlt"
-                                    aria-label="@thumbAlt"
-                                    data-bean-full="@largeUrl"
-                                    style="@(string.IsNullOrEmpty(thumbUrl) ? "" : $"background-image:url('{thumbUrl}');background-size:cover;background-position:center;")"></button>
+                                    class="aspect-square cursor-pointer overflow-hidden border-2 border-transparent bg-husk opacity-65 transition-[opacity,border-color,transform] duration-200 hover:scale-[1.03] hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream aria-pressed:border-clay aria-pressed:opacity-100"
+                                    aria-label="Mostrar @itemAlt"
+                                    aria-pressed="@(isActive ? "true" : "false")"
+                                    data-bean-full="@item.MainUrl"
+                                    data-bean-alt="@itemAlt">
+                                <img src="@item.ThumbUrl" alt="" class="h-full w-full object-cover" loading="lazy" />
+                            </button>
                         }
                     </div>
                 }
             </div>
 
-            <!-- ===== Info ===== -->
-            <div class="bean-detail-info">
-                <div class="bean-detail-eyebrow">@eyebrow</div>
-                <h1 class="bean-detail-title">@Model.Name</h1>
-                <div class="bean-detail-meta">
-                    <span class="stars">★★★★★</span>
-                    @if (Model.Rating.HasValue)
+            <div class="min-w-0 lg:col-span-5">
+                <div class="lg:sticky lg:top-28">
+                    <p class="font-data text-[10px] font-semibold uppercase tracking-[0.18em] text-clay-dark">@originLine</p>
+                    <h1 class="mt-4 text-balance font-display text-4xl leading-[0.92] tracking-[-0.04em] sm:text-5xl xl:text-6xl">@Model.Name</h1>
+
+                    <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3 border-y border-ink/15 py-4 text-sm">
+                        @if (Model.Rating.HasValue)
+                        {
+                            <span class="inline-flex items-center gap-2 font-bold text-ink">
+                                <svg class="size-4 fill-honey text-honey" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.4 2.9 5.88 6.49.94-4.7 4.58 1.11 6.47L12 17.22l-5.8 3.05 1.11-6.47-4.7-4.58 6.49-.94L12 2.4Z" /></svg>
+                                @Model.Rating.Value.ToString("0.0", co)
+                                @if (Model.ReviewCount.HasValue)
+                                {
+                                    <span class="font-medium text-ink/55">· @Model.ReviewCount.Value reseñas</span>
+                                }
+                            </span>
+                        }
+                        <span class="inline-flex items-center gap-2 font-semibold text-leaf">
+                            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 20V9l8-5 8 5v11H4Z" /><path d="M9 20v-6h6v6" /></svg>
+                            @providerName
+                        </span>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.Description))
                     {
-                        <span>@Model.Rating.Value.ToString("0.0", co)@(Model.ReviewCount.HasValue ? $" · {Model.ReviewCount.Value} reseñas" : "")</span>
+                        <p class="mt-7 max-w-2xl text-base leading-7 text-ink/65">@Model.Description</p>
                     }
-                    <span class="finca">@(Model.Provider?.Name) · pago directo</span>
-                </div>
 
-                <p class="bean-detail-desc">@Model.Description</p>
-
-                @if (notes.Length > 0)
-                {
-                    <div class="bean-detail-notes">
-                        @foreach (var n in notes)
-                        {
-                            <span class="bean-note bean-note-lg">@n</span>
-                        }
-                    </div>
-                }
-
-                <!-- Tarjeta de trazabilidad (datos reales del producto, null-safe) -->
-                <div class="bean-trace">
-                    <div class="bean-trace-title">Trazabilidad</div>
-                    <div class="bean-trace-grid">
-                        <div class="bean-trace-row"><span class="k">Finca</span><span class="v">@(!string.IsNullOrWhiteSpace(Model.Farm) ? Model.Farm : (Model.Provider?.Name ?? "—"))</span></div>
-                        <div class="bean-trace-row"><span class="k">Altura</span><span class="v">@(string.IsNullOrWhiteSpace(Model.Altitude) ? "—" : Model.Altitude)</span></div>
-                        <div class="bean-trace-row"><span class="k">Proceso</span><span class="v">@(Model.Process.HasValue ? procLabel(Model.Process.Value) : "—")</span></div>
-                        <div class="bean-trace-row"><span class="k">Variedad</span><span class="v">@(string.IsNullOrWhiteSpace(Model.Variety) ? "—" : Model.Variety)</span></div>
-                        <div class="bean-trace-row"><span class="k">Lote</span><span class="v">@(string.IsNullOrWhiteSpace(Model.Lot) ? "—" : $"#{Model.Lot}")</span></div>
-                        <div class="bean-trace-row"><span class="k">Tostado</span><span class="v green">@roastText</span></div>
-                    </div>
-                </div>
-
-                <!-- Países disponibles (dato real del modelo) -->
-                @if (Model.ProductCountries.Any(c => c.IsAvailable))
-                {
-                    <div class="bean-detail-notes">
-                        @foreach (var pc in Model.ProductCountries.Where(c => c.IsAvailable))
-                        {
-                            <span class="bean-note">🌎 @pc.Country?.Name</span>
-                        }
-                    </div>
-                }
-
-                <div class="bean-detail-price">$@Model.Price.ToString("#,##0", co) <small>COP / bolsa 340 g</small></div>
-
-                <form asp-controller="Cart" asp-action="AddToCart" method="post">
-                    <input type="hidden" name="productId" value="@Model.ProductID" />
-                    <div class="bean-buy-row">
-                        <div class="bean-stepper">
-                            <button type="button" class="minus" onclick="beanStep(-1)">−</button>
-                            <input type="number" name="quantity" id="bean-qty" value="1" min="1" max="99" onchange="beanStep(0)" />
-                            <button type="button" class="plus" onclick="beanStep(1)">+</button>
+                    @if (notes.Length > 0)
+                    {
+                        <div class="mt-6 flex flex-wrap gap-2" aria-label="Notas de cata">
+                            @foreach (var note in notes)
+                            {
+                                <span class="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-ink/65 ring-1 ring-oat">@note</span>
+                            }
                         </div>
-                        <button type="submit" class="btn-bean" style="flex:1;">
-                            🛍 Agregar al carrito · <span id="bean-total">$@Model.Price.ToString("#,##0", co)</span>
-                        </button>
-                    </div>
-                </form>
+                    }
 
-                <div class="bean-reassure">
-                    <span>✓ Envío a Colombia en 3–5 días</span>
-                    <span>✓ Pago directo al productor</span>
+                    <section class="mt-8 border border-oat bg-white" aria-labelledby="trace-title">
+                        <div class="flex items-center justify-between border-b border-oat px-5 py-4 sm:px-6">
+                            <h2 id="trace-title" class="text-sm font-extrabold tracking-[-0.02em]">Trazabilidad del lote</h2>
+                            <svg class="size-5 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3v18M7 6c0 3 2 5 5 5M17 6c0 3-2 5-5 5M7 13c0 3 2 5 5 5M17 13c0 3-2 5-5 5" /></svg>
+                        </div>
+                        <dl class="grid grid-cols-2">
+                            <div class="border-b border-r border-oat p-5">
+                                <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">Finca</dt>
+                                <dd class="mt-2 text-sm font-bold">@(!string.IsNullOrWhiteSpace(Model.Farm) ? Model.Farm : providerName)</dd>
+                            </div>
+                            <div class="border-b border-oat p-5">
+                                <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">Altura</dt>
+                                <dd class="mt-2 text-sm font-bold">@(string.IsNullOrWhiteSpace(Model.Altitude) ? "Por registrar" : Model.Altitude)</dd>
+                            </div>
+                            <div class="border-b border-r border-oat p-5">
+                                <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">Proceso</dt>
+                                <dd class="mt-2 text-sm font-bold">@(Model.Process.HasValue ? processLabel(Model.Process.Value) : "Por registrar")</dd>
+                            </div>
+                            <div class="border-b border-oat p-5">
+                                <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">Variedad</dt>
+                                <dd class="mt-2 text-sm font-bold">@(string.IsNullOrWhiteSpace(Model.Variety) ? "Por registrar" : Model.Variety)</dd>
+                            </div>
+                            <div class="border-r border-oat p-5">
+                                <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">Lote</dt>
+                                <dd class="mt-2 break-words text-sm font-bold">@lotCode</dd>
+                            </div>
+                            <div class="p-5">
+                                <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">Tostado</dt>
+                                <dd class="mt-2 text-sm font-bold text-leaf">@roastText</dd>
+                            </div>
+                        </dl>
+                    </section>
+
+                    @if (availableCountries.Count > 0)
+                    {
+                        <div class="mt-6 flex flex-wrap items-center gap-2">
+                            <span class="mr-1 font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45">Disponible en</span>
+                            @foreach (var productCountry in availableCountries)
+                            {
+                                <span class="inline-flex items-center gap-2 rounded-full border border-oat bg-white px-3 py-1.5 text-xs font-bold text-ink/65">
+                                    <svg class="size-3.5 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c3 3 4 6 4 9s-1 6-4 9c-3-3-4-6-4-9s1-6 4-9Z" /></svg>
+                                    @productCountry.Country!.Name
+                                </span>
+                            }
+                        </div>
+                    }
+
+                    <div class="mt-8 bg-ink p-5 text-white sm:p-6">
+                        <div class="flex flex-wrap items-end justify-between gap-3 border-b border-white/15 pb-5">
+                            <div>
+                                <p class="font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-clay-light">Precio por bolsa</p>
+                                <p class="mt-2 font-display text-3xl tracking-[-0.04em] sm:text-4xl">$@Model.Price.ToString("#,##0", co)</p>
+                            </div>
+                            <span class="pb-1 text-xs font-semibold text-husk">COP · 340 g</span>
+                        </div>
+
+                        <form asp-controller="Cart" asp-action="AddToCart" method="post" class="mt-5">
+                            <input type="hidden" name="productId" value="@Model.ProductID" />
+                            <div class="grid gap-3 sm:grid-cols-[8.5rem_1fr]">
+                                <div class="grid min-h-13 grid-cols-[2.75rem_1fr_2.75rem] border border-white/20" aria-label="Cantidad">
+                                    <button id="bean-qty-minus" type="button" class="grid cursor-pointer place-items-center text-xl text-husk transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light disabled:cursor-not-allowed disabled:opacity-40" aria-label="Disminuir cantidad" @(!inStock ? "disabled" : null)>−</button>
+                                    <input type="number" name="quantity" id="bean-qty" value="1" min="1" max="@maxQuantity" inputmode="numeric" class="min-w-0 border-x border-white/20 bg-transparent text-center font-data text-sm font-semibold text-white outline-none focus:ring-2 focus:ring-inset focus:ring-clay-light disabled:cursor-not-allowed disabled:opacity-40" aria-label="Cantidad de bolsas" @(!inStock ? "disabled" : null) />
+                                    <button id="bean-qty-plus" type="button" class="grid cursor-pointer place-items-center bg-clay text-xl text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:cursor-not-allowed disabled:opacity-40" aria-label="Aumentar cantidad" @(!inStock ? "disabled" : null)>+</button>
+                                </div>
+                                <button type="submit" class="inline-flex min-h-13 cursor-pointer items-center justify-center gap-3 bg-clay px-5 py-4 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-ink disabled:cursor-not-allowed disabled:bg-white/15 disabled:text-husk" disabled="@(!inStock)">
+                                    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 8h12l-1 12H7L6 8Z" /><path d="M9 9V6a3 3 0 0 1 6 0v3" /></svg>
+                                    @if (inStock)
+                                    {
+                                        <span>Agregar · <span id="bean-total" aria-live="polite" aria-atomic="true">$@Model.Price.ToString("#,##0", co)</span></span>
+                                    }
+                                    else
+                                    {
+                                        <span>Lote agotado</span>
+                                    }
+                                </button>
+                            </div>
+                        </form>
+
+                        <ul class="mt-5 grid gap-3 border-t border-white/15 pt-5 text-xs font-semibold text-husk sm:grid-cols-2">
+                            <li class="flex items-start gap-2">
+                                <svg class="mt-0.5 size-4 shrink-0 text-clay-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7h11v10H3V7Z" /><path d="M14 10h4l3 3v4h-7v-7Z" /><circle cx="7" cy="18" r="2" /><circle cx="17" cy="18" r="2" /></svg>
+                                Envío calculado en checkout
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <svg class="mt-0.5 size-4 shrink-0 text-clay-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" /></svg>
+                                Compra unificada por Bean
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
+<section class="border-t border-white/10 bg-roast px-4 py-16 text-white sm:px-6 sm:py-20 lg:px-10">
+    <div class="mx-auto grid max-w-[90rem] gap-8 lg:grid-cols-12 lg:items-end">
+        <div class="lg:col-span-8">
+            <h2 class="max-w-4xl text-balance font-display text-3xl leading-[0.95] tracking-[-0.04em] sm:text-4xl lg:text-5xl">Cada dato acompaña este lote hasta tu taza.</h2>
+            <p class="mt-5 max-w-2xl text-sm leading-6 text-husk sm:text-base sm:leading-7">Compara origen, proceso y productor antes de elegir otro café del patio.</p>
+        </div>
+        <div class="lg:col-span-4 lg:flex lg:justify-end">
+            <a asp-action="Index" asp-fragment="lotes" class="inline-flex min-h-13 cursor-pointer items-center justify-center gap-3 border border-white/20 px-7 py-4 text-sm font-extrabold text-white transition-colors hover:border-white/50 hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light">
+                Volver a los lotes
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6" /></svg>
+            </a>
+        </div>
+    </div>
+</section>
+
 @section Scripts {
     <script>
-        // Galería: al hacer clic en una miniatura, su foto pasa a ser la principal.
-        // La URL se lee del data-* del botón (nunca se inyecta en el HTML como código).
         (function () {
-            var thumbs = document.querySelectorAll('.bean-thumbs .bean-thumb');
-            var frame = document.getElementById('beanMainFrame');
+            var mainImage = document.getElementById('bean-main-image');
+            var thumbnails = document.querySelectorAll('[data-bean-full]');
 
-            Array.prototype.forEach.call(thumbs, function (thumb) {
-                thumb.addEventListener('click', function () {
-                    var url = thumb.getAttribute('data-bean-full');
+            Array.prototype.forEach.call(thumbnails, function (thumbnail) {
+                thumbnail.addEventListener('click', function () {
+                    var url = thumbnail.getAttribute('data-bean-full');
+                    if (!mainImage || !url) return;
 
-                    if (frame && url) {
-                        frame.style.backgroundImage = "url('" + url + "')";
-                        frame.style.backgroundSize = 'cover';
-                        frame.style.backgroundPosition = 'center';
-                        var tag = frame.querySelector('.foto-tag');
-                        if (tag) { tag.style.display = 'none'; }
-                    }
-
-                    Array.prototype.forEach.call(thumbs, function (t) { t.classList.remove('active'); });
-                    thumb.classList.add('active');
+                    mainImage.src = url;
+                    mainImage.alt = thumbnail.getAttribute('data-bean-alt') || '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(mainAlt))';
+                    Array.prototype.forEach.call(thumbnails, function (item) {
+                        item.setAttribute('aria-pressed', 'false');
+                    });
+                    thumbnail.setAttribute('aria-pressed', 'true');
                 });
             });
-        })();
 
-        // Total vivo del botón (cantidad × precio unitario). Precio inyectado desde el modelo.
-        var beanUnitPrice = @Model.Price.ToString("0", System.Globalization.CultureInfo.InvariantCulture);
-        function beanStep(delta) {
-            var input = document.getElementById('bean-qty');
-            var q = parseInt(input.value, 10);
-            if (isNaN(q)) q = 1;
-            q += delta;
-            if (q < 1) q = 1;
-            if (q > 99) q = 99;
-            input.value = q;
-            var total = q * beanUnitPrice;
-            document.getElementById('bean-total').textContent = '$' + total.toLocaleString('es-CO');
-        }
+            var quantityInput = document.getElementById('bean-qty');
+            var minusButton = document.getElementById('bean-qty-minus');
+            var plusButton = document.getElementById('bean-qty-plus');
+            var total = document.getElementById('bean-total');
+            var unitPrice = @Model.Price.ToString("0", System.Globalization.CultureInfo.InvariantCulture);
+
+            if (!quantityInput || !minusButton || !plusButton || !total) return;
+
+            function clampQuantity(value) {
+                var minimum = parseInt(quantityInput.min, 10) || 1;
+                var maximum = parseInt(quantityInput.max, 10) || 99;
+                return Math.min(maximum, Math.max(minimum, value));
+            }
+
+            function updateQuantity(nextValue) {
+                var quantity = clampQuantity(nextValue);
+                quantityInput.value = quantity;
+                total.textContent = '$' + (quantity * unitPrice).toLocaleString('es-CO');
+                minusButton.disabled = quantity <= 1;
+                plusButton.disabled = quantity >= parseInt(quantityInput.max, 10);
+            }
+
+            minusButton.addEventListener('click', function () {
+                updateQuantity((parseInt(quantityInput.value, 10) || 1) - 1);
+            });
+            plusButton.addEventListener('click', function () {
+                updateQuantity((parseInt(quantityInput.value, 10) || 1) + 1);
+            });
+            quantityInput.addEventListener('change', function () {
+                updateQuantity(parseInt(quantityInput.value, 10) || 1);
+            });
+            quantityInput.addEventListener('input', function () {
+                var quantity = parseInt(quantityInput.value, 10);
+                if (!isNaN(quantity)) {
+                    total.textContent = '$' + (clampQuantity(quantity) * unitPrice).toLocaleString('es-CO');
+                }
+            });
+
+            updateQuantity(1);
+        })();
     </script>
 }

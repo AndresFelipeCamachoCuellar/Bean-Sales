@@ -3,11 +3,10 @@
 
 @{
     ViewData["Title"] = "Pedido confirmado";
-    Layout = "_LayoutStore";
+    Layout = "_LayoutHome";
     var co = new System.Globalization.CultureInfo("es-CO");
     var orderShort = Model.OrderID.ToString().Substring(0, 8).ToUpper();
 
-    // ----- Estado del PAGO (4 desenlaces) -------------------------------------
     // El pago y la logística son dimensiones distintas: PaymentStatus manda aquí.
     bool pagado = Model.PaymentStatus == PaymentStatus.Approved;
     bool vencido = !pagado
@@ -20,12 +19,9 @@
 
     bool puedeReintentar = ViewBag.CanRetryPayment is bool reintentarFlag && reintentarFlag;
     int? minutosRestantes = ViewBag.PaymentMinutesLeft as int?;
-
-    // Entrega estimada: usa los días cotizados por la transportadora si los hay.
     var entregaEstimada = Model.OrderDate.AddDays(Model.ShippingEstimatedDays ?? 5);
 
-    // Paso actual según el estado (Confirmado=1 · Tostado y empacado=2 · En camino=3 · Entregado=4).
-    // Solo tiene sentido cuando el pago está aprobado.
+    // Confirmado=1, tostado y empacado=2, en camino=3, entregado=4.
     var step = !pagado ? 0 : Model.OrderStatus switch
     {
         OrderStatus.Confirmed => 1,
@@ -52,208 +48,254 @@
     }
 }
 
-<section class="bean-checkout">
-    <div class="bean-container">
-
+<section class="min-h-[72svh] bg-cream px-4 pb-20 pt-10 sm:px-6 sm:pb-24 sm:pt-14 lg:px-10 lg:pb-32">
+    <div class="mx-auto max-w-[90rem]">
         @if (TempData["PaymentError"] != null)
         {
-            <div class="bean-alert-info" role="status" style="margin-bottom:18px;">
-                <i class="fas fa-info-circle"></i> <span>@TempData["PaymentError"]</span>
+            <div class="mb-8 flex items-start gap-3 border border-clay/30 bg-white px-5 py-4 text-sm font-semibold text-clay-dark" role="status">
+                <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7h.01" /></svg>
+                <span>@TempData["PaymentError"]</span>
             </div>
         }
 
-        <!-- Cabecera: cambia según el desenlace del pago -->
-        @if (pagado)
-        {
-            <div class="bean-confirm-head bean-fadeup">
-                <div class="bean-confirm-check"><i class="fas fa-check"></i></div>
-                <h1 class="bean-h1 bean-confirm-title">¡Gracias, @Model.FirstName! Tu café va en camino.</h1>
-                <p class="bean-confirm-sub">
-                    Pedido <strong>#@orderShort</strong> · @Model.OrderDate.ToString("d 'de' MMMM, yyyy", co)
-                    <br />Te enviamos un comprobante por correo.
-                </p>
-            </div>
-        }
-        else if (esperandoPago)
-        {
-            <div class="bean-confirm-head bean-fadeup">
-                <div class="bean-confirm-check is-waiting"><i class="fas fa-hourglass-half"></i></div>
-                <h1 class="bean-h1 bean-confirm-title">Estamos confirmando tu pago</h1>
-                <p class="bean-confirm-sub">
-                    Pedido <strong>#@orderShort</strong> · @Model.OrderDate.ToString("d 'de' MMMM, yyyy", co)
-                    <br />Si pagaste por PSE puede tardar unos minutos. No cierres esta página.
-                    @if (minutosRestantes.HasValue)
-                    {
-                        <br />
-                        <span>Reservamos tus lotes por @minutosRestantes.Value minutos más.</span>
-                    }
-                </p>
-                @if (puedeReintentar)
+        <header class="grid border border-ink/15 bg-white lg:grid-cols-12">
+            <div class="p-6 sm:p-9 lg:col-span-8 lg:p-12">
+                @if (pagado)
                 {
-                    <div class="bean-pay-actions">
-                        <form asp-controller="Cart" asp-action="RetryPayment" asp-route-id="@Model.OrderID" method="post">
-                            <button type="submit" class="btn-bean">Ir a pagar</button>
-                        </form>
+                    <div class="grid size-14 place-items-center bg-leaf text-white sm:size-16">
+                        <svg class="size-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+                    </div>
+                    <h1 class="mt-7 max-w-4xl text-balance font-display text-4xl leading-[0.92] tracking-[-0.04em] sm:text-5xl lg:text-6xl">Gracias, @Model.FirstName. Tu café va en camino.</h1>
+                    <p class="mt-5 max-w-2xl text-base leading-7 text-ink/60">Te enviamos un comprobante por correo y aquí podrás seguir cada hito del despacho.</p>
+                }
+                else if (esperandoPago)
+                {
+                    <div class="grid size-14 place-items-center bg-honey text-white sm:size-16">
+                        <svg class="size-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                    </div>
+                    <h1 class="mt-7 max-w-4xl text-balance font-display text-4xl leading-[0.92] tracking-[-0.04em] sm:text-5xl lg:text-6xl">Estamos confirmando tu pago.</h1>
+                    <p class="mt-5 max-w-2xl text-base leading-7 text-ink/60">
+                        Si pagaste por PSE puede tardar unos minutos. No cierres esta página.
+                        @if (minutosRestantes.HasValue)
+                        {
+                            <span class="mt-2 block font-semibold text-ink">Reservamos tus lotes por @minutosRestantes.Value minutos más.</span>
+                        }
+                    </p>
+                    @if (puedeReintentar)
+                    {
+                        <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+                            <form asp-controller="Cart" asp-action="RetryPayment" asp-route-id="@Model.OrderID" method="post">
+                                <button type="submit" class="inline-flex min-h-13 w-full cursor-pointer items-center justify-center gap-3 bg-clay px-7 py-4 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-4 focus-visible:ring-offset-white sm:w-auto">
+                                    Ir a pagar
+                                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+                                </button>
+                            </form>
+                            <form asp-controller="Cart" asp-action="CancelPayment" asp-route-id="@Model.OrderID" method="post">
+                                <button type="submit" class="inline-flex min-h-13 w-full cursor-pointer items-center justify-center border border-ink/25 px-7 py-4 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay sm:w-auto">Cancelar el pedido</button>
+                            </form>
+                        </div>
+                    }
+                }
+                else if (fallido)
+                {
+                    <div class="grid size-14 place-items-center bg-clay text-white sm:size-16">
+                        <svg class="size-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v6M12 17h.01" /></svg>
+                    </div>
+                    <h1 class="mt-7 max-w-4xl text-balance font-display text-4xl leading-[0.92] tracking-[-0.04em] sm:text-5xl lg:text-6xl">No pudimos procesar tu pago.</h1>
+                    <p class="mt-5 max-w-2xl text-base leading-7 text-ink/60">
+                        @if (!string.IsNullOrWhiteSpace(Model.PaymentStatusMessage))
+                        {
+                            <span class="block">@Model.PaymentStatusMessage</span>
+                        }
+                        <span class="mt-2 block font-semibold text-ink">Tus lotes siguen reservados@(minutosRestantes.HasValue ? $" por {minutosRestantes.Value} minutos más" : "").</span>
+                    </p>
+                    <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+                        @if (puedeReintentar)
+                        {
+                            <form asp-controller="Cart" asp-action="RetryPayment" asp-route-id="@Model.OrderID" method="post">
+                                <button type="submit" class="inline-flex min-h-13 w-full cursor-pointer items-center justify-center gap-3 bg-clay px-7 py-4 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-4 focus-visible:ring-offset-white sm:w-auto">
+                                    Reintentar el pago
+                                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5" /><path d="M7.5 8.5A6 6 0 0 1 18 12M16.5 15.5A6 6 0 0 1 6 12" /></svg>
+                                </button>
+                            </form>
+                        }
                         <form asp-controller="Cart" asp-action="CancelPayment" asp-route-id="@Model.OrderID" method="post">
-                            <button type="submit" class="btn-bean-outline btn-bean-sm">Cancelar el pedido</button>
+                            <button type="submit" class="inline-flex min-h-13 w-full cursor-pointer items-center justify-center border border-ink/25 px-7 py-4 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay sm:w-auto">Cancelar el pedido</button>
                         </form>
                     </div>
                 }
+                else
+                {
+                    <div class="grid size-14 place-items-center bg-ink text-white sm:size-16">
+                        <svg class="size-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m9 9 6 6m0-6-6 6" /></svg>
+                    </div>
+                    <h1 class="mt-7 max-w-4xl text-balance font-display text-4xl leading-[0.92] tracking-[-0.04em] sm:text-5xl lg:text-6xl">Este pedido se canceló.</h1>
+                    <p class="mt-5 max-w-2xl text-base leading-7 text-ink/60">No se completó el pago, así que liberamos los lotes para otros clientes.</p>
+                    <a asp-controller="Home" asp-action="Index" asp-fragment="lotes" class="mt-8 inline-flex min-h-13 cursor-pointer items-center justify-center gap-3 bg-clay px-7 py-4 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-4 focus-visible:ring-offset-white">
+                        Volver a pedir
+                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+                    </a>
+                }
             </div>
-        }
-        else if (fallido)
-        {
-            <div class="bean-confirm-head bean-fadeup">
-                <div class="bean-confirm-check is-failed"><i class="fas fa-exclamation"></i></div>
-                <h1 class="bean-h1 bean-confirm-title">No pudimos procesar tu pago</h1>
-                <p class="bean-confirm-sub">
-                    Pedido <strong>#@orderShort</strong>
-                    @if (!string.IsNullOrWhiteSpace(Model.PaymentStatusMessage))
-                    {
-                        <br />
-                        <span>@Model.PaymentStatusMessage</span>
-                    }
-                    <br />Tus lotes siguen reservados@(minutosRestantes.HasValue ? $" por {minutosRestantes.Value} minutos más" : "").
-                </p>
-                <div class="bean-pay-actions">
-                    @if (puedeReintentar)
-                    {
-                        <form asp-controller="Cart" asp-action="RetryPayment" asp-route-id="@Model.OrderID" method="post">
-                            <button type="submit" class="btn-bean">Reintentar el pago</button>
-                        </form>
-                    }
-                    <form asp-controller="Cart" asp-action="CancelPayment" asp-route-id="@Model.OrderID" method="post">
-                        <button type="submit" class="btn-bean-outline btn-bean-sm">Cancelar el pedido</button>
-                    </form>
-                </div>
-            </div>
-        }
-        else
-        {
-            <div class="bean-confirm-head bean-fadeup">
-                <div class="bean-confirm-check is-expired"><i class="fas fa-times"></i></div>
-                <h1 class="bean-h1 bean-confirm-title">Este pedido se canceló</h1>
-                <p class="bean-confirm-sub">
-                    Pedido <strong>#@orderShort</strong>
-                    <br />No se completó el pago, así que liberamos los lotes para otros clientes.
-                </p>
-                <div class="bean-pay-actions">
-                    <a class="btn-bean" asp-controller="Home" asp-action="Index">Volver a pedir</a>
-                </div>
-            </div>
-        }
 
-        <div class="bean-checkout-grid" style="margin-top:34px;">
-            <!-- ===== Línea de tiempo de seguimiento (solo con el pago aprobado) ===== -->
-            <div class="bean-form-col">
-                <div class="bean-form-section">
+            <div class="flex flex-col justify-between border-t border-ink/15 bg-ink p-6 text-white sm:p-9 lg:col-span-4 lg:border-l lg:border-t-0 lg:p-10">
+                <div>
+                    <p class="font-data text-[10px] font-semibold uppercase tracking-[0.18em] text-clay-light">Registro de pedido</p>
+                    <p class="mt-4 font-display text-3xl tracking-[-0.04em]">#@orderShort</p>
+                </div>
+                <dl class="mt-10 divide-y divide-white/15 text-sm">
+                    <div class="flex items-center justify-between gap-4 py-4">
+                        <dt class="text-husk">Fecha</dt>
+                        <dd class="text-right font-bold">@Model.OrderDate.ToString("d 'de' MMMM, yyyy", co)</dd>
+                    </div>
+                    <div class="flex items-end justify-between gap-4 py-4">
+                        <dt class="text-husk">Total</dt>
+                        <dd class="text-right font-display text-2xl tracking-[-0.04em]">$@Model.TotalAmount.ToString("#,##0", co) <span class="font-data text-[10px] tracking-[0.12em] text-husk">@Model.CurrencyCode</span></dd>
+                    </div>
+                </dl>
+            </div>
+        </header>
+
+        <div class="mt-10 grid gap-10 lg:grid-cols-12 lg:items-start">
+            <div class="min-w-0 lg:col-span-7 xl:col-span-8">
+                <section class="border border-ink/15 bg-white" aria-labelledby="status-title">
+                    <div class="flex items-center justify-between border-b border-ink/15 px-5 py-5 sm:px-7">
+                        <h2 id="status-title" class="text-lg font-extrabold tracking-[-0.025em]">@(pagado ? "Seguimiento del envío" : "Estado del pago")</h2>
+                        <svg class="size-5 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v18M7 6c0 3 2 5 5 5M17 6c0 3-2 5-5 5M7 13c0 3 2 5 5 5M17 13c0 3-2 5-5 5" /></svg>
+                    </div>
+
                     @if (pagado)
                     {
-                        <h2>Seguimiento del envío</h2>
-                        <div class="bean-timeline">
+                        <ol class="px-5 py-7 sm:px-7">
                             @foreach (var h in hitos)
                             {
                                 var estado = EstadoHito(h.Num);
-                                <div class="bean-tl-item @estado">
-                                    <div class="bean-tl-marker">
+                                <li class="relative grid grid-cols-[2.75rem_minmax(0,1fr)] gap-4 pb-8 last:pb-0">
+                                    @if (h.Num < hitos.Length)
+                                    {
+                                        <span class="absolute left-[1.34rem] top-11 h-[calc(100%-2.75rem)] w-px @(estado == "done" ? "bg-leaf" : "bg-ink/15")" aria-hidden="true"></span>
+                                    }
+                                    <span class="relative z-10 grid size-11 place-items-center border @(estado == "done" ? "border-leaf bg-leaf text-white" : estado == "active" ? "border-clay bg-clay text-white" : "border-ink/15 bg-cream text-ink/30")">
                                         @if (estado == "done")
                                         {
-                                            <i class="fas fa-check"></i>
+                                            <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
                                         }
                                         else
                                         {
-                                            <span class="dot"></span>
+                                            <span class="font-data text-[10px] font-semibold">@h.Num</span>
                                         }
+                                    </span>
+                                    <div class="pt-1.5 @(estado == "future" ? "text-ink/40" : "text-ink")">
+                                        <h3 class="text-sm font-extrabold">@h.Titulo</h3>
+                                        <p class="mt-1 text-sm leading-6 @(estado == "future" ? "text-ink/35" : "text-ink/55")">@h.Detalle</p>
                                     </div>
-                                    <div class="bean-tl-body">
-                                        <div class="bean-tl-title">@h.Titulo</div>
-                                        <div class="bean-tl-detail">@h.Detalle</div>
-                                    </div>
-                                </div>
+                                </li>
                             }
-                        </div>
+                        </ol>
 
-                        <div class="bean-tl-callout">
-                            <i class="fas fa-truck"></i>
+                        <div class="m-5 flex items-start gap-4 bg-oat/60 p-5 sm:m-7">
+                            <svg class="mt-0.5 size-6 shrink-0 text-clay-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 7h11v10H3V7Z" /><path d="M14 10h4l3 3v4h-7v-7Z" /><circle cx="7" cy="18" r="2" /><circle cx="17" cy="18" r="2" /></svg>
                             <div>
-                                <strong>Entrega estimada:</strong>
-                                @entregaEstimada.ToString("d 'de' MMMM", co)
-                                <div class="muted">Recibirás el número de guía cuando el pedido salga a reparto.</div>
+                                <p class="text-sm font-extrabold">Entrega estimada: @entregaEstimada.ToString("d 'de' MMMM", co)</p>
+                                <p class="mt-1 text-xs font-semibold leading-5 text-ink/55">Recibirás el número de guía cuando el pedido salga a reparto.</p>
                             </div>
                         </div>
                     }
                     else
                     {
-                        <h2>Estado del pago</h2>
-                        <div class="bean-pay-state">
-                            <div class="bean-pay-state-row">
-                                <span>Estado</span>
-                                <span class="val">
-                                    @(esperandoPago ? "Pendiente de pago" : (fallido ? "Pago rechazado" : "Pago no completado"))
-                                </span>
+                        <dl class="divide-y divide-ink/10 px-5 sm:px-7">
+                            <div class="flex items-center justify-between gap-4 py-5">
+                                <dt class="text-sm text-ink/55">Estado</dt>
+                                <dd class="text-right text-sm font-extrabold">@(esperandoPago ? "Pendiente de pago" : (fallido ? "Pago rechazado" : "Pago no completado"))</dd>
                             </div>
                             @if (!string.IsNullOrWhiteSpace(Model.PaymentReference))
                             {
-                                <div class="bean-pay-state-row">
-                                    <span>Referencia</span>
-                                    <span class="val">@Model.PaymentReference</span>
+                                <div class="flex flex-col gap-2 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                                    <dt class="text-sm text-ink/55">Referencia</dt>
+                                    <dd class="break-all font-data text-[10px] font-semibold tracking-[0.06em] text-ink">@Model.PaymentReference</dd>
                                 </div>
                             }
                             @if (!string.IsNullOrWhiteSpace(Model.PaymentMethodUsed))
                             {
-                                <div class="bean-pay-state-row">
-                                    <span>Medio de pago</span>
-                                    <span class="val">@Model.PaymentMethodUsed</span>
+                                <div class="flex items-center justify-between gap-4 py-5">
+                                    <dt class="text-sm text-ink/55">Medio de pago</dt>
+                                    <dd class="text-right text-sm font-extrabold">@Model.PaymentMethodUsed</dd>
                                 </div>
                             }
-                        </div>
-                        <div class="bean-tl-callout">
-                            <i class="fas fa-shield-halved"></i>
+                        </dl>
+                        <div class="m-5 flex items-start gap-4 bg-oat/60 p-5 sm:m-7">
+                            <svg class="mt-0.5 size-6 shrink-0 text-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" /></svg>
                             <div>
-                                <strong>Tu pedido solo se despacha cuando el pago se confirma.</strong>
-                                <div class="muted">Wompi (Bancolombia) procesa el cobro; nosotros nunca vemos los datos de tu tarjeta.</div>
+                                <p class="text-sm font-extrabold">Tu pedido solo se despacha cuando el pago se confirma.</p>
+                                <p class="mt-1 text-xs font-semibold leading-5 text-ink/55">Wompi procesa el cobro; Bean nunca ve los datos de tu tarjeta.</p>
                             </div>
                         </div>
                     }
-                </div>
+                </section>
             </div>
 
-            <!-- ===== Resumen del pedido ===== -->
-            <aside class="bean-order">
-                <h3>Resumen del pedido</h3>
-                @foreach (var item in Model.Items)
-                {
-                    <div class="bean-order-item">
-                        <div class="bean-order-thumb bean-img o1" style="@(string.IsNullOrEmpty(item.Product?.ImageUrl) ? "" : $"background-image:url('{item.Product.ImageUrl}');background-size:cover;background-position:center;")"></div>
-                        <div class="info">
-                            <div class="n">@item.ProductName</div>
-                            <div class="q">Cant: @item.Quantity</div>
-                        </div>
-                        <div class="amt">$@item.SubTotal.ToString("#,##0", co)</div>
-                    </div>
-                }
-                <div class="bean-summary-sep"></div>
-                <div class="bean-summary-row"><span>Subtotal</span><span class="val">$@Model.Subtotal.ToString("#,##0", co)</span></div>
-                <div class="bean-summary-row"><span>Envío</span><span class="val">$@Model.ShippingCost.ToString("#,##0", co)</span></div>
-                <div class="bean-summary-sep"></div>
-                <div class="bean-summary-total">
-                    <span class="lbl">Total</span>
-                    <span class="amt">$@Model.TotalAmount.ToString("#,##0", co) <small>@Model.CurrencyCode</small></span>
+            <aside class="bg-ink p-6 text-white shadow-tray sm:p-8 lg:sticky lg:top-28 lg:col-span-5 xl:col-span-4" aria-labelledby="order-summary-title">
+                <div class="flex items-center justify-between border-b border-white/15 pb-5">
+                    <h2 id="order-summary-title" class="text-lg font-extrabold tracking-[-0.025em]">Resumen del pedido</h2>
+                    <span class="font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-clay-light">@Model.Items.Count @(Model.Items.Count == 1 ? "lote" : "lotes")</span>
                 </div>
 
-                <div class="bean-summary-sep"></div>
-                <div class="bean-confirm-ship">
-                    <div class="lbl">Enviar a</div>
-                    <div class="val">
-                        @Model.FirstName @Model.LastName<br />
+                @if (Model.Items.Any())
+                {
+                    <div class="divide-y divide-white/10">
+                        @foreach (var item in Model.Items)
+                        {
+                            var productInitial = string.IsNullOrWhiteSpace(item.ProductName) ? "B" : item.ProductName.Trim()[..1].ToUpperInvariant();
+                            <div class="grid grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-3 py-5">
+                                <div class="aspect-[4/5] overflow-hidden bg-clay-dark">
+                                    @if (!string.IsNullOrWhiteSpace(item.Product?.ImageUrl))
+                                    {
+                                        <img src="@item.Product.ImageUrl" alt="" class="h-full w-full object-cover" loading="lazy" />
+                                    }
+                                    else
+                                    {
+                                        <span class="grid h-full place-items-center font-display text-lg text-cream">@productInitial</span>
+                                    }
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-extrabold">@item.ProductName</p>
+                                    <p class="mt-1 font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-husk">Cantidad @item.Quantity</p>
+                                </div>
+                                <p class="whitespace-nowrap text-sm font-bold">$@item.SubTotal.ToString("#,##0", co)</p>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="border-b border-white/15 py-8 text-center">
+                        <svg class="mx-auto size-9 text-clay-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8Z" /><path d="M8 8a4 4 0 0 1 8 0" /></svg>
+                        <p class="mt-3 text-sm font-semibold text-husk">No hay líneas disponibles para mostrar.</p>
+                    </div>
+                }
+
+                <dl class="divide-y divide-white/10 text-sm">
+                    <div class="flex items-center justify-between gap-4 py-4"><dt class="text-husk">Subtotal</dt><dd class="font-bold">$@Model.Subtotal.ToString("#,##0", co)</dd></div>
+                    <div class="flex items-center justify-between gap-4 py-4"><dt class="text-husk">Envío</dt><dd class="font-bold">$@Model.ShippingCost.ToString("#,##0", co)</dd></div>
+                </dl>
+                <div class="flex items-end justify-between gap-4 border-t border-white/20 pt-6">
+                    <span class="text-sm font-bold text-husk">Total</span>
+                    <span class="text-right font-display text-3xl tracking-[-0.04em]">$@Model.TotalAmount.ToString("#,##0", co) <small class="font-data text-[10px] tracking-[0.12em] text-husk">@Model.CurrencyCode</small></span>
+                </div>
+
+                <div class="mt-7 border-t border-white/15 pt-6">
+                    <p class="font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-clay-light">Enviar a</p>
+                    <address class="mt-3 text-sm not-italic leading-6 text-husk">
+                        <strong class="text-white">@Model.FirstName @Model.LastName</strong><br />
                         @Model.Address<br />
                         @(!string.IsNullOrEmpty(Model.ShippingCity) ? Model.ShippingCity + ", " : "")@(!string.IsNullOrEmpty(Model.State) ? Model.State + ", " : "")@Model.ShippingCountry
                         @(!string.IsNullOrEmpty(Model.ZipCode) ? " · " + Model.ZipCode : "")
-                    </div>
+                    </address>
                 </div>
 
-                <a class="btn-bean btn-bean-block" asp-controller="Home" asp-action="Index" style="margin-top:20px;">
+                <a asp-controller="Home" asp-action="Index" asp-fragment="lotes" class="mt-7 inline-flex min-h-13 w-full cursor-pointer items-center justify-center gap-3 bg-clay px-6 py-4 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-ink">
                     Seguir comprando
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
                 </a>
             </aside>
         </div>
@@ -261,12 +303,11 @@
 </section>
 
 @section Scripts {
-    @* Las secciones se declaran SIEMPRE en el nivel superior de la vista; la condición va dentro. *@
+    @* La sección permanece en el nivel superior; la condición va dentro para evitar RZ1010. *@
     @if (esperandoPago)
     {
         <script>
-            // Mientras el pago no resuelve, la página se refresca sola durante ~2 minutos:
-            // el webhook suele llegar en segundos, pero PSE puede tardar.
+            // Polling cada 8 segundos, máximo 15 intentos (~2 minutos).
             (function () {
                 var clave = 'beanPayPoll:@Model.OrderID';
                 var intentos = parseInt(sessionStorage.getItem(clave) || '0', 10);

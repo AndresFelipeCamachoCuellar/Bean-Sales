@@ -1,0 +1,177 @@
+@model Web.Models.ViewModels.StoreNavigationViewModel
+
+<header class="sticky top-0 z-50 border-b border-white/10 bg-ink text-white">
+    <nav class="mx-auto flex h-18 max-w-[90rem] items-center gap-5 px-4 sm:px-6 lg:h-20 lg:px-10" aria-label="Navegación principal">
+        <a asp-controller="Home" asp-action="Index" class="group flex shrink-0 items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light focus-visible:ring-offset-4 focus-visible:ring-offset-ink">
+            <span class="grid size-9 rotate-45 place-items-center rounded-[65%_65%_65%_20%] bg-clay transition-transform duration-300 group-hover:rotate-[55deg]" aria-hidden="true">
+                <span class="size-2 rounded-full bg-cream"></span>
+            </span>
+            <span class="font-display text-xl tracking-[-0.04em] sm:text-2xl">BEAN</span>
+        </a>
+
+        <div class="ml-6 hidden items-center gap-7 lg:flex">
+            <a asp-controller="Home" asp-action="Index" asp-fragment="lotes"
+               class="pb-1 text-sm font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light @(Model.CatalogActive ? "border-b border-clay text-white" : "text-husk transition-colors hover:text-white")">Café</a>
+            <a asp-controller="Home" asp-action="Origenes"
+               class="pb-1 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light @(Model.OriginsActive ? "border-b border-clay text-white" : "text-husk transition-colors hover:text-white")">Orígenes</a>
+            <a asp-controller="Home" asp-action="Nosotros"
+               class="pb-1 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light @(Model.AboutActive ? "border-b border-clay text-white" : "text-husk transition-colors hover:text-white")">Nosotros</a>
+            <a asp-controller="Account" asp-action="RegisterProvider"
+               class="pb-1 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light @(Model.WholesaleActive ? "border-b border-clay text-white" : "text-husk transition-colors hover:text-white")">Para negocios</a>
+        </div>
+
+        <div class="ml-auto hidden items-center gap-3 lg:flex">
+            @await Component.InvokeAsync("CountrySelector", new { variant = "Home" })
+
+            @if (Model.IsSignedIn)
+            {
+                <details class="group relative">
+                    <summary class="flex cursor-pointer list-none items-center gap-2 rounded-full border border-white/15 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light [&::-webkit-details-marker]:hidden">
+                        <span class="grid size-6 place-items-center rounded-full bg-clay text-xs">@Model.Initial</span>
+                        <span class="max-w-24 truncate">@Model.DisplayName</span>
+                        <svg class="size-4 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                    </summary>
+                    <div class="absolute right-0 top-[calc(100%+12px)] w-64 border border-oat bg-white p-2 text-ink shadow-lift">
+                        <div class="px-4 pb-3 pt-2">
+                            <div class="truncate text-sm font-extrabold">@Model.DisplayName</div>
+                            <div class="mt-1 font-data text-[10px] uppercase tracking-[0.14em] text-clay-dark">@Model.RoleLabel</div>
+                        </div>
+                        <div class="border-t border-oat pt-2">
+                            @if (Model.ShowPanelLink)
+                            {
+                                <a asp-controller="@Model.PanelController" asp-action="Index" class="flex items-center justify-between px-4 py-3 text-sm font-bold hover:bg-cream focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">
+                                    Ir al panel <span aria-hidden="true">&#8599;</span>
+                                </a>
+                            }
+                            @if (Model.IsSuperAdmin && Model.CanReadApprovals)
+                            {
+                                <a asp-controller="ProductApproval" asp-action="Index" class="flex items-center justify-between px-4 py-3 text-sm font-semibold hover:bg-cream focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">
+                                    Aprobaciones
+                                    @if (Model.PendingApprovals > 0)
+                                    {
+                                        <span class="grid min-h-5 min-w-5 place-items-center rounded-full bg-clay px-1 font-data text-[10px] text-white">@Model.PendingApprovals</span>
+                                    }
+                                </a>
+                            }
+                            @if (Model.IsSuperAdmin)
+                            {
+                                <a asp-controller="Providers" asp-action="Index" class="block px-4 py-3 text-sm font-semibold hover:bg-cream focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Empresas</a>
+                                @if (Model.CanReadUsers)
+                                {
+                                    <a asp-controller="Users" asp-action="Index" class="block px-4 py-3 text-sm font-semibold hover:bg-cream focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Usuarios</a>
+                                }
+                                @if (Model.CanReadRoles)
+                                {
+                                    <a asp-controller="Roles" asp-action="Index" class="block px-4 py-3 text-sm font-semibold hover:bg-cream focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Roles</a>
+                                }
+                            }
+                            else if (Model.IsProvider)
+                            {
+                                @if (Model.CanReadProducts)
+                                {
+                                    <a asp-controller="Products" asp-action="Index" class="block px-4 py-3 text-sm font-semibold hover:bg-cream focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Mis productos</a>
+                                    <a asp-controller="SupplierOrders" asp-action="Index" class="block px-4 py-3 text-sm font-semibold hover:bg-cream focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Pedidos entrantes</a>
+                                }
+                                @if (Model.CanReadCompanyProfile)
+                                {
+                                    <a asp-controller="CompanyProfile" asp-action="Index" class="block px-4 py-3 text-sm font-semibold hover:bg-cream focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Mi empresa</a>
+                                }
+                            }
+                            <a asp-controller="Orders" asp-action="Index" class="block px-4 py-3 text-sm font-semibold hover:bg-cream focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Mis pedidos</a>
+                        </div>
+                        <form asp-controller="Account" asp-action="Logout" asp-route-returnUrl="@Url.Action("Index", "Home")" method="post" class="mt-2 border-t border-oat pt-2">
+                            <button type="submit" class="w-full cursor-pointer px-4 py-3 text-left text-sm font-semibold text-clay-dark hover:bg-cream focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Cerrar sesión</button>
+                        </form>
+                    </div>
+                </details>
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Login" class="rounded-full px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light">Ingresar</a>
+            }
+
+            <a asp-controller="Cart" asp-action="Index" class="relative grid size-11 place-items-center rounded-full bg-clay text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-ink" aria-label="Ver carrito con @Model.CartCount productos">
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 8h12l-1 12H7L6 8Z" /><path d="M9 9V6a3 3 0 0 1 6 0v3" /></svg>
+                @if (Model.CartCount > 0)
+                {
+                    <span class="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-white px-1 font-data text-[10px] font-semibold text-ink">@Model.CartCount</span>
+                }
+            </a>
+        </div>
+
+        <details class="group relative ml-auto lg:hidden">
+            <summary class="grid size-11 cursor-pointer list-none place-items-center rounded-full border border-white/15 text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light [&::-webkit-details-marker]:hidden" aria-label="Abrir menú">
+                <svg class="size-5 group-open:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+                <svg class="hidden size-5 group-open:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+            </summary>
+            <div class="absolute right-0 top-[calc(100%+12px)] max-h-[calc(100svh-6rem)] w-[min(21rem,calc(100vw-2rem))] overflow-y-auto border border-white/10 bg-roast p-5 shadow-lift">
+                <div class="flex flex-col gap-1">
+                    <a asp-controller="Home" asp-action="Index" asp-fragment="lotes" class="px-3 py-3 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light @(Model.CatalogActive ? "bg-white/10 text-white" : "text-husk")">Café</a>
+                    <a asp-controller="Home" asp-action="Origenes" class="px-3 py-3 text-base font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light @(Model.OriginsActive ? "bg-white/10 text-white" : "text-husk")">Orígenes</a>
+                    <a asp-controller="Home" asp-action="Nosotros" class="px-3 py-3 text-base font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light @(Model.AboutActive ? "bg-white/10 text-white" : "text-husk")">Nosotros</a>
+                    <a asp-controller="Account" asp-action="RegisterProvider" class="px-3 py-3 text-base font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light @(Model.WholesaleActive ? "bg-white/10 text-white" : "text-husk")">Para negocios</a>
+                </div>
+                <div class="my-4 border-t border-white/10"></div>
+                @await Component.InvokeAsync("CountrySelector", new { variant = "Home" })
+                @if (Model.IsSignedIn)
+                {
+                    <div class="mt-4 border-t border-white/10 pt-4">
+                        <div class="px-3 pb-2">
+                            <div class="truncate text-sm font-extrabold text-white">@Model.DisplayName</div>
+                            <div class="mt-1 font-data text-[10px] uppercase tracking-[0.14em] text-clay-light">@Model.RoleLabel</div>
+                        </div>
+                        @if (Model.ShowPanelLink)
+                        {
+                            <a asp-controller="@Model.PanelController" asp-action="Index" class="mt-2 flex min-h-11 items-center justify-between border border-white/15 px-4 py-3 text-sm font-bold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light">Ir al panel <span aria-hidden="true">&#8599;</span></a>
+                        }
+                        @if (Model.IsSuperAdmin && Model.CanReadApprovals)
+                        {
+                            <a asp-controller="ProductApproval" asp-action="Index" class="mt-2 flex min-h-11 items-center justify-between px-4 py-3 text-sm font-semibold text-husk hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light">
+                                Aprobaciones
+                                @if (Model.PendingApprovals > 0)
+                                {
+                                    <span class="grid min-h-5 min-w-5 place-items-center rounded-full bg-clay px-1 font-data text-[10px] text-white">@Model.PendingApprovals</span>
+                                }
+                            </a>
+                        }
+                        @if (Model.IsSuperAdmin)
+                        {
+                            <a asp-controller="Providers" asp-action="Index" class="block px-4 py-3 text-sm font-semibold text-husk hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light">Empresas</a>
+                            @if (Model.CanReadUsers)
+                            {
+                                <a asp-controller="Users" asp-action="Index" class="block px-4 py-3 text-sm font-semibold text-husk hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light">Usuarios</a>
+                            }
+                            @if (Model.CanReadRoles)
+                            {
+                                <a asp-controller="Roles" asp-action="Index" class="block px-4 py-3 text-sm font-semibold text-husk hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light">Roles</a>
+                            }
+                        }
+                        else if (Model.IsProvider)
+                        {
+                            @if (Model.CanReadProducts)
+                            {
+                                <a asp-controller="Products" asp-action="Index" class="block px-4 py-3 text-sm font-semibold text-husk hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light">Mis productos</a>
+                                <a asp-controller="SupplierOrders" asp-action="Index" class="block px-4 py-3 text-sm font-semibold text-husk hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light">Pedidos entrantes</a>
+                            }
+                            @if (Model.CanReadCompanyProfile)
+                            {
+                                <a asp-controller="CompanyProfile" asp-action="Index" class="block px-4 py-3 text-sm font-semibold text-husk hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light">Mi empresa</a>
+                            }
+                        }
+                        <a asp-controller="Orders" asp-action="Index" class="block px-4 py-3 text-sm font-semibold text-husk hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light">Mis pedidos</a>
+                        <form asp-controller="Account" asp-action="Logout" asp-route-returnUrl="@Url.Action("Index", "Home")" method="post" class="mt-2 border-t border-white/10 pt-2">
+                            <button type="submit" class="w-full cursor-pointer px-4 py-3 text-left text-sm font-semibold text-clay-light hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light">Cerrar sesión</button>
+                        </form>
+                    </div>
+                }
+                <div class="mt-3 grid grid-cols-2 gap-2">
+                    @if (!Model.IsSignedIn)
+                    {
+                        <a asp-controller="Account" asp-action="Login" class="border border-white/15 px-4 py-3 text-center text-sm font-bold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light">Ingresar</a>
+                    }
+                    <a asp-controller="Cart" asp-action="Index" class="bg-clay px-4 py-3 text-center text-sm font-bold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white @(!Model.IsSignedIn ? null : "col-span-2")">Carrito (@Model.CartCount)</a>
+                </div>
+            </div>
+        </details>
+    </nav>
+</header>

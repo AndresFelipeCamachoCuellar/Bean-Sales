@@ -2,95 +2,101 @@
 
 @{
     ViewData["Title"] = "Editar Usuario";
+    Layout = "_LayoutAdminTailwind";
 }
 
-<div class="bean-panel-head">
-    <div>
-        <h1 class="bean-panel-title">Editar usuario</h1>
-        <p class="bean-panel-sub">Actualiza los datos, el rol y el estado de acceso de la cuenta.</p>
+<div class="mx-auto max-w-5xl space-y-6">
+    <div class="border-b border-oat pb-6">
+        <h1 class="text-2xl font-extrabold tracking-[-0.03em] text-ink sm:text-3xl">Editar usuario</h1>
+        <p class="mt-2 text-sm leading-6 text-ink/65 sm:text-base">Actualiza los datos, el rol y el estado de acceso de la cuenta.</p>
+    </div>
+
+    <div class="border border-oat bg-white">
+        <form asp-action="Edit" method="post" class="divide-y divide-oat">
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="Email" />
+
+            <div asp-validation-summary="ModelOnly" class="m-6 border border-clay/30 bg-clay/10 px-4 py-3 text-sm font-bold text-clay-dark empty:hidden [&_ul]:list-disc [&_ul]:pl-5"></div>
+
+            <section class="p-5 sm:p-6 lg:p-8">
+                <h2 class="text-lg font-extrabold text-ink">Información personal</h2>
+                <div class="mt-5 grid gap-5 md:grid-cols-2">
+                    <div>
+                        <label asp-for="FirstName" class="mb-2 block text-sm font-bold text-ink"></label>
+                        <input asp-for="FirstName" class="min-h-12 w-full border border-ink/20 bg-cream px-4 text-sm text-ink outline-none transition-colors placeholder:text-ink/40 hover:border-ink/40 focus:border-clay focus:ring-2 focus:ring-clay/20" placeholder="Nombre" />
+                        <span asp-validation-for="FirstName" class="mt-1.5 block text-xs font-bold text-red-700"></span>
+                    </div>
+                    <div>
+                        <label asp-for="LastName" class="mb-2 block text-sm font-bold text-ink"></label>
+                        <input asp-for="LastName" class="min-h-12 w-full border border-ink/20 bg-cream px-4 text-sm text-ink outline-none transition-colors placeholder:text-ink/40 hover:border-ink/40 focus:border-clay focus:ring-2 focus:ring-clay/20" placeholder="Apellido" />
+                        <span asp-validation-for="LastName" class="mt-1.5 block text-xs font-bold text-red-700"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="DocumentTypeID" class="mb-2 block text-sm font-bold text-ink"></label>
+                        <select asp-for="DocumentTypeID" asp-items="Model.DocumentTypes" class="min-h-12 w-full cursor-pointer border border-ink/20 bg-cream px-4 text-sm text-ink outline-none transition-colors hover:border-ink/40 focus:border-clay focus:ring-2 focus:ring-clay/20">
+                            <option value="">-- Seleccione --</option>
+                        </select>
+                        <span asp-validation-for="DocumentTypeID" class="mt-1.5 block text-xs font-bold text-red-700"></span>
+                    </div>
+                    <div>
+                        <label asp-for="DocumentNumber" class="mb-2 block text-sm font-bold text-ink"></label>
+                        <input asp-for="DocumentNumber" class="min-h-12 w-full border border-ink/20 bg-cream px-4 text-sm text-ink outline-none transition-colors placeholder:text-ink/40 hover:border-ink/40 focus:border-clay focus:ring-2 focus:ring-clay/20" placeholder="Número de documento" />
+                        <span asp-validation-for="DocumentNumber" class="mt-1.5 block text-xs font-bold text-red-700"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="CountryID" class="mb-2 block text-sm font-bold text-ink"></label>
+                        <select asp-for="CountryID" asp-items="Model.Countries" class="min-h-12 w-full cursor-pointer border border-ink/20 bg-cream px-4 text-sm text-ink outline-none transition-colors hover:border-ink/40 focus:border-clay focus:ring-2 focus:ring-clay/20">
+                            <option value="">-- Seleccione --</option>
+                        </select>
+                        <span asp-validation-for="CountryID" class="mt-1.5 block text-xs font-bold text-red-700"></span>
+                    </div>
+                    <div>
+                        <label asp-for="Gender" class="mb-2 block text-sm font-bold text-ink"></label>
+                        <select asp-for="Gender" class="min-h-12 w-full cursor-pointer border border-ink/20 bg-cream px-4 text-sm text-ink outline-none transition-colors hover:border-ink/40 focus:border-clay focus:ring-2 focus:ring-clay/20">
+                            <option value="">-- Seleccione --</option>
+                            <option value="Male">Masculino</option>
+                            <option value="Female">Femenino</option>
+                        </select>
+                        <span asp-validation-for="Gender" class="mt-1.5 block text-xs font-bold text-red-700"></span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="p-5 sm:p-6 lg:p-8">
+                <h2 class="text-lg font-extrabold text-ink">Cuenta y permisos</h2>
+                <div class="mt-5 grid gap-5 md:grid-cols-2">
+                    <div>
+                        <label asp-for="Email" class="mb-2 block text-sm font-bold text-ink"></label>
+                        <input asp-for="Email" class="min-h-12 w-full cursor-not-allowed border border-ink/10 bg-oat/60 px-4 text-sm text-ink/55 outline-none" placeholder="Email" disabled />
+                        <span class="mt-1.5 block text-xs text-ink/55">El email no se puede editar.</span>
+                    </div>
+                    <div>
+                        <label asp-for="RoleID" class="mb-2 block text-sm font-bold text-ink"></label>
+                        <select asp-for="RoleID" asp-items="Model.Roles" class="min-h-12 w-full cursor-pointer border border-ink/20 bg-cream px-4 text-sm text-ink outline-none transition-colors hover:border-ink/40 focus:border-clay focus:ring-2 focus:ring-clay/20">
+                            <option value="">-- Seleccione --</option>
+                        </select>
+                        <span asp-validation-for="RoleID" class="mt-1.5 block text-xs font-bold text-red-700"></span>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="inline-flex min-h-12 cursor-pointer items-center gap-3 border border-ink/15 bg-cream px-4 text-sm font-bold text-ink focus-within:ring-2 focus-within:ring-clay">
+                            <input class="size-5 cursor-pointer accent-clay" type="checkbox" asp-for="Status">
+                            <span>Usuario activo</span>
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <div class="flex flex-col-reverse gap-3 bg-cream/60 p-5 sm:flex-row sm:justify-end sm:p-6">
+                <a asp-action="Index" class="inline-flex min-h-11 cursor-pointer items-center justify-center border border-ink/20 bg-white px-5 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Cancelar</a>
+                <button type="submit" class="inline-flex min-h-11 cursor-pointer items-center justify-center bg-clay px-5 text-sm font-extrabold text-white transition-colors hover:bg-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream">Guardar cambios</button>
+            </div>
+        </form>
     </div>
 </div>
 
-<div class="bean-form-card">
-    <form asp-action="Edit">
-        <input type="hidden" asp-for="Id" />
-        <input type="hidden" asp-for="Email" /> @* Email usually read-only or handled carefully *@
-
-        <div asp-validation-summary="ModelOnly" class="bean-form-summary"></div>
-
-        <h2 class="bean-form-section-title">Información personal</h2>
-        <div class="bean-form-grid">
-            <div class="bean-field">
-                <label asp-for="FirstName" class="bean-label"></label>
-                <input asp-for="FirstName" class="bean-input" placeholder="First Name" />
-                <span asp-validation-for="FirstName" class="bean-form-error"></span>
-            </div>
-            <div class="bean-field">
-                <label asp-for="LastName" class="bean-label"></label>
-                <input asp-for="LastName" class="bean-input" placeholder="Last Name" />
-                <span asp-validation-for="LastName" class="bean-form-error"></span>
-            </div>
-
-            <div class="bean-field">
-                <label asp-for="DocumentTypeID" class="bean-label"></label>
-                <select asp-for="DocumentTypeID" asp-items="Model.DocumentTypes" class="bean-select">
-                    <option value="">-- Seleccione --</option>
-                </select>
-                <span asp-validation-for="DocumentTypeID" class="bean-form-error"></span>
-            </div>
-            <div class="bean-field">
-                <label asp-for="DocumentNumber" class="bean-label"></label>
-                <input asp-for="DocumentNumber" class="bean-input" placeholder="Document Number" />
-                <span asp-validation-for="DocumentNumber" class="bean-form-error"></span>
-            </div>
-
-            <div class="bean-field">
-                <label asp-for="CountryID" class="bean-label"></label>
-                <select asp-for="CountryID" asp-items="Model.Countries" class="bean-select">
-                    <option value="">-- Seleccione --</option>
-                </select>
-                <span asp-validation-for="CountryID" class="bean-form-error"></span>
-            </div>
-            <div class="bean-field">
-                <label asp-for="Gender" class="bean-label"></label>
-                <select asp-for="Gender" class="bean-select">
-                    <option value="">-- Seleccione --</option>
-                    <option value="Male">Masculino</option>
-                    <option value="Female">Femenino</option>
-                </select>
-                <span asp-validation-for="Gender" class="bean-form-error"></span>
-            </div>
-        </div>
-
-        <h2 class="bean-form-section-title">Cuenta y permisos</h2>
-        <div class="bean-form-grid">
-            <div class="bean-field">
-                <label asp-for="Email" class="bean-label"></label>
-                <input asp-for="Email" class="bean-input" placeholder="Email" disabled />
-                <span class="bean-label" style="font-weight:500;">El email no se puede editar.</span>
-            </div>
-            <div class="bean-field">
-                <label asp-for="RoleID" class="bean-label"></label>
-                <select asp-for="RoleID" asp-items="Model.Roles" class="bean-select">
-                    <option value="">-- Seleccione --</option>
-                </select>
-                <span asp-validation-for="RoleID" class="bean-form-error"></span>
-            </div>
-            <div class="bean-field">
-                <div class="bean-switch-row">
-                    <input class="form-check-input" type="checkbox" asp-for="Status">
-                    <label class="form-check-label" asp-for="Status">Usuario Activo</label>
-                </div>
-            </div>
-        </div>
-
-        <div class="bean-form-actions">
-            <a asp-action="Index" class="bean-btn-pill outline">Cancelar</a>
-            <button type="submit" class="bean-btn-pill primary">Guardar cambios</button>
-        </div>
-    </form>
-</div>
-
 @section Scripts {
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <partial name="_ValidationScriptsPartial" />
 }

@@ -1,0 +1,73 @@
+@{
+    var authWide = ViewData["AuthWide"] as string == "wide";
+}
+<!DOCTYPE html>
+<html lang="es" class="bg-ink">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1d1510" />
+    <title>@ViewData["Title"] · Bean</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Azeret+Mono:wght@500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/bean-tailwind.css" asp-append-version="true" />
+</head>
+<body class="min-h-screen bg-cream font-sans text-ink antialiased selection:bg-clay selection:text-white">
+    <!--
+    THESIS: Entrar a Bean es cruzar al patio de origen, no completar un formulario genérico dentro de una tarjeta flotante.
+    OWN-WORLD: Tinta, crema y arcilla; bandejas rectangulares, líneas de trazabilidad y las tres voces tipográficas de Bean.
+    STORY: La persona reconoce el hub, elige entrar o registrarse y completa sus datos sin perder contexto ni continuidad.
+    FIRST VIEWPORT: Relato de origen a la izquierda y formulario enfocado a la derecha; en móvil, el patio se condensa como cabecera.
+    FORM: Umbral del patio, extensión directa del sistema Patio de origen.
+    FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+    -->
+    <a href="#auth-content" class="fixed left-4 top-4 z-50 -translate-y-24 bg-white px-5 py-3 text-sm font-extrabold text-ink shadow-lift transition-transform focus:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
+        Saltar al formulario
+    </a>
+
+    <div class="lg:grid lg:min-h-screen lg:grid-cols-[minmax(22rem,0.85fr)_minmax(36rem,1.15fr)] xl:grid-cols-2">
+        <aside class="relative min-h-64 overflow-hidden bg-ink text-white sm:min-h-72 lg:sticky lg:top-0 lg:h-screen">
+            <svg class="absolute inset-0 h-full w-full text-clay-light/20" viewBox="0 0 800 900" fill="none" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M-80 105C120-20 315 215 880 20M-110 250C115 90 400 370 900 160M-90 420C175 220 450 560 895 340M-105 620C180 385 500 760 910 520M-80 820C215 585 530 960 900 735" stroke="currentColor" stroke-width="2" />
+                <path d="M90-40C8 180 238 270 70 530S210 825 105 980M650-50C535 160 775 310 610 510s90 315 5 475" stroke="currentColor" stroke-width="1" />
+            </svg>
+            <div class="absolute -bottom-32 -right-28 size-80 rotate-[-18deg] rounded-[65%_65%_65%_20%] border border-clay-light/30 lg:-bottom-24 lg:-right-16 lg:size-[28rem]" aria-hidden="true"></div>
+
+            <div class="relative flex min-h-64 flex-col justify-between px-5 py-6 sm:min-h-72 sm:px-8 sm:py-8 lg:h-full lg:min-h-0 lg:px-10 lg:py-10 xl:px-14 xl:py-12">
+                <a asp-controller="Home" asp-action="Index" class="group inline-flex w-fit cursor-pointer items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light focus-visible:ring-offset-4 focus-visible:ring-offset-ink" aria-label="Bean, ir al inicio">
+                    <span class="relative grid size-9 rotate-[-12deg] place-items-center rounded-[65%_65%_65%_20%] bg-clay transition-colors group-hover:bg-clay-light" aria-hidden="true">
+                        <span class="size-2 rounded-full bg-cream"></span>
+                    </span>
+                    <span class="font-display text-2xl tracking-[-0.04em]">Bean</span>
+                </a>
+
+                <div class="max-w-xl pb-2 lg:pb-0">
+                    <h2 class="max-w-lg text-balance font-display text-[clamp(2.35rem,7vw,4.75rem)] leading-[0.92] tracking-[-0.04em]">Tu café te está esperando.</h2>
+                    <p class="mt-4 hidden max-w-lg text-base leading-7 text-husk sm:block lg:mt-6 lg:text-lg">Guarda tus lotes, sigue cada envío y vuelve al origen de tu próxima taza.</p>
+                </div>
+
+                <dl class="hidden grid-cols-2 border-y border-white/15 sm:grid lg:max-w-xl">
+                    <div class="py-4 pr-4 lg:py-5">
+                        <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-clay-light">Origen</dt>
+                        <dd class="mt-2 text-sm font-extrabold">Colombia</dd>
+                    </div>
+                    <div class="border-l border-white/15 py-4 pl-4 lg:py-5 lg:pl-6">
+                        <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-clay-light">Trazabilidad</dt>
+                        <dd class="mt-2 text-sm font-extrabold">Lote a lote</dd>
+                    </div>
+                </dl>
+            </div>
+        </aside>
+
+        <main id="auth-content" tabindex="-1" class="flex min-h-[calc(100svh-16rem)] items-start justify-center bg-cream px-4 py-10 focus:outline-none sm:min-h-[calc(100svh-18rem)] sm:px-8 sm:py-14 lg:min-h-screen lg:items-center lg:px-12 lg:py-16 xl:px-20">
+            <div class="w-full @(authWide ? "max-w-2xl" : "max-w-[30rem]")">
+                @RenderBody()
+            </div>
+        </main>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

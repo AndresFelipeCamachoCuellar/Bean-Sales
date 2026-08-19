@@ -1,0 +1,186 @@
+@using Microsoft.AspNetCore.Identity
+@using Web.Models
+@inject SignInManager<ApplicationUser> SignInManager
+
+@{
+    var signedIn = SignInManager.IsSignedIn(User);
+    var displayName = User.Identity?.Name ?? "Usuario";
+    var avatarInitial = !string.IsNullOrWhiteSpace(displayName)
+        ? displayName.Trim().Substring(0, 1).ToUpperInvariant()
+        : "U";
+}
+<!DOCTYPE html>
+<html lang="es" class="bg-cream">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1d1510" />
+    <title>@ViewData["Title"] · Bean Panel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Azeret+Mono:wght@500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/bean-tailwind.css" asp-append-version="true" />
+</head>
+<body class="min-h-screen bg-cream font-sans text-ink antialiased selection:bg-clay selection:text-white">
+    <!--
+    THESIS: Operar Bean se siente como leer y mover lotes en un patio de origen, no como usar una plantilla administrativa genérica.
+    OWN-WORLD: Tinta, crema y arcilla; bandejas rectangulares, divisiones finas, datos monoespaciados y SVG de trazo uniforme.
+    STORY: El equipo reconoce su contexto, encuentra solo los módulos autorizados y vuelve a la tienda o cierra sesión sin perder orientación.
+    FIRST VIEWPORT: Navegación oscura fija a la izquierda, barra operativa compacta arriba y una superficie crema amplia para el módulo activo.
+    FORM: Extensión operativa del sistema Patio de origen.
+    FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+    -->
+    <a href="#contenido-admin" class="fixed left-4 top-4 z-[70] -translate-y-24 bg-white px-5 py-3 text-sm font-extrabold text-ink shadow-lift transition-transform focus:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
+        Saltar al contenido
+    </a>
+
+    @if (signedIn)
+    {
+        <partial name="_AdminSidebarTailwind" />
+        <button type="button"
+                id="adminSidebarBackdrop"
+                class="fixed inset-0 z-40 hidden cursor-pointer bg-ink/70 lg:hidden"
+                aria-label="Cerrar navegación"
+                tabindex="-1"></button>
+    }
+
+    <div id="adminShell" class="min-h-screen @(signedIn ? "lg:pl-72" : "")">
+        <header class="sticky top-0 z-30 flex min-h-16 items-center border-b border-oat bg-cream/95 px-4 sm:px-6 lg:px-8">
+            @if (signedIn)
+            {
+                <button type="button"
+                        id="adminSidebarToggle"
+                        class="mr-3 grid size-11 shrink-0 cursor-pointer place-items-center border border-ink/15 text-ink transition-colors hover:border-clay hover:bg-white hover:text-clay focus:outline-none focus-visible:ring-2 focus-visible:ring-clay lg:hidden"
+                        aria-label="Abrir navegación"
+                        aria-controls="adminSidebar"
+                        aria-expanded="false">
+                    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <path d="M4 7h16M4 12h16M4 17h16" />
+                    </svg>
+                </button>
+                <div class="min-w-0">
+                    <p class="font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-clay-dark">Panel de operaciones</p>
+                    <p class="truncate text-sm font-extrabold text-ink sm:text-base">@(ViewData["Title"] ?? "Administración")</p>
+                </div>
+            }
+            else
+            {
+                <a class="group inline-flex cursor-pointer items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-4 focus-visible:ring-offset-cream"
+                   asp-area="" asp-controller="Home" asp-action="Index" aria-label="Bean, ir al inicio">
+                    <span class="relative grid size-8 rotate-[-12deg] place-items-center rounded-[65%_65%_65%_20%] bg-clay transition-colors group-hover:bg-clay-light" aria-hidden="true">
+                        <span class="size-2 rounded-full bg-cream"></span>
+                    </span>
+                    <span class="font-display text-xl tracking-[-0.04em]">Bean</span>
+                </a>
+            }
+
+            <div class="ml-auto flex items-center gap-2 sm:gap-3">
+                <div class="hidden sm:block [&_summary]:border-ink/15 [&_summary]:bg-white [&_summary]:text-ink [&_summary]:hover:border-clay [&_summary_svg]:text-clay-dark">
+                    @await Component.InvokeAsync("CountrySelector", new { variant = "Home" })
+                </div>
+
+                @if (signedIn)
+                {
+                    <button type="button"
+                            class="relative grid size-11 shrink-0 cursor-pointer place-items-center border border-ink/15 bg-white text-ink transition-colors hover:border-clay hover:text-clay focus:outline-none focus-visible:ring-2 focus-visible:ring-clay"
+                            aria-label="Notificaciones">
+                        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z" />
+                            <path d="M10 21h4" />
+                        </svg>
+                        <span class="absolute right-2 top-2 size-2 rounded-full border-2 border-white bg-clay" aria-hidden="true"></span>
+                    </button>
+
+                    <details class="group relative">
+                        <summary class="flex min-h-11 cursor-pointer list-none items-center gap-2 border border-ink/15 bg-white px-2.5 text-sm font-bold text-ink transition-colors hover:border-clay focus:outline-none focus-visible:ring-2 focus-visible:ring-clay [&::-webkit-details-marker]:hidden">
+                            <span class="grid size-7 shrink-0 place-items-center rounded-full bg-ink font-data text-[10px] font-semibold uppercase text-white">@avatarInitial</span>
+                            <span class="hidden max-w-36 truncate md:block">@displayName</span>
+                            <svg class="hidden size-4 text-clay-dark transition-transform group-open:rotate-180 md:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
+                        </summary>
+                        <div class="absolute right-0 top-[calc(100%+10px)] z-50 w-64 border border-oat bg-white p-2 shadow-lift">
+                            <div class="border-b border-oat px-3 py-3">
+                                <p class="font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-clay-dark">Sesión activa</p>
+                                <p class="mt-1 truncate text-sm font-extrabold text-ink">@displayName</p>
+                            </div>
+                            <a class="mt-2 flex min-h-11 cursor-pointer items-center gap-3 px-3 text-sm font-bold text-ink transition-colors hover:bg-cream hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-clay"
+                               asp-area="" asp-controller="Home" asp-action="Index">
+                                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                    <path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V21h14V9.5M9 21v-7h6v7" />
+                                </svg>
+                                Ver tienda
+                            </a>
+                            <form asp-area="" asp-controller="Account" asp-action="Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" method="post">
+                                <button type="submit" class="flex min-h-11 w-full cursor-pointer items-center gap-3 px-3 text-left text-sm font-bold text-ink transition-colors hover:bg-cream hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-clay">
+                                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                        <path d="M10 5H5v14h5M14 8l4 4-4 4M18 12H9" />
+                                    </svg>
+                                    Cerrar sesión
+                                </button>
+                            </form>
+                        </div>
+                    </details>
+                }
+                else
+                {
+                    <a class="inline-flex min-h-11 cursor-pointer items-center bg-ink px-5 text-sm font-extrabold text-white transition-colors hover:bg-clay focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream"
+                       asp-area="" asp-controller="Account" asp-action="Login">Iniciar sesión</a>
+                }
+            </div>
+        </header>
+
+        <main id="contenido-admin" tabindex="-1" class="min-h-[calc(100svh-4rem)] focus:outline-none">
+            <div class="mx-auto w-full max-w-[100rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+                @RenderBody()
+            </div>
+        </main>
+    </div>
+
+    @if (signedIn)
+    {
+        <script>
+            (function () {
+                const trigger = document.getElementById('adminSidebarToggle');
+                const closeButton = document.getElementById('adminSidebarClose');
+                const sidebar = document.getElementById('adminSidebar');
+                const backdrop = document.getElementById('adminSidebarBackdrop');
+                const shell = document.getElementById('adminShell');
+                const desktop = window.matchMedia('(min-width: 1024px)');
+
+                if (!trigger || !closeButton || !sidebar || !backdrop || !shell) return;
+
+                function setOpen(open, restoreFocus) {
+                    const mobileOpen = open && !desktop.matches;
+                    sidebar.classList.toggle('-translate-x-full', !mobileOpen);
+                    backdrop.classList.toggle('hidden', !mobileOpen);
+                    trigger.setAttribute('aria-expanded', mobileOpen ? 'true' : 'false');
+                    sidebar.inert = !mobileOpen && !desktop.matches;
+                    shell.inert = mobileOpen;
+                    document.body.classList.toggle('overflow-hidden', mobileOpen);
+
+                    if (mobileOpen) closeButton.focus();
+                    if (!mobileOpen && restoreFocus) trigger.focus();
+                }
+
+                trigger.addEventListener('click', function () { setOpen(true, false); });
+                closeButton.addEventListener('click', function () { setOpen(false, true); });
+                backdrop.addEventListener('click', function () { setOpen(false, true); });
+                sidebar.querySelectorAll('a[href]').forEach(function (link) {
+                    link.addEventListener('click', function () {
+                        if (!desktop.matches) setOpen(false, false);
+                    });
+                });
+                document.addEventListener('keydown', function (event) {
+                    if (event.key === 'Escape' && trigger.getAttribute('aria-expanded') === 'true') {
+                        setOpen(false, true);
+                    }
+                });
+                desktop.addEventListener('change', function () { setOpen(false, false); });
+                setOpen(false, false);
+            })();
+        </script>
+    }
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

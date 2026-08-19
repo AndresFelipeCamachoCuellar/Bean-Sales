@@ -1,0 +1,12 @@
+{
+  "name": "bean-sales-frontend",
+  "private": true,
+  "scripts": {
+    "css:build": "tailwindcss -i ./Web/Styles/bean-tailwind.css -o ./Web/wwwroot/css/bean-tailwind.css --minify",
+    "css:watch": "tailwindcss -i ./Web/Styles/bean-tailwind.css -o ./Web/wwwroot/css/bean-tailwind.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.3.3",
+    "tailwindcss": "4.3.3"
+  }
+}

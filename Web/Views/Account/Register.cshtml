@@ -1,70 +1,74 @@
 @model Web.Models.ViewModels.RegisterUserViewModel
 
 @{
+    Layout = "_LayoutAuthTailwind";
     ViewData["Title"] = "Crear cuenta";
     ViewData["AuthWide"] = "wide";
 }
 
-<div class="bean-auth-toggle">
-    <a asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]">Entrar</a>
-    <a href="#" class="active">Crear cuenta</a>
-</div>
+<nav class="grid grid-cols-2 border border-ink/20" aria-label="Opciones de acceso">
+    <a asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" class="flex min-h-12 cursor-pointer items-center justify-center bg-white px-4 text-sm font-extrabold text-ink transition-colors hover:bg-oat focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-inset">Entrar</a>
+    <a asp-action="Register" asp-route-returnUrl="@ViewData["ReturnUrl"]" aria-current="page" class="flex min-h-12 cursor-pointer items-center justify-center bg-ink px-4 text-sm font-extrabold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-inset">Crear cuenta</a>
+</nav>
 
-<h1 class="bean-auth-title">Crea tu cuenta</h1>
-<p class="bean-auth-sub">Guarda favoritos, sigue tus envíos y compra con menos fricción.</p>
+<h1 class="mt-10 text-balance font-display text-4xl leading-[0.95] tracking-[-0.04em] sm:text-5xl">Crea tu cuenta</h1>
+<p class="mt-4 max-w-xl text-base leading-7 text-ink/65">Guarda favoritos, sigue tus envíos y compra con menos fricción.</p>
 
-<form asp-action="Register" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
-    <div asp-validation-summary="All" class="bean-auth-validation"></div>
+<form asp-action="Register" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post" class="mt-8" novalidate>
+    <div asp-validation-summary="All" class="mb-6 hidden border border-clay bg-clay/10 p-4 text-sm font-semibold leading-6 text-clay-dark [&.validation-summary-errors]:block [&_ul]:space-y-1" role="alert" aria-live="polite"></div>
 
-    <div class="bean-auth-grid2">
-        <div class="bean-auth-field">
-            <label asp-for="FirstName" class="bean-auth-label">Nombre</label>
-            <input asp-for="FirstName" class="bean-auth-input" placeholder="Tu nombre" />
-            <span asp-validation-for="FirstName" class="text-danger"></span>
+    <div class="grid gap-x-5 sm:grid-cols-2">
+        <div>
+            <label asp-for="FirstName" class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/70">Nombre</label>
+            <input asp-for="FirstName" class="mt-2 min-h-13 w-full border border-ink/25 bg-white px-4 py-3 text-base text-ink caret-clay outline-none transition-colors placeholder:text-ink/55 hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25 [&.input-validation-error]:border-clay [&.input-validation-error]:bg-clay/5 [&.input-validation-error]:ring-1 [&.input-validation-error]:ring-clay" autocomplete="given-name" placeholder="Tu nombre" />
+            <span asp-validation-for="FirstName" class="block pt-2 text-xs font-bold leading-5 text-clay-dark [&.field-validation-valid]:hidden" aria-live="polite"></span>
         </div>
-        <div class="bean-auth-field">
-            <label asp-for="LastName" class="bean-auth-label">Apellido</label>
-            <input asp-for="LastName" class="bean-auth-input" placeholder="Tu apellido" />
-            <span asp-validation-for="LastName" class="text-danger"></span>
-        </div>
-    </div>
-
-    <div class="bean-auth-field">
-        <label asp-for="Email" class="bean-auth-label">Correo electrónico</label>
-        <input asp-for="Email" class="bean-auth-input" placeholder="nombre@correo.com" />
-        <span asp-validation-for="Email" class="text-danger"></span>
-    </div>
-
-    <div class="bean-auth-grid2">
-        <div class="bean-auth-field">
-            <label asp-for="DocumentTypeID" class="bean-auth-label">Tipo de documento</label>
-            <select asp-for="DocumentTypeID" asp-items="Model.DocumentTypes" class="bean-auth-input"></select>
-            <span asp-validation-for="DocumentTypeID" class="text-danger"></span>
-        </div>
-        <div class="bean-auth-field">
-            <label asp-for="DocumentNumber" class="bean-auth-label">Número de documento</label>
-            <input asp-for="DocumentNumber" class="bean-auth-input" placeholder="Número" />
-            <span asp-validation-for="DocumentNumber" class="text-danger"></span>
+        <div class="mt-5 sm:mt-0">
+            <label asp-for="LastName" class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/70">Apellido</label>
+            <input asp-for="LastName" class="mt-2 min-h-13 w-full border border-ink/25 bg-white px-4 py-3 text-base text-ink caret-clay outline-none transition-colors placeholder:text-ink/55 hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25 [&.input-validation-error]:border-clay [&.input-validation-error]:bg-clay/5 [&.input-validation-error]:ring-1 [&.input-validation-error]:ring-clay" autocomplete="family-name" placeholder="Tu apellido" />
+            <span asp-validation-for="LastName" class="block pt-2 text-xs font-bold leading-5 text-clay-dark [&.field-validation-valid]:hidden" aria-live="polite"></span>
         </div>
     </div>
 
-    <div class="bean-auth-grid2">
-        <div class="bean-auth-field">
-            <label asp-for="Password" class="bean-auth-label">Contraseña</label>
-            <input asp-for="Password" class="bean-auth-input" placeholder="Mínimo 6 caracteres" />
-            <span asp-validation-for="Password" class="text-danger"></span>
+    <div class="mt-5">
+        <label asp-for="Email" class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/70">Correo electrónico</label>
+        <input asp-for="Email" class="mt-2 min-h-13 w-full border border-ink/25 bg-white px-4 py-3 text-base text-ink caret-clay outline-none transition-colors placeholder:text-ink/55 hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25 [&.input-validation-error]:border-clay [&.input-validation-error]:bg-clay/5 [&.input-validation-error]:ring-1 [&.input-validation-error]:ring-clay" autocomplete="email" placeholder="nombre@correo.com" />
+        <span asp-validation-for="Email" class="block pt-2 text-xs font-bold leading-5 text-clay-dark [&.field-validation-valid]:hidden" aria-live="polite"></span>
+    </div>
+
+    <div class="mt-5 grid gap-x-5 sm:grid-cols-2">
+        <div>
+            <label asp-for="DocumentTypeID" class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/70">Tipo de documento</label>
+            <select asp-for="DocumentTypeID" asp-items="Model.DocumentTypes" class="mt-2 min-h-13 w-full cursor-pointer border border-ink/25 bg-white px-4 py-3 text-base text-ink outline-none transition-colors hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25 [&.input-validation-error]:border-clay [&.input-validation-error]:bg-clay/5 [&.input-validation-error]:ring-1 [&.input-validation-error]:ring-clay"></select>
+            <span asp-validation-for="DocumentTypeID" class="block pt-2 text-xs font-bold leading-5 text-clay-dark [&.field-validation-valid]:hidden" aria-live="polite"></span>
         </div>
-        <div class="bean-auth-field">
-            <label asp-for="ConfirmPassword" class="bean-auth-label">Confirmar contraseña</label>
-            <input asp-for="ConfirmPassword" class="bean-auth-input" placeholder="Repite la contraseña" />
-            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+        <div class="mt-5 sm:mt-0">
+            <label asp-for="DocumentNumber" class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/70">Número de documento</label>
+            <input asp-for="DocumentNumber" class="mt-2 min-h-13 w-full border border-ink/25 bg-white px-4 py-3 text-base text-ink caret-clay outline-none transition-colors placeholder:text-ink/55 hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25 [&.input-validation-error]:border-clay [&.input-validation-error]:bg-clay/5 [&.input-validation-error]:ring-1 [&.input-validation-error]:ring-clay" placeholder="Número" />
+            <span asp-validation-for="DocumentNumber" class="block pt-2 text-xs font-bold leading-5 text-clay-dark [&.field-validation-valid]:hidden" aria-live="polite"></span>
         </div>
     </div>
 
-    <button type="submit" class="bean-auth-cta" style="margin-top:8px;">Registrarse y continuar</button>
+    <div class="mt-5 grid gap-x-5 sm:grid-cols-2">
+        <div>
+            <label asp-for="Password" class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/70">Contraseña</label>
+            <input asp-for="Password" class="mt-2 min-h-13 w-full border border-ink/25 bg-white px-4 py-3 text-base text-ink caret-clay outline-none transition-colors placeholder:text-ink/55 hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25 [&.input-validation-error]:border-clay [&.input-validation-error]:bg-clay/5 [&.input-validation-error]:ring-1 [&.input-validation-error]:ring-clay" autocomplete="new-password" placeholder="6+ caracteres, mayúscula, número y símbolo" />
+            <span asp-validation-for="Password" class="block pt-2 text-xs font-bold leading-5 text-clay-dark [&.field-validation-valid]:hidden" aria-live="polite"></span>
+        </div>
+        <div class="mt-5 sm:mt-0">
+            <label asp-for="ConfirmPassword" class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/70">Confirmar contraseña</label>
+            <input asp-for="ConfirmPassword" class="mt-2 min-h-13 w-full border border-ink/25 bg-white px-4 py-3 text-base text-ink caret-clay outline-none transition-colors placeholder:text-ink/55 hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25 [&.input-validation-error]:border-clay [&.input-validation-error]:bg-clay/5 [&.input-validation-error]:ring-1 [&.input-validation-error]:ring-clay" autocomplete="new-password" placeholder="Repite la contraseña" />
+            <span asp-validation-for="ConfirmPassword" class="block pt-2 text-xs font-bold leading-5 text-clay-dark [&.field-validation-valid]:hidden" aria-live="polite"></span>
+        </div>
+    </div>
+
+    <button type="submit" class="mt-7 inline-flex min-h-13 w-full cursor-pointer items-center justify-center gap-3 bg-clay px-7 py-4 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-4 focus-visible:ring-offset-cream">
+        Registrarse y continuar
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+    </button>
 </form>
 
-<p class="bean-auth-foot">¿Ya tienes cuenta? <a class="bean-auth-link" asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]">Inicia sesión aquí</a></p>
+<p class="mt-8 text-center text-sm leading-6 text-ink/65">¿Ya tienes cuenta? <a class="cursor-pointer font-extrabold text-clay-dark underline decoration-clay/40 underline-offset-4 transition-colors hover:text-clay focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream" asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]">Inicia sesión aquí</a></p>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

@@ -2,249 +2,283 @@
 @model List<Web.Models.ShoppingCartItem>
 
 @{
+    Layout = "_LayoutHome";
     ViewData["Title"] = "Checkout";
     var co = new System.Globalization.CultureInfo("es-CO");
+    var subtotal = (decimal)ViewBag.Total;
+    var shipping = (decimal)ViewBag.Shipping;
+    var grandTotal = (decimal)ViewBag.GrandTotal;
 
-    // Importes servidos por el controlador (fuente única del costo de envío).
-    var envio = (decimal)ViewBag.Shipping;
-    var granTotal = (decimal)ViewBag.GrandTotal;
+    IEnumerable<string> departments = ViewBag.Departments ?? Enumerable.Empty<string>();
+    IEnumerable<ShippingCityItem> cities = ViewBag.Cities ?? Enumerable.Empty<ShippingCityItem>();
+    string? selectedDepartment = ViewBag.SelectedDepartment as string;
+    string? selectedDane = ViewBag.SelectedCityDaneCode as string;
+    string? selectedCity = ViewBag.SelectedCityName as string;
 
-    // Catálogo de destino (DIVIPOLA) servido desde BD: no depende de la API externa.
-    IEnumerable<string> departamentos = ViewBag.Departments ?? Enumerable.Empty<string>();
-    IEnumerable<ShippingCityItem> ciudades = ViewBag.Cities ?? Enumerable.Empty<ShippingCityItem>();
+    var requiresCity = ViewBag.ShippingRequiresCity is bool requiresFlag && requiresFlag;
+    var isDomestic = ViewBag.IsDomestic is bool domesticFlag ? domesticFlag : true;
+    var shippingStatus = ViewBag.ShippingStatus is string status ? status : "Ok";
+    string? shippingMessage = ViewBag.ShippingMessage as string;
+    string? carrier = ViewBag.ShippingCarrier as string;
+    int? shippingDays = ViewBag.ShippingDays is int days ? days : null;
 
-    string? depSeleccionado = ViewBag.SelectedDepartment as string;
-    string? daneSeleccionado = ViewBag.SelectedCityDaneCode as string;
-    string? ciudadSeleccionada = ViewBag.SelectedCityName as string;
+    var noCoverage = shippingStatus is "NoCoverage" or "Invalid";
+    var missingCity = requiresCity && string.IsNullOrEmpty(selectedDane);
+    var paymentBlocked = noCoverage || missingCity;
+    var paymentLabel = missingCity
+        ? "Elige tu ciudad para continuar"
+        : noCoverage
+            ? "No disponible para este destino"
+            : $"Pagar ${grandTotal.ToString("#,##0", co)} COP";
 
-    // Con la tarifa plana (Provider = Fixed) el precio no depende de la ciudad:
-    // el checkout se comporta exactamente igual que antes.
-    bool requiereCiudad = ViewBag.ShippingRequiresCity is bool requiereFlag && requiereFlag;
+    Guid? pendingOrder = ViewBag.PendingOrderId as Guid?;
+    string? pendingOrderShort = ViewBag.PendingOrderShort as string;
+    int? pendingMinutes = ViewBag.PendingOrderMinutes as int?;
 
-    // Fuera de Colombia no hay catálogo DIVIPOLA: se pide el departamento/estado como
-    // texto libre y se cobra la tarifa de configuración.
-    bool esNacional = ViewBag.IsDomestic is bool nacionalFlag ? nacionalFlag : true;
-
-    string estadoEnvio = ViewBag.ShippingStatus is string estado ? estado : "Ok";
-    string? mensajeEnvio = ViewBag.ShippingMessage as string;
-    string? transportadora = ViewBag.ShippingCarrier as string;
-    int? diasEnvio = ViewBag.ShippingDays is int dias ? dias : (int?)null;
-
-    bool sinCobertura = estadoEnvio == "NoCoverage" || estadoEnvio == "Invalid";
-    bool faltaCiudad = requiereCiudad && string.IsNullOrEmpty(daneSeleccionado);
-    bool pagoBloqueado = sinCobertura || faltaCiudad;
-
-    string etiquetaPago = pagoBloqueado
-        ? (sinCobertura ? "No disponible para este destino" : "Elige tu ciudad para continuar")
-        : $"Pagar ${granTotal.ToString("#,##0", co)} COP";
-
-    // Pedido del cliente que quedó esperando pago (reserva de stock vigente).
-    Guid? pedidoPendiente = ViewBag.PendingOrderId as Guid?;
-    string? pedidoPendienteCorto = ViewBag.PendingOrderShort as string;
-    int? pendienteMinutos = ViewBag.PendingOrderMinutes as int?;
-
-    // Prellenado del formulario (perfil real del cliente, no su email).
-    string formNombre = ViewBag.FormFirstName as string ?? string.Empty;
-    string formApellido = ViewBag.FormLastName as string ?? string.Empty;
-    string formDireccion = ViewBag.FormAddress as string ?? string.Empty;
-    string formZip = ViewBag.FormZip as string ?? string.Empty;
-    string formCelular = ViewBag.FormPhone as string ?? string.Empty;
+    var formFirstName = ViewBag.FormFirstName as string ?? string.Empty;
+    var formLastName = ViewBag.FormLastName as string ?? string.Empty;
+    var formAddress = ViewBag.FormAddress as string ?? string.Empty;
+    var formZip = ViewBag.FormZip as string ?? string.Empty;
+    var formPhone = ViewBag.FormPhone as string ?? string.Empty;
 }
 
-<section class="bean-checkout">
-    <div class="bean-container">
-        <!-- Stepper de pasos -->
-        <div class="bean-steps">
-            <div class="bean-step active"><span class="num">1</span> Envío</div>
-            <div class="bean-step-line"></div>
-            <div class="bean-step active"><span class="num">2</span> Pago</div>
-            <div class="bean-step-line"></div>
-            <div class="bean-step"><span class="num">3</span> Confirmación</div>
-        </div>
+<section class="bg-cream px-4 pb-20 pt-8 sm:px-6 sm:pb-24 sm:pt-12 lg:px-10 lg:pb-32">
+    <div class="mx-auto max-w-[90rem]">
+        <ol class="grid grid-cols-[auto_1fr_auto_1fr_auto] items-center gap-2 border-y border-ink/15 py-5 sm:gap-4" aria-label="Progreso del checkout">
+            <li class="flex items-center gap-2 text-xs font-extrabold text-ink sm:text-sm">
+                <span class="grid size-7 place-items-center bg-clay font-data text-[10px] text-white">1</span>
+                <span>Envío</span>
+            </li>
+            <li class="h-px bg-clay" aria-hidden="true"></li>
+            <li class="flex items-center gap-2 text-xs font-extrabold text-ink sm:text-sm">
+                <span class="grid size-7 place-items-center bg-clay font-data text-[10px] text-white">2</span>
+                <span>Pago</span>
+            </li>
+            <li class="h-px bg-oat" aria-hidden="true"></li>
+            <li class="flex items-center gap-2 text-xs font-bold text-ink/40 sm:text-sm">
+                <span class="grid size-7 place-items-center border border-ink/20 font-data text-[10px]">3</span>
+                <span class="hidden sm:inline">Confirmación</span>
+                <span class="sm:hidden">Listo</span>
+            </li>
+        </ol>
 
-        <div class="bean-checkout-grid">
-            <!-- ===== Formulario ===== -->
-            <div class="bean-form-col">
+        <div class="mt-10 grid gap-10 lg:grid-cols-12 lg:items-start">
+            <div class="min-w-0 lg:col-span-7">
                 @if (TempData["CheckoutError"] != null)
                 {
-                    <div class="bean-alert-error" role="alert">
-                        <i class="fas fa-exclamation-circle"></i> @TempData["CheckoutError"]
+                    <div class="mb-6 flex items-start gap-3 border border-clay/30 bg-white px-5 py-4 text-sm font-semibold text-clay-dark" role="alert">
+                        <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v6M12 17h.01" /></svg>
+                        <span>@TempData["CheckoutError"]</span>
                     </div>
                 }
-                @if (pedidoPendiente.HasValue)
+
+                @if (pendingOrder.HasValue)
                 {
-                    <div class="bean-alert-info bean-pay-pending" role="status">
-                        <i class="fas fa-hourglass-half"></i>
-                        <span>
-                            Tienes el pedido <strong>#@pedidoPendienteCorto</strong> esperando pago@(pendienteMinutos.HasValue ? $" (vence en {pendienteMinutos.Value} min)" : "").
-                        </span>
-                        <div class="bean-pay-pending-actions">
-                            <a class="btn-bean-outline btn-bean-sm" asp-controller="Cart" asp-action="Pay" asp-route-id="@pedidoPendiente.Value">Retomar el pago</a>
-                            <form asp-controller="Cart" asp-action="CancelPayment" asp-route-id="@pedidoPendiente.Value" method="post">
-                                <button type="submit" class="bean-link-danger">Cancelarlo</button>
+                    <div class="mb-6 border border-honey/35 bg-white p-5" role="status">
+                        <div class="flex items-start gap-3">
+                            <svg class="mt-0.5 size-5 shrink-0 text-honey" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                            <p class="text-sm leading-6 text-ink/70">Tienes el pedido <strong class="text-ink">#@pendingOrderShort</strong> esperando pago@(pendingMinutes.HasValue ? $" (vence en {pendingMinutes.Value} min)" : "").</p>
+                        </div>
+                        <div class="mt-4 flex flex-wrap items-center gap-4 pl-8">
+                            <a asp-controller="Cart" asp-action="Pay" asp-route-id="@pendingOrder.Value" class="cursor-pointer border-b border-ink pb-1 text-sm font-extrabold focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Retomar el pago</a>
+                            <form asp-controller="Cart" asp-action="CancelPayment" asp-route-id="@pendingOrder.Value" method="post">
+                                <button type="submit" class="cursor-pointer text-sm font-bold text-clay-dark hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Cancelar pedido</button>
                             </form>
                         </div>
                     </div>
                 }
-                <form class="needs-validation" id="beanCheckoutForm" asp-controller="Cart" asp-action="Checkout" method="post" novalidate>
-                    <div class="bean-form-section">
-                        <h2>Dirección de envío</h2>
-                        <div class="bean-form-grid">
-                            <div class="bean-field">
-                                <label for="firstName" class="bean-label">Nombre</label>
-                                <input type="text" class="bean-input" id="firstName" name="firstName" value="@formNombre" required>
+
+                <form id="beanCheckoutForm" asp-controller="Cart" asp-action="Checkout" method="post" novalidate>
+                    <section class="border border-oat bg-white" aria-labelledby="shipping-address-title">
+                        <div class="border-b border-oat px-5 py-5 sm:px-7">
+                            <p class="font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-clay-dark">Destino</p>
+                            <h1 id="shipping-address-title" class="mt-2 font-display text-3xl leading-none tracking-[-0.04em] sm:text-4xl">Dirección de envío</h1>
+                        </div>
+
+                        <div class="grid gap-5 p-5 sm:grid-cols-2 sm:p-7">
+                            <div>
+                                <label for="firstName" class="mb-2 block text-xs font-extrabold text-ink/65">Nombre</label>
+                                <input type="text" id="firstName" name="firstName" value="@formFirstName" autocomplete="given-name" required class="min-h-12 w-full border border-oat bg-cream px-4 py-3 text-sm font-semibold outline-none transition-colors focus:border-clay focus:ring-2 focus:ring-clay/20" />
                             </div>
-                            <div class="bean-field">
-                                <label for="lastName" class="bean-label">Apellido</label>
-                                <input type="text" class="bean-input" id="lastName" name="lastName" value="@formApellido" required>
+                            <div>
+                                <label for="lastName" class="mb-2 block text-xs font-extrabold text-ink/65">Apellido</label>
+                                <input type="text" id="lastName" name="lastName" value="@formLastName" autocomplete="family-name" required class="min-h-12 w-full border border-oat bg-cream px-4 py-3 text-sm font-semibold outline-none transition-colors focus:border-clay focus:ring-2 focus:ring-clay/20" />
                             </div>
-                            <div class="bean-field col-span-2">
-                                <label for="address" class="bean-label">Dirección</label>
-                                <input type="text" class="bean-input" id="address" name="address" value="@formDireccion" placeholder="Calle 123 #45-67" required>
+                            <div class="sm:col-span-2">
+                                <label for="address" class="mb-2 block text-xs font-extrabold text-ink/65">Dirección completa</label>
+                                <input type="text" id="address" name="address" value="@formAddress" placeholder="Calle 123 #45-67" autocomplete="street-address" required class="min-h-12 w-full border border-oat bg-cream px-4 py-3 text-sm font-semibold outline-none transition-colors placeholder:text-ink/30 focus:border-clay focus:ring-2 focus:ring-clay/20" />
                             </div>
-                            @*
-                                Celular OBLIGATORIO: la transportadora lo necesita para
-                                coordinar la entrega y Wompi exige shipping-address:phone-number
-                                cuando se le envía la dirección de envío.
-                            *@
-                            <div class="bean-field">
-                                <label for="phone" class="bean-label">Celular</label>
-                                <input type="tel" class="bean-input" id="phone" name="phone" value="@formCelular"
-                                       placeholder="3001234567" inputmode="tel" autocomplete="tel"
-                                       minlength="7" maxlength="20" required>
-                                <span class="bean-field-hint" id="phoneHint">Para coordinar la entrega. Solo números.</span>
+                            <div>
+                                <label for="phone" class="mb-2 block text-xs font-extrabold text-ink/65">Celular</label>
+                                <input type="tel" id="phone" name="phone" value="@formPhone" placeholder="3001234567" inputmode="tel" autocomplete="tel" minlength="7" maxlength="20" required aria-describedby="phoneHint" class="min-h-12 w-full border border-oat bg-cream px-4 py-3 text-sm font-semibold outline-none transition-colors placeholder:text-ink/30 focus:border-clay focus:ring-2 focus:ring-clay/20" />
+                                <span id="phoneHint" class="mt-2 block text-xs leading-5 text-ink/45">Para coordinar la entrega. Solo números.</span>
                             </div>
-                            <div class="bean-field">
-                                <label for="country" class="bean-label">País</label>
-                                <select class="bean-select" id="country" name="country" required>
+                            <div>
+                                <label for="country" class="mb-2 block text-xs font-extrabold text-ink/65">País</label>
+                                <select id="country" name="country" required class="min-h-12 w-full cursor-pointer border border-oat bg-cream px-4 py-3 text-sm font-semibold outline-none focus:border-clay focus:ring-2 focus:ring-clay/20">
                                     <option value="Colombia" selected>Colombia</option>
                                 </select>
-                                <span class="bean-field-hint">Por ahora solo despachamos dentro de Colombia.</span>
+                                <span class="mt-2 block text-xs leading-5 text-ink/45">Por ahora solo despachamos dentro de Colombia.</span>
                             </div>
-                            @if (esNacional)
+
+                            @if (isDomestic)
                             {
-                                <div class="bean-field">
-                                    <label for="state" class="bean-label">Departamento</label>
-                                    <select class="bean-select" id="state" name="state" required>
+                                <div>
+                                    <label for="state" class="mb-2 block text-xs font-extrabold text-ink/65">Departamento</label>
+                                    <select id="state" name="state" required class="min-h-12 w-full cursor-pointer border border-oat bg-cream px-4 py-3 text-sm font-semibold outline-none focus:border-clay focus:ring-2 focus:ring-clay/20">
                                         <option value="">Selecciona tu departamento</option>
-                                        @foreach (var dep in departamentos)
+                                        @foreach (var department in departments)
                                         {
-                                            <option value="@dep" selected="@(dep == depSeleccionado)">@dep</option>
+                                            if (department == selectedDepartment)
+                                            {
+                                                <option value="@department" selected>@department</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@department">@department</option>
+                                            }
                                         }
                                     </select>
                                 </div>
-                                <div class="bean-field">
-                                    <label for="cityDaneCode" class="bean-label">Ciudad</label>
-                                    <select class="bean-select" id="cityDaneCode" name="cityDaneCode" required disabled="@(string.IsNullOrEmpty(depSeleccionado))">
-                                        <option value="">@(string.IsNullOrEmpty(depSeleccionado) ? "Elige primero el departamento" : "Selecciona tu ciudad")</option>
-                                        @foreach (var ciudad in ciudades)
+                                <div>
+                                    <label for="cityDaneCode" class="mb-2 block text-xs font-extrabold text-ink/65">Ciudad</label>
+                                    <select id="cityDaneCode" name="cityDaneCode" required disabled="@(string.IsNullOrEmpty(selectedDepartment))" class="min-h-12 w-full cursor-pointer border border-oat bg-cream px-4 py-3 text-sm font-semibold outline-none focus:border-clay focus:ring-2 focus:ring-clay/20 disabled:cursor-not-allowed disabled:opacity-50">
+                                        <option value="">@(string.IsNullOrEmpty(selectedDepartment) ? "Elige primero el departamento" : "Selecciona tu ciudad")</option>
+                                        @foreach (var city in cities)
                                         {
-                                            <option value="@ciudad.DaneCode" selected="@(ciudad.DaneCode == daneSeleccionado)">@ciudad.Name</option>
+                                            if (city.DaneCode == selectedDane)
+                                            {
+                                                <option value="@city.DaneCode" selected>@city.Name</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@city.DaneCode">@city.Name</option>
+                                            }
                                         }
                                     </select>
-                                    <input type="hidden" id="cityName" name="cityName" value="@ciudadSeleccionada" />
+                                    <input type="hidden" id="cityName" name="cityName" value="@selectedCity" />
                                 </div>
                             }
                             else
                             {
-                                <div class="bean-field col-span-2">
-                                    <label for="state" class="bean-label">Estado / Provincia</label>
-                                    <input type="text" class="bean-input" id="state" name="state" value="@depSeleccionado" required>
-                                    <span class="bean-field-hint">Los envíos fuera de Colombia se cotizan con tarifa estándar.</span>
+                                <div class="sm:col-span-2">
+                                    <label for="state" class="mb-2 block text-xs font-extrabold text-ink/65">Estado / Provincia</label>
+                                    <input type="text" id="state" name="state" value="@selectedDepartment" required class="min-h-12 w-full border border-oat bg-cream px-4 py-3 text-sm font-semibold outline-none focus:border-clay focus:ring-2 focus:ring-clay/20" />
+                                    <span class="mt-2 block text-xs leading-5 text-ink/45">Los envíos fuera de Colombia se cotizan con tarifa estándar.</span>
                                 </div>
                             }
-                            <div class="bean-field">
-                                <label for="zip" class="bean-label">Código postal <span class="bean-optional">(opcional)</span></label>
-                                <input type="text" class="bean-input" id="zip" name="zip" value="@formZip" placeholder="110111">
+
+                            <div>
+                                <label for="zip" class="mb-2 block text-xs font-extrabold text-ink/65">Código postal <span class="font-medium text-ink/35">(opcional)</span></label>
+                                <input type="text" id="zip" name="zip" value="@formZip" placeholder="110111" autocomplete="postal-code" class="min-h-12 w-full border border-oat bg-cream px-4 py-3 text-sm font-semibold outline-none transition-colors placeholder:text-ink/30 focus:border-clay focus:ring-2 focus:ring-clay/20" />
                             </div>
                         </div>
-                    </div>
+                    </section>
 
-                    <div class="bean-form-section" style="margin-top:26px;">
-                        <h2>Envío</h2>
-                        <div class="bean-ship-box" id="beanShipBox">
-                            <div class="bean-alert-info" id="beanShipPending" role="status" style="@(faltaCiudad && !sinCobertura ? "" : "display:none;")">
-                                <i class="fas fa-truck"></i>
+                    <section class="mt-6 border border-oat bg-white" aria-labelledby="shipping-quote-title">
+                        <div class="border-b border-oat px-5 py-4 sm:px-7">
+                            <h2 id="shipping-quote-title" class="text-base font-extrabold tracking-[-0.02em]">Envío</h2>
+                        </div>
+                        <div id="beanShipBox" class="p-5 sm:p-7" aria-live="polite">
+                            <div id="beanShipPending" class="flex items-start gap-3 text-sm font-semibold leading-6 text-ink/60 @(missingCity && !noCoverage ? "" : "hidden")" role="status">
+                                <svg class="mt-0.5 size-5 shrink-0 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7h11v10H3V7Z" /><path d="M14 10h4l3 3v4h-7v-7Z" /><circle cx="7" cy="18" r="2" /><circle cx="17" cy="18" r="2" /></svg>
                                 <span>Elige tu departamento y ciudad para calcular el costo del envío.</span>
                             </div>
-                            <div class="bean-alert-error" id="beanShipAlert" role="alert" style="@(sinCobertura ? "" : "display:none;")">
-                                <i class="fas fa-exclamation-circle"></i>
-                                <span id="beanShipAlertText">@(mensajeEnvio ?? "Todavía no llegamos a esa ciudad. Escríbenos y lo gestionamos contigo.")</span>
+                            <div id="beanShipAlert" class="flex items-start gap-3 text-sm font-semibold leading-6 text-clay-dark @(noCoverage ? "" : "hidden")" role="alert">
+                                <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v6M12 17h.01" /></svg>
+                                <span id="beanShipAlertText">@(shippingMessage ?? "Todavía no llegamos a esa ciudad. Escríbenos y lo gestionamos contigo.")</span>
                             </div>
-                            <div class="bean-ship-option" id="beanShipOption" style="@(pagoBloqueado ? "display:none;" : "")">
-                                <div class="bean-ship-option-main">
-                                    <span class="bean-ship-carrier" id="beanShipCarrier">@(transportadora ?? "Envío estándar")</span>
-                                    <span class="bean-ship-eta" id="beanShipEta">@(diasEnvio.HasValue ? $"Entrega estimada en {diasEnvio.Value} días hábiles" : "Entrega estimada en días hábiles")</span>
+                            <div id="beanShipOption" class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between @(paymentBlocked ? "hidden" : "")">
+                                <div>
+                                    <strong id="beanShipCarrier" class="block text-sm font-extrabold">@(carrier ?? "Envío estándar")</strong>
+                                    <span id="beanShipEta" class="mt-1 block text-xs font-medium text-ink/50">@(shippingDays.HasValue ? $"Entrega estimada en {shippingDays.Value} días hábiles" : "Entrega estimada en días hábiles")</span>
                                 </div>
-                                <span class="bean-ship-price" id="beanShipPrice">$@envio.ToString("#,##0", co)</span>
+                                <strong id="beanShipPrice" class="font-data text-sm text-clay-dark">$@shipping.ToString("#,##0", co)</strong>
                             </div>
-                            <div class="bean-alert-info" id="beanShipNote" role="status" style="@(estadoEnvio == "Fallback" ? "" : "display:none;")">
-                                <i class="fas fa-info-circle"></i>
+                            <div id="beanShipNote" class="mt-4 flex items-start gap-3 border-t border-oat pt-4 text-xs font-semibold leading-5 text-ink/55 @(shippingStatus == "Fallback" ? "" : "hidden")" role="status">
+                                <svg class="mt-0.5 size-4 shrink-0 text-honey" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>
                                 <span id="beanShipNoteText">No pudimos cotizar con la transportadora; se aplica una tarifa estándar.</span>
                             </div>
                         </div>
-                    </div>
+                    </section>
 
-                    <div class="bean-form-section" style="margin-top:26px;">
-                        <h2>Método de pago</h2>
-                        @*
-                            Con el Web Checkout de Wompi el método lo elige el cliente DENTRO
-                            de la pasarela, así que aquí no hay radios que enviar: este bloque
-                            es informativo. El monto nunca viaja desde el navegador.
-                        *@
-                        <div class="bean-pay-gateway">
-                            <div class="bean-pay-gateway-head">
-                                <span class="bean-pay-lock" aria-hidden="true"><i class="fas fa-lock"></i></span>
-                                <div>
-                                    <div class="bean-pay-gateway-title">Pago seguro con Wompi</div>
-                                    <div class="bean-pay-gateway-sub">
-                                        Te llevamos a la pasarela de Bancolombia para completar el pago
-                                        y vuelves aquí automáticamente.
-                                    </div>
+                    <section class="mt-6 border border-oat bg-white p-5 sm:p-7" aria-labelledby="payment-method-title">
+                        <h2 id="payment-method-title" class="text-base font-extrabold tracking-[-0.02em]">Método de pago</h2>
+                        <div class="mt-5 flex items-start gap-4 bg-cream p-5">
+                            <span class="grid size-11 shrink-0 place-items-center bg-ink text-white" aria-hidden="true">
+                                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10" width="14" height="10" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>
+                            </span>
+                            <div>
+                                <h3 class="text-sm font-extrabold">Pago seguro con Wompi</h3>
+                                <p class="mt-2 text-sm leading-6 text-ink/55">Te llevamos a la pasarela de Bancolombia para elegir tu medio de pago y volver automáticamente.</p>
+                                <div class="mt-4 flex flex-wrap gap-2">
+                                    @foreach (var paymentBrand in new[] { "Tarjetas", "PSE", "Nequi", "Bancolombia" })
+                                    {
+                                        <span class="rounded-full border border-oat bg-white px-3 py-1.5 text-[10px] font-bold text-ink/60">@paymentBrand</span>
+                                    }
                                 </div>
                             </div>
-                            <div class="bean-pay-brands">
-                                <span class="bean-pay-brand">Tarjetas</span>
-                                <span class="bean-pay-brand">PSE</span>
-                                <span class="bean-pay-brand">Nequi</span>
-                                <span class="bean-pay-brand">Bancolombia</span>
-                            </div>
                         </div>
-                    </div>
+                    </section>
 
-                    <button class="btn-bean btn-bean-block" type="submit" id="beanPayBtn"
-                            disabled="@(pagoBloqueado ? "disabled" : null)" style="margin-top:26px;">
-                        <span id="beanPayLabel">@etiquetaPago</span>
+                    <button type="submit" id="beanPayBtn" disabled="@paymentBlocked" class="mt-6 inline-flex min-h-14 w-full cursor-pointer items-center justify-center gap-3 bg-clay px-6 py-4 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-4 focus-visible:ring-offset-cream disabled:cursor-not-allowed disabled:bg-ink/15 disabled:text-ink/45">
+                        <span id="beanPayLabel">@paymentLabel</span>
+                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
                     </button>
                 </form>
             </div>
 
-            <!-- ===== Columna Tu orden ===== -->
-            <aside class="bean-order">
-                <h3>Tu orden</h3>
-                @foreach (var item in Model)
-                {
-                    <div class="bean-order-item">
-                        <div class="bean-order-thumb bean-img o1" style="@(string.IsNullOrEmpty(item.Product?.ImageUrl) ? "" : $"background-image:url('{item.Product.ImageUrl}');background-size:cover;background-position:center;")"></div>
-                        <div class="info">
-                            <div class="n">@item.Product?.Name</div>
-                            <div class="q">Cant: @item.Quantity</div>
-                        </div>
-                        <div class="amt">$@((item.Quantity * (item.Product?.Price ?? 0)).ToString("#,##0", co))</div>
+            <aside class="bg-ink p-6 text-white shadow-tray sm:p-8 lg:sticky lg:top-28 lg:col-span-5" aria-labelledby="order-summary-title">
+                <div class="flex items-center justify-between border-b border-white/15 pb-5">
+                    <h2 id="order-summary-title" class="text-lg font-extrabold tracking-[-0.025em]">Tu orden</h2>
+                    <span class="font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-clay-light">@Model.Sum(item => item.Quantity) bolsas</span>
+                </div>
+
+                <div class="divide-y divide-white/10">
+                    @foreach (var item in Model)
+                    {
+                        var productName = item.Product?.Name ?? "Producto";
+                        var productInitial = string.IsNullOrWhiteSpace(productName) ? "B" : productName.Trim()[..1].ToUpperInvariant();
+                        <article class="grid grid-cols-[3.75rem_minmax(0,1fr)_auto] items-center gap-3 py-5">
+                            <div class="aspect-square overflow-hidden bg-clay-dark">
+                                @if (!string.IsNullOrWhiteSpace(item.Product?.ImageUrl))
+                                {
+                                    <img src="@item.Product.ImageUrl" alt="" class="h-full w-full object-cover" />
+                                }
+                                else
+                                {
+                                    <span class="grid h-full place-items-center font-display text-xl text-cream">@productInitial</span>
+                                }
+                            </div>
+                            <div class="min-w-0">
+                                <h3 class="truncate text-sm font-extrabold">@productName</h3>
+                                <p class="mt-1 text-xs font-semibold text-husk">Cantidad: @item.Quantity</p>
+                            </div>
+                            <strong class="whitespace-nowrap text-sm">$@((item.Quantity * (item.Product?.Price ?? 0)).ToString("#,##0", co))</strong>
+                        </article>
+                    }
+                </div>
+
+                <dl class="border-t border-white/15 pt-2 text-sm">
+                    <div class="flex items-center justify-between gap-4 py-3">
+                        <dt class="text-husk">Subtotal</dt>
+                        <dd class="font-bold">$@subtotal.ToString("#,##0", co)</dd>
                     </div>
-                }
-                <div class="bean-summary-sep"></div>
-                <div class="bean-summary-row"><span>Subtotal</span><span class="val">$@(((decimal)ViewBag.Total).ToString("#,##0", co))</span></div>
-                <div class="bean-summary-row">
-                    <span>Envío</span>
-                    <span class="val" id="beanSummaryShipping">@(pagoBloqueado ? "—" : $"${envio.ToString("#,##0", co)}")</span>
+                    <div class="flex items-center justify-between gap-4 py-3">
+                        <dt class="text-husk">Envío</dt>
+                        <dd id="beanSummaryShipping" class="font-bold">@(paymentBlocked ? "—" : $"${shipping.ToString("#,##0", co)}")</dd>
+                    </div>
+                </dl>
+
+                <div class="mt-3 flex items-end justify-between gap-4 border-t border-white/20 pt-6">
+                    <span class="text-sm font-bold text-husk">Total</span>
+                    <strong id="beanSummaryTotal" class="font-display text-3xl tracking-[-0.04em]">@(paymentBlocked ? "—" : $"${grandTotal.ToString("#,##0", co)}")</strong>
                 </div>
-                <div class="bean-summary-sep"></div>
-                <div class="bean-summary-total">
-                    <span class="lbl">Total</span>
-                    <span class="amt" id="beanSummaryTotal">@(pagoBloqueado ? "—" : $"${granTotal.ToString("#,##0", co)}")</span>
-                </div>
-                <div class="bean-secure-note">🔒 Transacción cifrada · Devolución garantizada</div>
+
+                <p class="mt-6 flex items-start gap-2 text-xs font-semibold leading-5 text-husk">
+                    <svg class="mt-0.5 size-4 shrink-0 text-clay-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" /></svg>
+                    El monto definitivo se recalcula en el servidor antes de crear tu orden.
+                </p>
             </aside>
         </div>
     </div>
@@ -252,87 +286,82 @@
 
 @section Scripts {
     <script>
-        // ---------------------------------------------------------------
-        // Envío: departamento -> ciudad -> cotización server-side.
-        // El navegador NUNCA envía el precio: solo el código DANE. El importe
-        // real lo vuelve a calcular el servidor al confirmar el pedido.
-        // ---------------------------------------------------------------
         (function () {
-            // Fuera de Colombia no se renderizan los selects: no hay nada que cablear
-            // y la tarifa ya viene calculada del servidor.
-            var hasCitySelector = @(esNacional ? "true" : "false");
-            if (!hasCitySelector) { return; }
+            var hasCitySelector = @(isDomestic ? "true" : "false");
+            if (!hasCitySelector) return;
 
+            var form = document.getElementById('beanCheckoutForm');
+            var department = document.getElementById('state');
+            var city = document.getElementById('cityDaneCode');
+            var cityName = document.getElementById('cityName');
+            var button = document.getElementById('beanPayBtn');
+            var label = document.getElementById('beanPayLabel');
+            var alertBox = document.getElementById('beanShipAlert');
+            var alertText = document.getElementById('beanShipAlertText');
+            var pendingBox = document.getElementById('beanShipPending');
+            var option = document.getElementById('beanShipOption');
+            var carrier = document.getElementById('beanShipCarrier');
+            var eta = document.getElementById('beanShipEta');
+            var price = document.getElementById('beanShipPrice');
+            var note = document.getElementById('beanShipNote');
+            var noteText = document.getElementById('beanShipNoteText');
+            var summaryShipping = document.getElementById('beanSummaryShipping');
+            var summaryTotal = document.getElementById('beanSummaryTotal');
+            var requiresCity = @(requiresCity ? "true" : "false");
             var citiesUrl = '@Url.Action("Cities", "Cart")';
             var quoteUrl = '@Url.Action("QuoteShipping", "Cart")';
-            var requiresCity = @(requiereCiudad ? "true" : "false");
+            var fallbackShipping = '$@shipping.ToString("#,##0", co)';
+            var fallbackTotal = '$@grandTotal.ToString("#,##0", co)';
 
-            var $form = $('#beanCheckoutForm');
-            var $dep = $('#state');
-            var $city = $('#cityDaneCode');
-            var $cityName = $('#cityName');
-            var $btn = $('#beanPayBtn');
-            var $label = $('#beanPayLabel');
-            var $alert = $('#beanShipAlert');
-            var $alertText = $('#beanShipAlertText');
-            var $pending = $('#beanShipPending');
-            var $option = $('#beanShipOption');
-            var $carrier = $('#beanShipCarrier');
-            var $eta = $('#beanShipEta');
-            var $price = $('#beanShipPrice');
-            var $note = $('#beanShipNote');
-            var $noteText = $('#beanShipNoteText');
-            var $sumShipping = $('#beanSummaryShipping');
-            var $sumTotal = $('#beanSummaryTotal');
+            if (!form || !department || !city || !button || !label) return;
 
-            function token() {
-                return $form.find('input[name="__RequestVerificationToken"]').val();
+            function show(element, visible) {
+                if (element) element.classList.toggle('hidden', !visible);
             }
 
-            function escapeHtml(text) {
-                return String(text)
-                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-                    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            function token() {
+                var tokenInput = form.querySelector('input[name="__RequestVerificationToken"]');
+                return tokenInput ? tokenInput.value : '';
             }
 
             function showAlert(message) {
-                $alertText.text(message);
-                $alert.show();
-                $pending.hide();
-                $option.hide();
-                $note.hide();
+                if (alertText) alertText.textContent = message;
+                show(alertBox, true);
+                show(pendingBox, false);
+                show(option, false);
+                show(note, false);
             }
 
-            function block(message, label) {
+            function block(message, buttonText) {
                 showAlert(message);
-                $sumShipping.text('—');
-                $sumTotal.text('—');
-                $btn.prop('disabled', true);
-                $label.text(label || 'No disponible para este destino');
+                if (summaryShipping) summaryShipping.textContent = '—';
+                if (summaryTotal) summaryTotal.textContent = '—';
+                button.disabled = true;
+                label.textContent = buttonText || 'No disponible para este destino';
             }
 
             function pending() {
-                $alert.hide();
-                $pending.show();
-                $option.hide();
-                $note.hide();
-                $sumShipping.text('—');
-                $sumTotal.text('—');
-                $btn.prop('disabled', true);
-                $label.text('Elige tu ciudad para continuar');
+                show(alertBox, false);
+                show(pendingBox, true);
+                show(option, false);
+                show(note, false);
+                if (summaryShipping) summaryShipping.textContent = '—';
+                if (summaryTotal) summaryTotal.textContent = '—';
+                button.disabled = true;
+                label.textContent = 'Elige tu ciudad para continuar';
             }
 
             function loading() {
-                $alert.hide();
-                $pending.hide();
-                $note.hide();
-                $option.show();
-                $carrier.text('Calculando envío…');
-                $eta.text('');
-                $price.text('…');
-                $sumShipping.text('…');
-                $btn.prop('disabled', true);
-                $label.text('Calculando envío…');
+                show(alertBox, false);
+                show(pendingBox, false);
+                show(note, false);
+                show(option, true);
+                if (carrier) carrier.textContent = 'Calculando envío…';
+                if (eta) eta.textContent = '';
+                if (price) price.textContent = '…';
+                if (summaryShipping) summaryShipping.textContent = '…';
+                button.disabled = true;
+                label.textContent = 'Calculando envío…';
             }
 
             function render(data) {
@@ -341,175 +370,174 @@
                     return;
                 }
 
-                $alert.hide();
-                $pending.hide();
-                $option.show();
-                $carrier.text(data.carrier || 'Envío estándar');
-                $eta.text(data.days ? ('Entrega estimada en ' + data.days + ' días hábiles') : 'Entrega estimada en días hábiles');
-                $price.text('$' + data.shippingText);
+                show(alertBox, false);
+                show(pendingBox, false);
+                show(option, true);
+                if (carrier) carrier.textContent = data.carrier || 'Envío estándar';
+                if (eta) eta.textContent = data.days ? 'Entrega estimada en ' + data.days + ' días hábiles' : 'Entrega estimada en días hábiles';
+                if (price) price.textContent = '$' + data.shippingText;
 
                 if (data.status === 'Fallback') {
-                    $noteText.text(data.message || 'No pudimos cotizar con la transportadora; se aplica una tarifa estándar.');
-                    $note.show();
+                    if (noteText) noteText.textContent = data.message || 'No pudimos cotizar con la transportadora; se aplica una tarifa estándar.';
+                    show(note, true);
                 } else {
-                    $note.hide();
+                    show(note, false);
                 }
 
-                $sumShipping.text('$' + data.shippingText);
-                $sumTotal.text('$' + data.grandTotalText);
-                $btn.prop('disabled', false);
-                $label.text('Pagar $' + data.grandTotalText + ' COP');
+                if (summaryShipping) summaryShipping.textContent = '$' + data.shippingText;
+                if (summaryTotal) summaryTotal.textContent = '$' + data.grandTotalText;
+                button.disabled = false;
+                label.textContent = 'Pagar $' + data.grandTotalText + ' COP';
             }
 
             function syncCityName() {
-                var selected = $city.find('option:selected');
-                $cityName.val($city.val() ? selected.text() : '');
+                var selectedOption = city.options[city.selectedIndex];
+                if (cityName) cityName.value = city.value && selectedOption ? selectedOption.textContent : '';
             }
 
-            function quote() {
+            async function quote() {
                 syncCityName();
-                var dane = $city.val();
-
+                var dane = city.value;
                 if (!dane) {
-                    if (requiresCity) { pending(); }
+                    if (requiresCity) pending();
                     return;
                 }
 
-                if (requiresCity) { loading(); }
+                if (requiresCity) loading();
 
-                $.ajax({
-                    url: quoteUrl,
-                    type: 'POST',
-                    dataType: 'json',
-                    headers: { 'RequestVerificationToken': token() },
-                    data: { daneCode: dane, __RequestVerificationToken: token() }
-                })
-                .done(function (data) { render(data); })
-                .fail(function () {
-                    // Falló la cotización desde el navegador: no se bloquea la venta.
-                    // El servidor vuelve a cotizar (y aplica el respaldo) al confirmar.
-                    $alert.hide();
-                    $pending.hide();
-                    $option.show();
-                    $carrier.text('Envío estándar');
-                    $eta.text('Entrega estimada en días hábiles');
-                    $noteText.text('No pudimos cotizar con la transportadora; se aplica una tarifa estándar.');
-                    $note.show();
-                    $btn.prop('disabled', false);
-                });
+                try {
+                    var body = new URLSearchParams({
+                        daneCode: dane,
+                        __RequestVerificationToken: token()
+                    });
+                    var response = await fetch(quoteUrl, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                            'RequestVerificationToken': token()
+                        },
+                        body: body.toString()
+                    });
+                    if (!response.ok) throw new Error('Shipping quote failed');
+                    render(await response.json());
+                } catch (error) {
+                    show(alertBox, false);
+                    show(pendingBox, false);
+                    show(option, true);
+                    if (carrier) carrier.textContent = 'Envío estándar';
+                    if (eta) eta.textContent = 'Entrega estimada en días hábiles';
+                    if (price) price.textContent = fallbackShipping;
+                    if (noteText) noteText.textContent = 'No pudimos cotizar con la transportadora; se aplica una tarifa estándar.';
+                    show(note, true);
+                    if (summaryShipping) summaryShipping.textContent = fallbackShipping;
+                    if (summaryTotal) summaryTotal.textContent = fallbackTotal;
+                    button.disabled = false;
+                    label.textContent = 'Pagar ' + fallbackTotal + ' COP';
+                }
             }
 
-            function loadCities(department, preselect) {
-                if (!department) {
-                    $city.prop('disabled', true).html('<option value="">Elige primero el departamento</option>');
+            async function loadCities(departmentName, preselect) {
+                city.replaceChildren(new Option(departmentName ? 'Cargando ciudades…' : 'Elige primero el departamento', ''));
+                city.disabled = true;
+
+                if (!departmentName) {
                     quote();
                     return;
                 }
 
-                $city.prop('disabled', true).html('<option value="">Cargando ciudades…</option>');
-
-                $.getJSON(citiesUrl, { department: department })
-                    .done(function (data) {
-                        var html = '<option value="">Selecciona tu ciudad</option>';
-                        for (var i = 0; i < data.length; i++) {
-                            html += '<option value="' + escapeHtml(data[i].dane) + '">' + escapeHtml(data[i].name) + '</option>';
-                        }
-                        $city.html(html).prop('disabled', false);
-                        if (preselect) { $city.val(preselect); }
-                        quote();
-                    })
-                    .fail(function () {
-                        $city.html('<option value="">No pudimos cargar las ciudades</option>');
+                try {
+                    var response = await fetch(citiesUrl + '?' + new URLSearchParams({ department: departmentName }), { credentials: 'same-origin' });
+                    if (!response.ok) throw new Error('Cities request failed');
+                    var data = await response.json();
+                    city.replaceChildren(new Option('Selecciona tu ciudad', ''));
+                    data.forEach(function (item) {
+                        city.add(new Option(item.name, item.dane));
                     });
+                    city.disabled = false;
+                    if (preselect) city.value = preselect;
+                    quote();
+                } catch (error) {
+                    city.replaceChildren(new Option('No pudimos cargar las ciudades', ''));
+                }
             }
 
-            $dep.on('change', function () { loadCities($(this).val(), null); });
-            $city.on('change', function () { quote(); });
-
-            // Último cinturón de seguridad: sin ciudad no se postea el pedido.
-            $form.on('submit', function (e) {
-                if (!$city.val()) {
-                    e.preventDefault();
+            department.addEventListener('change', function () { loadCities(department.value, null); });
+            city.addEventListener('change', quote);
+            form.addEventListener('submit', function (event) {
+                if (!city.value) {
+                    event.preventDefault();
                     showAlert('Selecciona el departamento y la ciudad de destino para calcular el envío.');
-                    $city.trigger('focus');
+                    city.focus();
                 }
             });
 
             syncCityName();
         })();
 
-        // ---------------------------------------------------------------
-        // Celular: validación simple en el navegador (el formulario es novalidate,
-        // así que el `required` del input no basta). El servidor VUELVE a validarlo
-        // con la misma regla: esto solo evita un viaje de ida y vuelta.
-        // Se registra ANTES del anti doble clic para que su preventDefault se respete.
-        // ---------------------------------------------------------------
         (function () {
             var form = document.getElementById('beanCheckoutForm');
             var input = document.getElementById('phone');
             var hint = document.getElementById('phoneHint');
-            if (!form || !input) { return; }
+            if (!form || !input) return;
 
-            var textoAyuda = hint ? hint.textContent : '';
+            var helpText = hint ? hint.textContent : '';
 
-            function digitos(valor) {
-                return (valor || '').replace(/\D/g, '');
+            function digits(value) {
+                return (value || '').replace(/\D/g, '');
             }
 
-            function marcarError(mensaje) {
-                input.classList.add('is-invalid');
+            function valid() {
+                var value = digits(input.value);
+                return value.length >= 7 && value.length <= 15;
+            }
+
+            function markError(message) {
+                input.classList.add('border-clay', 'ring-2', 'ring-clay/20');
+                input.setAttribute('aria-invalid', 'true');
                 if (hint) {
-                    hint.textContent = mensaje;
-                    hint.classList.add('is-invalid');
+                    hint.textContent = message;
+                    hint.classList.add('text-clay-dark');
                 }
             }
 
-            function limpiarError() {
-                input.classList.remove('is-invalid');
+            function clearError() {
+                input.classList.remove('border-clay', 'ring-2', 'ring-clay/20');
+                input.removeAttribute('aria-invalid');
                 if (hint) {
-                    hint.textContent = textoAyuda;
-                    hint.classList.remove('is-invalid');
+                    hint.textContent = helpText;
+                    hint.classList.remove('text-clay-dark');
                 }
-            }
-
-            function esValido() {
-                var d = digitos(input.value);
-                return d.length >= 7 && d.length <= 15;
             }
 
             input.addEventListener('input', function () {
-                if (input.classList.contains('is-invalid') && esValido()) { limpiarError(); }
+                if (input.hasAttribute('aria-invalid') && valid()) clearError();
             });
 
-            form.addEventListener('submit', function (e) {
-                if (esValido()) { limpiarError(); return; }
+            form.addEventListener('submit', function (event) {
+                if (valid()) {
+                    clearError();
+                    return;
+                }
 
-                e.preventDefault();
-                marcarError(input.value.trim() === ''
+                event.preventDefault();
+                markError(input.value.trim() === ''
                     ? 'Escribe tu celular: la transportadora lo necesita para entregar.'
                     : 'Ese celular no parece válido (mínimo 7 dígitos).');
                 input.focus();
             });
         })();
 
-        // ---------------------------------------------------------------
-        // Anti doble clic al salir hacia la pasarela.
-        // Se registra AL FINAL a propósito: así corre DESPUÉS del handler de envío
-        // y puede respetar su preventDefault() cuando falta la ciudad.
-        // El servidor también lo cubre: si ya hay un pedido esperando pago, lo retoma.
-        // ---------------------------------------------------------------
         (function () {
             var form = document.getElementById('beanCheckoutForm');
-            var btn = document.getElementById('beanPayBtn');
+            var button = document.getElementById('beanPayBtn');
             var label = document.getElementById('beanPayLabel');
-            if (!form || !btn) { return; }
+            if (!form || !button) return;
 
-            form.addEventListener('submit', function (e) {
-                if (e.defaultPrevented) { return; }
-                if (btn.disabled) { return; }
-
-                btn.disabled = true;
-                if (label) { label.textContent = 'Conectando con Wompi…'; }
+            form.addEventListener('submit', function (event) {
+                if (event.defaultPrevented || button.disabled) return;
+                button.disabled = true;
+                if (label) label.textContent = 'Conectando con Wompi…';
             });
         })();
     </script>

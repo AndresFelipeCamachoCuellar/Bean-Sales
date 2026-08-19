@@ -2,132 +2,327 @@
 
 @using Web.Models.Enums
 @{
-    ViewData["Title"] = "Catálogo de Café";
-    // Cultura fija para formato de precio COP ("$62.000"). Formato de presentación, no cambia el binding.
+    Layout = "_LayoutHome";
+    ViewData["Title"] = "Café colombiano de especialidad";
     var co = new System.Globalization.CultureInfo("es-CO");
-    // Etiqueta de proceso en español para las chips/badges.
-    Func<CoffeeProcess, string> procLabel = p => p switch
+    var products = Model.ToList();
+    var featured = products.FirstOrDefault();
+    Func<CoffeeProcess, string> processLabel = process => process switch
     {
         CoffeeProcess.Washed => "Lavado",
         CoffeeProcess.Honey => "Honey",
         CoffeeProcess.Natural => "Natural",
-        _ => p.ToString()
+        _ => process.ToString()
     };
-    var i = 0; // Solo para el escalonado de animación y el tono decorativo de la imagen.
+    var featuredNotes = featured == null || string.IsNullOrWhiteSpace(featured.TastingNotes)
+        ? Array.Empty<string>()
+        : featured.TastingNotes.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Take(2).ToArray();
+    var featuredProfile = featuredNotes.Length > 0
+        ? string.Join(" · ", featuredNotes)
+        : "Por registrar";
+    var featuredProcess = featured != null && featured.Process.HasValue
+        ? processLabel(featured.Process.Value)
+        : "Por registrar";
+    var productIndex = 0;
 }
 
-<!-- ===== HERO ===== -->
-<section class="bean-hero">
-    <span class="bean-float f1"></span>
-    <span class="bean-float f2"></span>
-    <span class="bean-float f3"></span>
-    <div class="bean-hero-badge">☕ Tueste de esta semana ya disponible</div>
-    <h1 class="bean-fadeup">Café con origen,<br /><span class="shimmer">frescura en movimiento.</span></h1>
-    <p class="sub bean-fadeup" style="animation-delay:.08s">Micro-lotes trazables de fincas colombianas, tostados cada semana y enviados a Colombia y Canadá.</p>
-    <div class="bean-hero-ctas bean-fadeup" style="animation-delay:.16s">
-        <a href="#lotes" class="btn-bean">Explorar lotes →</a>
-        <a asp-controller="Account" asp-action="RegisterProvider" class="btn-bean-ghost-dark">Mayoreo</a>
-    </div>
-    <div class="bean-stats bean-fadeup" style="animation-delay:.24s">
-        <div class="bean-stat"><span class="num">14</span><span class="lbl">fincas aliadas</span></div>
-        <div class="bean-stat"><span class="num">4.9★</span><span class="lbl">promedio reseñas</span></div>
-        <div class="bean-stat"><span class="num">48 h</span><span class="lbl">del tueste al envío</span></div>
+<section class="overflow-hidden bg-ink text-white">
+    <div class="mx-auto grid min-h-[calc(100svh-4.5rem)] max-w-[90rem] lg:grid-cols-12">
+        <div class="flex flex-col justify-between px-4 py-14 sm:px-6 sm:py-20 lg:col-span-7 lg:min-h-[calc(100svh-5rem)] lg:border-r lg:border-white/10 lg:px-10 lg:py-[clamp(2.5rem,6vh,4rem)] xl:px-16">
+            <div class="max-w-4xl">
+                <h1 class="text-balance font-display text-[clamp(3.4rem,8vw,7.5rem)] leading-[0.86] tracking-[-0.055em] lg:text-[clamp(4.5rem,min(7vw,11.5vh),7.5rem)]">
+                    Café colombiano,<br /><span class="text-clay-light">lote por lote.</span>
+                </h1>
+                <p class="mt-8 max-w-2xl text-pretty text-lg leading-8 text-husk sm:text-xl lg:mt-[clamp(1.5rem,3vh,2rem)]">Micro-lotes trazables de fincas colombianas, tostados cada semana y listos para llegar frescos a tu casa.</p>
+                <div class="mt-10 flex flex-col gap-3 sm:flex-row lg:mt-[clamp(1.5rem,3vh,2rem)]">
+                    <a href="#lotes" class="inline-flex min-h-13 items-center justify-center gap-3 bg-clay px-7 py-4 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-ink">
+                        Explorar lotes
+                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+                    </a>
+                    <a asp-controller="Home" asp-action="Origenes" class="inline-flex min-h-13 items-center justify-center border border-white/20 px-7 py-4 text-sm font-bold text-white transition-colors hover:border-white/50 hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light">Conocer los origenes</a>
+                </div>
+            </div>
+
+            <dl class="mt-16 grid grid-cols-3 border-y border-white/10 sm:max-w-2xl lg:mt-[clamp(2rem,5vh,4rem)]">
+                <div class="py-5 pr-3 sm:py-6">
+                    <dt class="font-data text-[9px] uppercase tracking-[0.14em] text-husk sm:text-[10px]">Fincas aliadas</dt>
+                    <dd class="mt-2 font-display text-2xl tracking-[-0.04em] sm:text-3xl">14</dd>
+                </div>
+                <div class="border-x border-white/10 px-3 py-5 sm:px-6 sm:py-6">
+                        <dt class="font-data text-[9px] uppercase tracking-[0.14em] text-husk sm:text-[10px]">Calificación</dt>
+                    <dd class="mt-2 font-display text-2xl tracking-[-0.04em] sm:text-3xl">4.9</dd>
+                </div>
+                <div class="py-5 pl-3 sm:py-6 sm:pl-6">
+                    <dt class="font-data text-[9px] uppercase tracking-[0.14em] text-husk sm:text-[10px]">Tueste a envio</dt>
+                    <dd class="mt-2 font-display text-2xl tracking-[-0.04em] sm:text-3xl">48h</dd>
+                </div>
+            </dl>
+        </div>
+
+        <div class="relative min-h-[34rem] bg-roast p-4 sm:p-6 lg:col-span-5 lg:min-h-full lg:p-8">
+            <div class="absolute inset-0 opacity-15" aria-hidden="true">
+                <svg class="h-full w-full" viewBox="0 0 600 800" fill="none" preserveAspectRatio="none">
+                    <path d="M-50 120C130 20 260 230 650 70M-80 250C120 130 360 340 680 190M-60 410C170 250 410 520 660 340M-50 600C190 400 390 720 680 500M-50 760C170 590 420 870 670 670" stroke="#d98a5f" stroke-width="1.5" />
+                </svg>
+            </div>
+
+            <div class="relative grid h-full min-h-[30rem] grid-cols-2 grid-rows-[minmax(0,1fr)_auto] gap-3 lg:min-h-[calc(100vh-9rem)]">
+                <article class="group relative col-span-2 min-h-0 overflow-hidden bg-husk shadow-tray">
+                    @if (featured != null && !string.IsNullOrWhiteSpace(featured.ImageUrl))
+                    {
+                        <img src="@featured.ImageUrl" alt="@featured.Name" class="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]" fetchpriority="high" />
+                    }
+                    else
+                    {
+                        <div class="grid h-full place-items-center bg-clay-dark p-8 text-center">
+                            <svg class="h-48 w-48 text-clay-light/70" viewBox="0 0 200 200" fill="none" aria-hidden="true">
+                                <path d="M100 20C42 20 22 63 22 104c0 45 36 76 78 76 48 0 78-35 78-80 0-42-25-80-78-80Z" stroke="currentColor" stroke-width="2" />
+                                <path d="M104 23c-27 38-30 85-7 154M60 35c11 19 14 37 7 55-8 22-6 47 8 72M142 34c-12 22-13 43-4 64 8 20 6 42-8 64" stroke="currentColor" stroke-width="2" />
+                            </svg>
+                        </div>
+                    }
+                    <span class="absolute right-4 top-4 bg-ink/85 px-3 py-2 font-data text-[9px] font-semibold uppercase tracking-[0.14em] text-white">Patio de origen · COL 2026</span>
+                    <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink via-ink/85 to-transparent px-6 pb-6 pt-24">
+                        <div class="flex items-end justify-between gap-4">
+                            <div>
+                                <p class="font-data text-[10px] uppercase tracking-[0.18em] text-clay-light">@(featured?.Origin ?? "Colombia")</p>
+                                <h2 class="mt-2 max-w-sm text-balance font-display text-2xl leading-none tracking-[-0.04em] sm:text-3xl">@(featured?.Name ?? "El proximo lote empieza aqui")</h2>
+                            </div>
+                            @if (featured != null)
+                            {
+                                <a asp-action="Details" asp-route-id="@featured.ProductID" class="grid size-12 shrink-0 place-items-center rounded-full bg-white text-ink transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light" aria-label="Ver @featured.Name">
+                                    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </article>
+
+                <dl class="col-span-2 grid grid-cols-1 sm:grid-cols-2">
+                    <div class="flex min-w-0 items-start gap-4 border border-white/10 bg-clay-dark p-4 sm:p-5">
+                        <svg class="mt-0.5 size-6 shrink-0 text-clay-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 12c3-5 6-7 8-7s5 2 8 7c-3 5-6 7-8 7s-5-2-8-7Z" /><circle cx="12" cy="12" r="2.5" /></svg>
+                        <div class="min-w-0">
+                            <dt class="font-data text-[9px] uppercase tracking-[0.14em] text-clay-light">Perfil de taza</dt>
+                            <dd class="mt-2 text-balance text-sm font-extrabold leading-tight text-white sm:text-base">@featuredProfile</dd>
+                        </div>
+                    </div>
+                    <div class="flex min-w-0 items-start gap-4 border border-white/10 bg-roast p-4 sm:border-l-0 sm:p-5">
+                        <svg class="mt-0.5 size-6 shrink-0 text-clay-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 3v18M7 6c0 3 2 5 5 5M17 6c0 3-2 5-5 5M7 13c0 3 2 5 5 5M17 13c0 3-2 5-5 5" /></svg>
+                        <div class="min-w-0">
+                            <dt class="font-data text-[9px] uppercase tracking-[0.14em] text-clay-light">Proceso</dt>
+                            <dd class="mt-2 text-balance text-sm font-extrabold leading-tight text-white sm:text-base">@featuredProcess</dd>
+                        </div>
+                    </div>
+                </dl>
+            </div>
+        </div>
     </div>
 </section>
 
-<!-- ===== MARQUEE de confianza ===== -->
-<div class="bean-marquee">
-    <div class="bean-marquee-track">
-        <span>Trazabilidad finca a taza ✦</span><span>Comercio justo ✦</span><span>Tueste semanal ✦</span><span>Envío Colombia · Canadá ✦</span><span>Reseñas verificadas ✦</span>
-        <span>Trazabilidad finca a taza ✦</span><span>Comercio justo ✦</span><span>Tueste semanal ✦</span><span>Envío Colombia · Canadá ✦</span><span>Reseñas verificadas ✦</span>
-    </div>
-</div>
-
-<!-- ===== CATÁLOGO ===== -->
-<section class="bean-catalog" id="lotes">
-    <div class="bean-container">
-        <div class="bean-catalog-head">
+<section class="bg-clay text-white" aria-label="Compromisos de Bean">
+    <ul class="mx-auto grid max-w-[90rem] grid-cols-2 lg:grid-cols-4">
+        <li class="flex min-h-24 items-center gap-3 border-b border-r border-white/20 px-4 py-5 sm:gap-4 sm:px-6 lg:border-b-0 lg:px-8">
+            <svg class="size-6 shrink-0 text-cream" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 20V9l8-5 8 5v11H4Z" /><path d="M9 20v-6h6v6M8 10h.01M16 10h.01" /></svg>
             <div>
-                <h2>Lotes disponibles</h2>
-                <div class="meta">@Model.Count() orígenes · precios en COP</div>
+                <strong class="block text-sm font-extrabold leading-tight">Finca a taza</strong>
+                <span class="mt-1 block text-xs font-semibold text-white/85">Origen identificable</span>
             </div>
-            <!-- Chips de filtro por proceso (placeholder visual: aún sin filtrado en servidor) -->
-            <div class="bean-filters">
-                <button type="button" class="bean-chip active">Todos</button>
-                <button type="button" class="bean-chip">Lavado</button>
-                <button type="button" class="bean-chip">Honey</button>
-                <button type="button" class="bean-chip">Natural</button>
+        </li>
+        <li class="flex min-h-24 items-center gap-3 border-b border-white/20 px-4 py-5 sm:gap-4 sm:px-6 lg:border-b-0 lg:border-r lg:px-8">
+            <svg class="size-6 shrink-0 text-cream" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M7 12h10M12 7v10" /><circle cx="12" cy="12" r="9" /></svg>
+            <div>
+                <strong class="block text-sm font-extrabold leading-tight">Comercio directo</strong>
+                <span class="mt-1 block text-xs font-semibold text-white/85">Productor visible</span>
+            </div>
+        </li>
+        <li class="flex min-h-24 items-center gap-3 border-r border-white/20 px-4 py-5 sm:gap-4 sm:px-6 lg:px-8">
+            <svg class="size-6 shrink-0 text-cream" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3v3M12 18v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M3 12h3M18 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" /><circle cx="12" cy="12" r="4" /></svg>
+            <div>
+                <strong class="block text-sm font-extrabold leading-tight">Tueste semanal</strong>
+                <span class="mt-1 block text-xs font-semibold text-white/85">Frescura primero</span>
+            </div>
+        </li>
+        <li class="flex min-h-24 items-center gap-3 px-4 py-5 sm:gap-4 sm:px-6 lg:px-8">
+            <svg class="size-6 shrink-0 text-cream" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7h11v10H3V7Z" /><path d="M14 10h4l3 3v4h-7v-7ZM7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM17 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" /></svg>
+            <div>
+                <strong class="block text-sm font-extrabold leading-tight">Entrega nacional</strong>
+                <span class="mt-1 block text-xs font-semibold text-white/85">Cobertura Colombia</span>
+            </div>
+        </li>
+    </ul>
+</section>
+
+<section id="lotes" class="scroll-mt-20 bg-cream px-4 pb-20 pt-14 sm:px-6 sm:pb-24 sm:pt-16 lg:px-10 lg:pb-32 lg:pt-20">
+    <div class="mx-auto max-w-[90rem]">
+        <div class="flex flex-col gap-7 border-b border-ink/15 pb-8 md:flex-row md:items-end md:justify-between">
+            <div>
+                <h2 class="max-w-3xl text-balance font-display text-4xl leading-[0.95] tracking-[-0.045em] sm:text-5xl lg:text-6xl">Lotes en el patio</h2>
+                <p class="mt-5 max-w-xl text-base leading-7 text-ink/65">Cada café conserva los datos que importan: quién lo produjo, dónde creció y cómo fue procesado.</p>
+            </div>
+            <div class="flex items-center gap-3 font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-clay-dark">
+                <span class="size-2 rounded-full bg-leaf"></span>
+                @products.Count disponibles · COP
             </div>
         </div>
 
-        @if (!Model.Any())
+        @if (products.Count == 0)
         {
-            <div class="bean-empty">
-                <div class="ico"><i class="fas fa-search"></i></div>
-                <h3>No hay lotes para tu región</h3>
-                <p>No hay productos disponibles en tu región seleccionada por el momento.</p>
+            <div class="grid min-h-96 place-items-center border-b border-x border-oat bg-white px-6 py-20 text-center">
+                <div class="max-w-md">
+                    <svg class="mx-auto size-14 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M20 11a8 8 0 1 1-3.35-6.52" /><path d="M20 4v7h-7" /></svg>
+                    <h3 class="mt-6 font-display text-2xl tracking-[-0.035em]">El patio esta entre cosechas</h3>
+                    <p class="mt-3 text-sm leading-6 text-ink/60">No hay lotes disponibles para tu región en este momento. Cambia el país de envío o vuelve pronto.</p>
+                </div>
             </div>
         }
         else
         {
-            <div class="bean-grid">
-                @foreach (var product in Model)
+            <div class="mt-10 grid gap-x-5 gap-y-12 md:grid-cols-2 xl:grid-cols-3">
+                @foreach (var product in products)
                 {
-                    var tone = "o" + ((i % 6) + 1);
-                    i++;
-                    var delay = (i * 0.08).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
-                    // Datos reales del producto (null-safe).
+                    productIndex++;
                     var notes = string.IsNullOrWhiteSpace(product.TastingNotes)
                         ? Array.Empty<string>()
-                        : product.TastingNotes.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                    <div class="bean-card bean-fadeup" style="animation-delay:@(delay)s">
-                        <div class="bean-card-img bean-img @tone" style="@(string.IsNullOrEmpty(product.ImageUrl) ? "" : $"background-image:url('{product.ImageUrl}');background-size:cover;background-position:center;")">
-                            <div class="top-badges">
-                                @if (product.Process.HasValue)
-                                {
-                                    <span class="bean-badge bean-badge-process">@procLabel(product.Process.Value)</span>
-                                }
+                        : product.TastingNotes.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Take(3).ToArray();
+                    var lotCode = string.IsNullOrWhiteSpace(product.Lot) ? $"BEAN-{productIndex:00}" : product.Lot;
+                    var productInitial = string.IsNullOrWhiteSpace(product.Name) ? "B" : product.Name.Trim()[..1].ToUpperInvariant();
+                    <article class="group flex min-w-0 flex-col">
+                        <a asp-action="Details" asp-route-id="@product.ProductID" class="relative block aspect-[4/5] cursor-pointer overflow-hidden bg-husk focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-4 focus-visible:ring-offset-cream">
+                            @if (!string.IsNullOrWhiteSpace(product.ImageUrl))
+                            {
+                                <img src="@product.ImageUrl" alt="@product.Name" class="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]" loading="lazy" />
+                            }
+                            else
+                            {
+                                <div class="relative grid h-full place-items-center overflow-hidden bg-clay-dark">
+                                    <svg class="absolute inset-0 h-full w-full text-clay-light/35" viewBox="0 0 500 650" fill="none" preserveAspectRatio="none" aria-hidden="true">
+                                        <path d="M-40 80C100 0 250 170 540 35M-50 190C120 70 310 270 550 140M-60 330C140 170 340 430 560 280M-30 480C120 350 340 600 550 430M-50 620C170 470 350 730 560 560" stroke="currentColor" stroke-width="2" />
+                                    </svg>
+                                    <span class="relative font-display text-7xl tracking-[-0.08em] text-cream/90">@productInitial</span>
+                                </div>
+                            }
+                            <div class="absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-4">
+                                <span class="bg-cream px-3 py-2 font-data text-[9px] font-semibold uppercase tracking-[0.14em] text-ink">@lotCode</span>
                                 @if (product.Rating.HasValue)
                                 {
-                                    <span class="bean-badge bean-badge-rating"><span class="star">★</span> @product.Rating.Value.ToString("0.0", co)</span>
+                                    <span class="flex items-center gap-1 bg-ink px-3 py-2 font-data text-[9px] font-semibold text-white">
+                                        <svg class="size-3 fill-honey text-honey" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.4 2.9 5.88 6.49.94-4.7 4.58 1.11 6.47L12 17.22l-5.8 3.05 1.11-6.47-4.7-4.58 6.49-.94L12 2.4Z" /></svg>
+                                        @product.Rating.Value.ToString("0.0", co)
+                                    </span>
                                 }
                             </div>
-                        </div>
-                        <div class="bean-card-body">
-                            <div class="bean-card-origin">@(string.IsNullOrWhiteSpace(product.Origin) ? "Colombia" : product.Origin)</div>
-                            <h3 class="bean-card-name">@product.Name</h3>
-                            <div class="bean-card-provider">@product.Provider?.Name</div>
+                            <div class="absolute inset-x-0 bottom-0 flex items-center justify-between bg-ink/90 px-4 py-3 text-white">
+                                <span class="font-data text-[9px] uppercase tracking-[0.14em]">@(product.Origin ?? "Colombia")</span>
+                                @if (product.Process.HasValue)
+                                {
+                                    <span class="font-data text-[9px] uppercase tracking-[0.14em] text-clay-light">@processLabel(product.Process.Value)</span>
+                                }
+                            </div>
+                        </a>
+
+                        <div class="flex flex-1 flex-col border-b border-x border-oat bg-white p-5 sm:p-6">
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="min-w-0">
+                                    <h3 class="text-balance text-xl font-extrabold leading-tight tracking-[-0.03em] text-ink">@product.Name</h3>
+                                    <p class="mt-2 truncate text-sm font-medium text-ink/55">@(product.Provider?.Name ?? "Productor colombiano")</p>
+                                </div>
+                                <p class="shrink-0 font-data text-sm font-semibold text-clay-dark">$@product.Price.ToString("#,##0", co)</p>
+                            </div>
+
                             @if (notes.Length > 0)
                             {
-                                <div class="bean-card-notes">
-                                    @foreach (var n in notes)
+                                <div class="mt-5 flex flex-wrap gap-2">
+                                    @foreach (var note in notes)
                                     {
-                                        <span class="bean-note">@n</span>
+                                        <span class="rounded-full bg-cream px-3 py-1.5 text-[11px] font-semibold text-ink/65">@note</span>
                                     }
                                 </div>
                             }
-                            <div class="bean-card-foot">
-                                <div class="bean-card-price">$@product.Price.ToString("#,##0", co) <small>/ 340 g</small></div>
-                                <form asp-controller="Cart" asp-action="AddToCart" method="post" class="d-inline">
+
+                            <div class="mt-auto flex items-center gap-3 pt-7">
+                                <a asp-action="Details" asp-route-id="@product.ProductID" class="inline-flex min-h-11 flex-1 cursor-pointer items-center justify-center border border-ink/20 px-4 py-3 text-sm font-bold text-ink transition-colors hover:border-ink hover:bg-cream focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Ver lote</a>
+                                <form asp-controller="Cart" asp-action="AddToCart" method="post" class="flex-1">
                                     <input type="hidden" name="productId" value="@product.ProductID" />
-                                    <button type="submit" class="bean-card-add">Agregar</button>
+                                    <button type="submit" class="inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 bg-ink px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-clay focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2" aria-label="Agregar @product.Name al carrito">
+                                        Agregar
+                                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 8h12l-1 12H7L6 8Z" /><path d="M9 9V6a3 3 0 0 1 6 0v3" /></svg>
+                                    </button>
                                 </form>
                             </div>
-                            <a asp-action="Details" asp-route-id="@product.ProductID" class="bean-card-origin" style="margin-top:10px;text-transform:none;letter-spacing:0;font-weight:600;">Ver detalle →</a>
                         </div>
-                    </div>
+                    </article>
+                }
+                @if (products.Count == 1)
+                {
+                    var soleProduct = products[0];
+                    <aside class="hidden self-start flex-col bg-ink p-8 text-white md:flex xl:col-span-2 xl:p-10">
+                        <p class="font-data text-[10px] uppercase tracking-[0.18em] text-clay-light">Disponibilidad actual</p>
+                        <h3 class="mt-5 max-w-2xl text-balance font-display text-3xl leading-[0.94] tracking-[-0.045em] xl:text-4xl">Hoy el patio concentra un único lote.</h3>
+                        <p class="mt-5 max-w-xl text-sm leading-6 text-husk xl:text-base xl:leading-7">El catálogo cambia con cada recepción y con el país de entrega. Este es el único lote publicado para tu región.</p>
+                        <dl class="mt-9 grid border-t border-white/15 pt-6 xl:grid-cols-3">
+                            <div>
+                                <dt class="font-data text-[9px] uppercase tracking-[0.14em] text-husk">Origen</dt>
+                                <dd class="mt-2 text-sm font-bold">@(soleProduct.Origin ?? "Colombia")</dd>
+                            </div>
+                            <div class="mt-5 border-t border-white/15 pt-5 xl:mt-0 xl:border-x xl:border-t-0 xl:px-5 xl:pt-0">
+                                <dt class="font-data text-[9px] uppercase tracking-[0.14em] text-husk">Proceso</dt>
+                                <dd class="mt-2 text-sm font-bold">@(soleProduct.Process.HasValue ? processLabel(soleProduct.Process.Value) : "Por registrar")</dd>
+                            </div>
+                            <div class="mt-5 border-t border-white/15 pt-5 xl:mt-0 xl:border-t-0 xl:pl-5 xl:pt-0">
+                                <dt class="font-data text-[9px] uppercase tracking-[0.14em] text-husk">Productor</dt>
+                                <dd class="mt-2 truncate text-sm font-bold">@(soleProduct.Provider?.Name ?? "Colombia")</dd>
+                            </div>
+                        </dl>
+                    </aside>
                 }
             </div>
         }
+    </div>
+</section>
 
-        <!-- ===== BANNER B2B ===== -->
-        <div class="bean-b2b">
-            <div>
-                <div class="eyebrow">Para cafeterías y negocios</div>
-                <h3>Precios de mayoreo y cupo mensual asegurado.</h3>
-                <p>Registra tu empresa, accede a precios por volumen y recibe tu pedido con tueste programado.</p>
+<section class="bg-white px-4 py-20 sm:px-6 sm:py-24 lg:px-10 lg:py-32">
+    <div class="mx-auto max-w-[90rem]">
+        <div class="grid gap-12 lg:grid-cols-12 lg:items-start">
+            <div class="lg:col-span-5">
+                <h2 class="text-balance font-display text-4xl leading-[0.95] tracking-[-0.045em] sm:text-5xl">Del patio a tu taza, sin perder el rastro.</h2>
+                <p class="mt-6 max-w-lg text-base leading-7 text-ink/65">Cada lote conecta la información del productor con el producto que recibes. Menos anonimato, más contexto para elegir bien.</p>
+                <a asp-controller="Home" asp-action="Origenes" class="mt-8 inline-flex cursor-pointer items-center gap-3 border-b border-ink pb-1 text-sm font-extrabold text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">
+                    Explorar por origen
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+                </a>
             </div>
-            <a asp-controller="Account" asp-action="RegisterProvider" class="btn-bean">Registrar mi empresa →</a>
+            <ol class="grid border-t border-ink/15 sm:grid-cols-3 lg:col-span-7">
+                <li class="border-b border-ink/15 py-7 sm:border-r sm:px-6 lg:py-10">
+                    <svg class="size-7 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 20V9l8-5 8 5v11H4Z" /><path d="M9 20v-6h6v6M8 10h.01M16 10h.01" /></svg>
+                    <h3 class="mt-6 text-lg font-extrabold tracking-[-0.025em]">Finca identificada</h3>
+                    <p class="mt-3 text-sm leading-6 text-ink/60">Origen, productor y altura cuando el lote los tiene registrados.</p>
+                </li>
+                <li class="border-b border-ink/15 py-7 sm:border-r sm:px-6 lg:py-10">
+                    <svg class="size-7 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3v18M7 6c0 3 2 5 5 5M17 6c0 3-2 5-5 5M7 13c0 3 2 5 5 5M17 13c0 3-2 5-5 5" /></svg>
+                    <h3 class="mt-6 text-lg font-extrabold tracking-[-0.025em]">Proceso visible</h3>
+                    <p class="mt-3 text-sm leading-6 text-ink/60">Lavado, honey o natural: información útil antes de elegir.</p>
+                </li>
+                <li class="border-b border-ink/15 py-7 sm:px-6 lg:py-10">
+                    <svg class="size-7 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8Z" /><path d="M8 8a4 4 0 0 1 8 0M9 14h6" /></svg>
+                    <h3 class="mt-6 text-lg font-extrabold tracking-[-0.025em]">Compra unificada</h3>
+                    <p class="mt-3 text-sm leading-6 text-ink/60">Distintas marcas y fincas reunidas en un solo carrito.</p>
+                </li>
+            </ol>
+        </div>
+    </div>
+</section>
+
+<section class="bg-clay px-4 py-16 text-white sm:px-6 sm:py-20 lg:px-10">
+    <div class="mx-auto grid max-w-[90rem] gap-10 lg:grid-cols-12 lg:items-end">
+        <div class="lg:col-span-8">
+            <h2 class="max-w-4xl text-balance font-display text-4xl leading-[0.95] tracking-[-0.045em] sm:text-5xl lg:text-6xl">¿Compras para tu negocio o quieres poner tu café en el patio?</h2>
+            <p class="mt-6 max-w-2xl text-base leading-7 text-white/80">Registra tu empresa para iniciar el proceso con Bean. La ruta empresarial queda disponible sin competir con tu compra personal.</p>
+        </div>
+        <div class="lg:col-span-4 lg:flex lg:justify-end">
+            <a asp-controller="Account" asp-action="RegisterProvider" class="inline-flex min-h-13 cursor-pointer items-center justify-center gap-3 bg-white px-7 py-4 text-sm font-extrabold text-clay-dark transition-colors hover:bg-cream focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-4 focus-visible:ring-offset-clay">
+                Registrar mi empresa
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+            </a>
         </div>
     </div>
 </section>

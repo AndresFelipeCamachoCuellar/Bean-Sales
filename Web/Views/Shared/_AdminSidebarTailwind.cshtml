@@ -1,0 +1,301 @@
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using Web.Constants
+@using Web.Models
+@using Web.Models.Enums
+@using Web.Services
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject IPermissionService PermissionService
+@inject Web.Data.ApplicationDbContext Database
+
+@{
+    var currentUser = await UserManager.GetUserAsync(User);
+    string? providerName = null;
+    if (currentUser?.ProviderID != null)
+    {
+        providerName = await Database.Providers
+            .AsNoTracking()
+            .Where(provider => provider.ProviderID == currentUser.ProviderID)
+            .Select(provider => provider.Name)
+            .FirstOrDefaultAsync();
+    }
+
+    var isProvider = currentUser?.ProviderID != null;
+    var isSuperAdmin = User.IsInRole(Roles.SuperAdmin);
+    var roleLabel = isProvider ? "Proveedor" : "Admin";
+    var displayName = providerName ?? currentUser?.UserName ?? User.Identity?.Name ?? "Usuario";
+    var avatarInitial = !string.IsNullOrWhiteSpace(displayName)
+        ? displayName.Trim().Substring(0, 1).ToUpperInvariant()
+        : "U";
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+
+    bool IsActive(string controller) => string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase);
+    string NavClasses(string controller) => IsActive(controller)
+        ? "group flex min-h-11 items-center gap-3 bg-clay px-3 text-sm font-extrabold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-clay-light"
+        : "group flex min-h-11 items-center gap-3 px-3 text-sm font-bold text-husk transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-clay-light";
+
+    IReadOnlySet<string> allowedModules = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    if (currentUser != null)
+    {
+        allowedModules = await PermissionService.GetAllowedModulesAsync(
+            currentUser,
+            Permissions.Read,
+            new[]
+            {
+                Modules.Orders,
+                Modules.Inventory,
+                Modules.Warehouses,
+                Modules.Pricing,
+                Modules.Users,
+                Modules.Roles,
+                Modules.CompanyProfile,
+                Modules.Products,
+                Modules.CompanyUsers,
+                Modules.CompanyRoles
+            });
+    }
+
+    var canReadOrders = allowedModules.Contains(Modules.Orders);
+    var canReadInventory = allowedModules.Contains(Modules.Inventory);
+    var canReadWarehouses = allowedModules.Contains(Modules.Warehouses);
+    var canReadPricing = allowedModules.Contains(Modules.Pricing);
+    var canReadUsers = allowedModules.Contains(Modules.Users);
+    var canReadRoles = allowedModules.Contains(Modules.Roles);
+    var canReadCompanyProfile = allowedModules.Contains(Modules.CompanyProfile);
+    var canReadProducts = allowedModules.Contains(Modules.Products);
+    var canReadCompanyUsers = allowedModules.Contains(Modules.CompanyUsers);
+    var canReadCompanyRoles = allowedModules.Contains(Modules.CompanyRoles);
+
+    var pendingApprovals = 0;
+    if (isSuperAdmin)
+    {
+        pendingApprovals = await Database.Products
+            .CountAsync(product => product.ProductStatus == ProductStatus.PendingApproval && product.Status);
+    }
+}
+
+@if (SignInManager.IsSignedIn(User) && currentUser != null)
+{
+    var pendingOrders = 0;
+    var lowStock = 0;
+    var marginAlerts = 0;
+
+    if (canReadOrders)
+    {
+        pendingOrders = await Database.Orders
+            .CountAsync(order => order.OrderStatus == OrderStatus.Confirmed || order.OrderStatus == OrderStatus.Processing);
+    }
+    if (canReadInventory)
+    {
+        lowStock = await Web.Controllers.InventoryController.CountLowStockProductsAsync(Database);
+    }
+    if (canReadPricing)
+    {
+        marginAlerts = await Database.Products.CountAsync(product => product.MarginAlert && product.Status);
+    }
+
+    <aside id="adminSidebar"
+           class="fixed inset-y-0 left-0 z-50 flex w-72 -translate-x-full flex-col bg-ink text-white shadow-lift transition-transform duration-200 ease-out motion-reduce:transition-none lg:translate-x-0 lg:shadow-none"
+           aria-label="Navegación administrativa">
+        <div class="flex min-h-20 items-center border-b border-white/10 px-5">
+            <a class="group inline-flex min-w-0 cursor-pointer items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light focus-visible:ring-offset-4 focus-visible:ring-offset-ink"
+               asp-area="" asp-controller="Home" asp-action="Index" aria-label="Bean, ir a la tienda">
+                <span class="relative grid size-9 shrink-0 rotate-[-12deg] place-items-center rounded-[65%_65%_65%_20%] bg-clay transition-colors group-hover:bg-clay-light" aria-hidden="true">
+                    <span class="size-2 rounded-full bg-cream"></span>
+                </span>
+                <span class="font-display text-2xl tracking-[-0.04em]">Bean</span>
+                <span class="rounded-full px-2 py-1 font-data text-[10px] font-semibold uppercase tracking-[0.14em] @(isProvider ? "bg-leaf/25 text-husk" : "bg-clay/25 text-clay-light")">@roleLabel</span>
+            </a>
+            <button type="button"
+                    id="adminSidebarClose"
+                    class="ml-auto grid size-11 shrink-0 cursor-pointer place-items-center text-husk transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light lg:hidden"
+                    aria-label="Cerrar navegación">
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path d="m6 6 12 12M18 6 6 18" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto overscroll-contain px-3 py-5">
+            <p class="px-3 pb-3 font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-clay-light">Operación</p>
+            <nav class="space-y-1" aria-label="Módulos del panel">
+                @if (isSuperAdmin)
+                {
+                    <a class="@NavClasses("Dashboard")" aria-current="@(IsActive("Dashboard") ? "page" : null)"
+                       asp-area="" asp-controller="Dashboard" asp-action="Index">
+                        <svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                            <path d="M4 19V9M10 19V5M16 19v-7M22 19V2" /><path d="M2 19h22" />
+                        </svg>
+                        <span class="min-w-0 flex-1">Dashboard</span>
+                    </a>
+                }
+                @if (canReadOrders)
+                {
+                    <a class="@NavClasses("OrderManagement")" aria-current="@(IsActive("OrderManagement") ? "page" : null)"
+                       asp-area="" asp-controller="OrderManagement" asp-action="Index">
+                        <svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                            <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" /><path d="M9 8h6M9 12h6" />
+                        </svg>
+                        <span class="min-w-0 flex-1">Pedidos</span>
+                        @if (pendingOrders > 0)
+                        {
+                            <span class="min-w-6 rounded-full bg-white/15 px-2 py-1 text-center font-data text-[10px] font-semibold tabular-nums text-white" title="@pendingOrders pedidos por despachar">@pendingOrders</span>
+                        }
+                    </a>
+                }
+                @if (canReadInventory)
+                {
+                    <a class="@NavClasses("Inventory")" aria-current="@(IsActive("Inventory") ? "page" : null)"
+                       asp-area="" asp-controller="Inventory" asp-action="Index">
+                        <svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                            <path d="m4 7 8-4 8 4-8 4-8-4Z" /><path d="m4 12 8 4 8-4M4 17l8 4 8-4" />
+                        </svg>
+                        <span class="min-w-0 flex-1">Inventario</span>
+                        @if (lowStock > 0)
+                        {
+                            <span class="min-w-6 rounded-full bg-white/15 px-2 py-1 text-center font-data text-[10px] font-semibold tabular-nums text-white" title="@lowStock productos con stock bajo">@lowStock</span>
+                        }
+                    </a>
+                }
+                @if (canReadWarehouses)
+                {
+                    <a class="@NavClasses("Warehouses")" aria-current="@(IsActive("Warehouses") ? "page" : null)"
+                       asp-area="" asp-controller="Warehouses" asp-action="Index">
+                        <svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                            <path d="M3 21V8l9-5 9 5v13M7 21v-9h10v9M7 16h10" />
+                        </svg>
+                        <span class="min-w-0 flex-1">Bodegas</span>
+                    </a>
+                }
+                @if (canReadPricing)
+                {
+                    <a class="@NavClasses("Pricing")" aria-current="@(IsActive("Pricing") ? "page" : null)"
+                       asp-area="" asp-controller="Pricing" asp-action="Index">
+                        <svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                            <path d="m5 19 14-14M7.5 5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5ZM16.5 14a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z" />
+                        </svg>
+                        <span class="min-w-0 flex-1">Precios</span>
+                        @if (marginAlerts > 0)
+                        {
+                            <span class="min-w-6 rounded-full bg-white/15 px-2 py-1 text-center font-data text-[10px] font-semibold tabular-nums text-white" title="@marginAlerts alertas de margen">@marginAlerts</span>
+                        }
+                    </a>
+                }
+                @if (canReadUsers)
+                {
+                    <a class="@NavClasses("Users")" aria-current="@(IsActive("Users") ? "page" : null)"
+                       asp-area="" asp-controller="Users" asp-action="Index">
+                        <svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                        <span class="min-w-0 flex-1">Usuarios</span>
+                    </a>
+                }
+                @if (canReadRoles)
+                {
+                    <a class="@NavClasses("Roles")" aria-current="@(IsActive("Roles") ? "page" : null)"
+                       asp-area="" asp-controller="Roles" asp-action="Index">
+                        <svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /><path d="m9 12 2 2 4-4" />
+                        </svg>
+                        <span class="min-w-0 flex-1">Roles</span>
+                    </a>
+                }
+                @if (canReadCompanyProfile)
+                {
+                    <a class="@NavClasses("CompanyProfile")" aria-current="@(IsActive("CompanyProfile") ? "page" : null)"
+                       asp-area="" asp-controller="CompanyProfile" asp-action="Index">
+                        <svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                            <path d="M3 21h18M5 21V7l7-4 7 4v14M9 10h1M14 10h1M9 14h1M14 14h1M10 21v-4h4v4" />
+                        </svg>
+                        <span class="min-w-0 flex-1">Mi Empresa</span>
+                    </a>
+                }
+                @if (canReadProducts)
+                {
+                    <a class="@NavClasses("Products")" aria-current="@(IsActive("Products") ? "page" : null)"
+                       asp-area="" asp-controller="Products" asp-action="Index">
+                        <svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                            <path d="M4 7.5 12 3l8 4.5V17l-8 4-8-4V7.5Z" /><path d="m4 7.5 8 4.5 8-4.5M12 12v9" />
+                        </svg>
+                        <span class="min-w-0 flex-1">Mis Productos</span>
+                    </a>
+                }
+                @if (isProvider && canReadProducts)
+                {
+                    <a class="@NavClasses("SupplierOrders")" aria-current="@(IsActive("SupplierOrders") ? "page" : null)"
+                       asp-area="" asp-controller="SupplierOrders" asp-action="Index">
+                        <svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                            <path d="M4 4h16v16H4V4Z" /><path d="m4 14 4-4h8l4 4M9 14a3 3 0 0 0 6 0" />
+                        </svg>
+                        <span class="min-w-0 flex-1">Pedidos entrantes</span>
+                    </a>
+                }
+                @if (canReadCompanyUsers)
+                {
+                    <a class="@NavClasses("CompanyUsers")" aria-current="@(IsActive("CompanyUsers") ? "page" : null)"
+                       asp-area="" asp-controller="CompanyUsers" asp-action="Index">
+                        <svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                            <path d="M15 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM19 8v6M16 11h6" />
+                        </svg>
+                        <span class="min-w-0 flex-1">Usuarios (Empresa)</span>
+                    </a>
+                }
+                @if (canReadCompanyRoles)
+                {
+                    <a class="@NavClasses("CompanyRoles")" aria-current="@(IsActive("CompanyRoles") ? "page" : null)"
+                       asp-area="" asp-controller="CompanyRoles" asp-action="Index">
+                        <svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                            <circle cx="8" cy="15" r="4" /><path d="m11 12 8-8M15 4h4v4M12 15h9" />
+                        </svg>
+                        <span class="min-w-0 flex-1">Roles (Empresa)</span>
+                    </a>
+                }
+                @if (isSuperAdmin)
+                {
+                    <a class="@NavClasses("Providers")" aria-current="@(IsActive("Providers") ? "page" : null)"
+                       asp-area="" asp-controller="Providers" asp-action="Index">
+                        <svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                            <path d="M3 21h18M5 21V8h6v13M13 21V3h6v18M7 11h2M7 15h2M15 7h2M15 11h2M15 15h2" />
+                        </svg>
+                        <span class="min-w-0 flex-1">Empresas</span>
+                    </a>
+                    <a class="@NavClasses("ProductApproval")" aria-current="@(IsActive("ProductApproval") ? "page" : null)"
+                       asp-area="" asp-controller="ProductApproval" asp-action="Index">
+                        <svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                            <path d="M9 11 12 14 22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                        </svg>
+                        <span class="min-w-0 flex-1">Aprobaciones</span>
+                        @if (pendingApprovals > 0)
+                        {
+                            <span class="min-w-6 rounded-full bg-white/15 px-2 py-1 text-center font-data text-[10px] font-semibold tabular-nums text-white" title="@pendingApprovals productos pendientes de aprobación">@pendingApprovals</span>
+                        }
+                    </a>
+                }
+            </nav>
+
+            <div class="my-5 border-t border-white/10"></div>
+            <a class="group flex min-h-11 cursor-pointer items-center gap-3 px-3 text-sm font-extrabold text-clay-light transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-clay-light"
+               asp-area="" asp-controller="Home" asp-action="Index">
+                <svg class="size-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                    <path d="M4 10h16l-1-6H5l-1 6Z" /><path d="M5 10v10h14V10M9 20v-6h6v6M3 10c0 2 3 3 4.5 1.5C9 13 12 12 12 10c0 2 3 3 4.5 1.5C18 13 21 12 21 10" />
+                </svg>
+                <span class="min-w-0 flex-1">Ver tienda</span>
+                <svg class="size-4 transition-transform group-hover:translate-x-1 motion-reduce:transform-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path d="m9 18 6-6-6-6" />
+                </svg>
+            </a>
+        </div>
+
+        <div class="border-t border-white/10 p-4">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="grid size-10 shrink-0 place-items-center rounded-full bg-cream font-data text-xs font-semibold uppercase text-ink">@avatarInitial</span>
+                <div class="min-w-0">
+                    <p class="truncate text-sm font-extrabold text-white">@displayName</p>
+                    <p class="mt-0.5 truncate font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-husk">@(isProvider ? "Proveedor verificado" : "Administrador")</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+}

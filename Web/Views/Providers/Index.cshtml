@@ -2,68 +2,129 @@
 
 @{
     ViewData["Title"] = "Gestión de Proveedores";
+    Layout = "_LayoutAdminTailwind";
+    var providers = Model.ToList();
+    var pendingCount = providers.Count(item => item.ApprovalStatus == Web.Models.ApprovalStatus.Pending);
+    var approvedCount = providers.Count(item => item.ApprovalStatus == Web.Models.ApprovalStatus.Approved);
 }
 
-<div class="bean-panel-head">
-    <div>
-        <h1 class="bean-panel-title">Empresas registradas</h1>
-        <p class="bean-panel-sub">Valida y gestiona las empresas proveedoras que abastecen el catálogo.</p>
-    </div>
-</div>
+<div class="space-y-6 sm:space-y-8">
+    <header class="grid gap-6 border-b border-ink/15 pb-6 sm:pb-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+        <div class="min-w-0">
+            <h1 class="max-w-4xl text-balance font-display text-3xl leading-[0.98] tracking-[-0.04em] text-ink sm:text-4xl lg:text-5xl">
+                Empresas registradas
+            </h1>
+            <p class="mt-3 max-w-2xl text-sm leading-6 text-ink/65 sm:text-base sm:leading-7">
+                Valida y gestiona las empresas proveedoras que abastecen el catálogo.
+            </p>
+        </div>
+        <dl class="grid grid-cols-2 border-l border-t border-ink/15 bg-white">
+            <div class="min-w-28 border-b border-r border-ink/15 px-4 py-3 sm:min-w-32">
+                <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/55">Pendientes</dt>
+                <dd class="mt-1 text-xl font-extrabold tabular-nums text-honey">@pendingCount</dd>
+            </div>
+            <div class="min-w-28 border-b border-r border-ink/15 px-4 py-3 sm:min-w-32">
+                <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/55">Aprobadas</dt>
+                <dd class="mt-1 text-xl font-extrabold tabular-nums text-leaf">@approvedCount</dd>
+            </div>
+        </dl>
+    </header>
 
-<div class="bean-panel-tablewrap">
-    <table class="bean-panel-table">
-        <thead>
-            <tr>
-                <th>Nombre</th>
-                <th>NIT</th>
-                <th>Email</th>
-                <th>Estado aprobación</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model)
-            {
-                <tr>
-                    <td class="bean-td-name">@item.Name</td>
-                    <td>@item.NIT</td>
-                    <td>@item.Email</td>
-                    <td>
-                        @if(item.ApprovalStatus == Web.Models.ApprovalStatus.Pending)
-                        {
-                            <span class="bean-status pending"><span class="dot"></span>Pendiente</span>
-                        }
-                        else if(item.ApprovalStatus == Web.Models.ApprovalStatus.Approved)
-                        {
-                            <span class="bean-status active"><span class="dot"></span>Aprobado</span>
-                        }
-                        else
-                        {
-                            <span class="bean-status rejected"><span class="dot"></span>Rechazado</span>
-                        }
-                    </td>
-                    <td>
-                        @if(item.ApprovalStatus == Web.Models.ApprovalStatus.Pending)
-                        {
-                            <div class="bean-td-actions">
-                                <form asp-action="Approve" asp-route-id="@item.ProviderID" method="post">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="bean-btn-approve" title="Aprobar">
-                                        <i class="fas fa-check"></i> Aprobar
-                                    </button>
-                                </form>
-                                <form asp-action="Reject" asp-route-id="@item.ProviderID" method="post">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="bean-btn-reject" title="Rechazar">
-                                        <i class="fas fa-times"></i> Rechazar
-                                    </button>
-                                </form>
-                            </div>
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    @if (providers.Count == 0)
+    {
+        <section class="grid min-h-80 place-items-center border border-ink/15 bg-white px-6 py-12 text-center" aria-labelledby="providers-empty-title">
+            <div class="max-w-md">
+                <span class="mx-auto grid size-14 place-items-center bg-cream text-clay-dark" aria-hidden="true">
+                    <svg class="size-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                        <path d="M4 21V8l8-5 8 5v13M8 21v-5h8v5M8 10h.01M12 10h.01M16 10h.01" />
+                    </svg>
+                </span>
+                <h2 id="providers-empty-title" class="mt-5 text-xl font-extrabold tracking-[-0.03em] text-ink">Aún no hay empresas registradas</h2>
+                <p class="mt-2 text-sm leading-6 text-ink/65">Las solicitudes de proveedores aparecerán aquí para su validación.</p>
+            </div>
+        </section>
+    }
+    else
+    {
+        <section class="border border-ink/15 bg-white" aria-label="Empresas proveedoras">
+            <div class="hidden grid-cols-[minmax(11rem,1.1fr)_minmax(8rem,0.65fr)_minmax(13rem,1.15fr)_minmax(10rem,0.75fr)_minmax(13rem,1fr)] border-b border-ink/15 bg-ink text-white md:grid">
+                <div class="px-4 py-3 font-data text-[10px] font-semibold uppercase tracking-[0.14em]">Nombre</div>
+                <div class="px-4 py-3 font-data text-[10px] font-semibold uppercase tracking-[0.14em]">NIT</div>
+                <div class="px-4 py-3 font-data text-[10px] font-semibold uppercase tracking-[0.14em]">Email</div>
+                <div class="px-4 py-3 font-data text-[10px] font-semibold uppercase tracking-[0.14em]">Estado</div>
+                <div class="px-4 py-3 font-data text-[10px] font-semibold uppercase tracking-[0.14em]">Acciones</div>
+            </div>
+
+            <div class="divide-y divide-oat">
+                @foreach (var item in providers)
+                {
+                    <article class="grid gap-5 px-4 py-5 md:grid-cols-[minmax(11rem,1.1fr)_minmax(8rem,0.65fr)_minmax(13rem,1.15fr)_minmax(10rem,0.75fr)_minmax(13rem,1fr)] md:items-center md:gap-0 md:px-0 md:py-0">
+                        <div class="min-w-0 md:px-4 md:py-5">
+                            <span class="mb-1 block font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45 md:hidden">Empresa</span>
+                            <h2 class="break-words text-base font-extrabold tracking-[-0.02em] text-ink">@item.Name</h2>
+                        </div>
+                        <div class="min-w-0 md:px-4 md:py-5">
+                            <span class="mb-1 block font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45 md:hidden">NIT</span>
+                            <span class="font-data text-xs font-semibold tabular-nums text-ink/70">@item.NIT</span>
+                        </div>
+                        <div class="min-w-0 md:px-4 md:py-5">
+                            <span class="mb-1 block font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45 md:hidden">Email</span>
+                            <span class="break-all text-sm font-semibold text-ink/70">@item.Email</span>
+                        </div>
+                        <div class="md:px-4 md:py-5">
+                            <span class="mb-2 block font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45 md:hidden">Estado</span>
+                            @if (item.ApprovalStatus == Web.Models.ApprovalStatus.Pending)
+                            {
+                                <span class="inline-flex items-center gap-2 rounded-full bg-honey/15 px-3 py-1.5 font-data text-[10px] font-semibold uppercase tracking-[0.1em] text-ink">
+                                    <span class="size-1.5 rounded-full bg-honey" aria-hidden="true"></span>Pendiente
+                                </span>
+                            }
+                            else if (item.ApprovalStatus == Web.Models.ApprovalStatus.Approved)
+                            {
+                                <span class="inline-flex items-center gap-2 rounded-full bg-leaf/10 px-3 py-1.5 font-data text-[10px] font-semibold uppercase tracking-[0.1em] text-leaf">
+                                    <span class="size-1.5 rounded-full bg-leaf" aria-hidden="true"></span>Aprobado
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="inline-flex items-center gap-2 rounded-full bg-clay/10 px-3 py-1.5 font-data text-[10px] font-semibold uppercase tracking-[0.1em] text-clay-dark">
+                                    <span class="size-1.5 rounded-full bg-clay" aria-hidden="true"></span>Rechazado
+                                </span>
+                            }
+                        </div>
+                        <div class="md:px-4 md:py-5">
+                            @if (item.ApprovalStatus == Web.Models.ApprovalStatus.Pending)
+                            {
+                                <span class="mb-2 block font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/45 md:hidden">Acciones</span>
+                                <div class="flex flex-wrap gap-2">
+                                    <form asp-action="Approve" asp-route-id="@item.ProviderID" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 bg-leaf px-4 text-sm font-extrabold text-white transition-colors hover:bg-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-leaf focus-visible:ring-offset-2 focus-visible:ring-offset-white" title="Aprobar @item.Name">
+                                            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+                                                <path d="m5 12 4 4L19 6" />
+                                            </svg>
+                                            Aprobar
+                                        </button>
+                                    </form>
+                                    <form asp-action="Reject" asp-route-id="@item.ProviderID" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 border border-clay/35 bg-white px-4 text-sm font-extrabold text-clay-dark transition-colors hover:border-clay hover:bg-clay hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-white" title="Rechazar @item.Name">
+                                            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+                                                <path d="m6 6 12 12M18 6 6 18" />
+                                            </svg>
+                                            Rechazar
+                                        </button>
+                                    </form>
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-ink/35">Sin acciones pendientes</span>
+                            }
+                        </div>
+                    </article>
+                }
+            </div>
+        </section>
+    }
 </div>

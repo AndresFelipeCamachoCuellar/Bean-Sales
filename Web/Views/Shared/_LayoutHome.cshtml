@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth bg-cream motion-reduce:scroll-auto">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1d1510" />
+    <title>@ViewData["Title"] · Bean</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Azeret+Mono:wght@500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/bean-tailwind.css" asp-append-version="true" />
+</head>
+<body class="min-h-screen bg-cream font-sans text-ink antialiased selection:bg-clay selection:text-white">
+    <!--
+    THESIS: El catalogo se siente como un patio de secado vivo, no como una plantilla de marketplace.
+    OWN-WORLD: Cafe tinta, crema y terracota; reticulas de bandejas, etiquetas de lote y tipografia grotesca de alto contraste.
+    STORY: El visitante reconoce cafe colombiano trazable, descubre lotes reales y avanza directamente a comprar.
+    FIRST VIEWPORT: Navegacion compacta, promesa y CTA a la izquierda; un lote real ocupa una mesa modular a la derecha.
+    FORM: Patio de origen, cuarta estructura del conjunto; seed 2a064b3c.
+    FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+    -->
+    <a href="#contenido" class="fixed left-4 top-4 z-[100] -translate-y-24 rounded-full bg-white px-5 py-3 text-sm font-bold text-ink shadow-lift transition-transform focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-clay focus:ring-offset-2 focus:ring-offset-ink">
+        Saltar al contenido
+    </a>
+
+    @await Component.InvokeAsync("StoreNavigation")
+
+    <main id="contenido" tabindex="-1">
+        @RenderBody()
+    </main>
+
+    <partial name="_StoreFooterTailwind" />
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

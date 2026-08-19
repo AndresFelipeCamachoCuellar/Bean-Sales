@@ -4,56 +4,105 @@
 
 @{
     ViewData["Title"] = "Roles (Empresa)";
-    Layout = "_Layout";
+    Layout = "_LayoutAdminTailwind";
     var user = await UserManager.GetUserAsync(User);
     var canCreate = await PermissionService.HasPermissionAsync(user, Web.Constants.Modules.CompanyRoles, Web.Constants.Permissions.Create);
     var canUpdate = await PermissionService.HasPermissionAsync(user, Web.Constants.Modules.CompanyRoles, Web.Constants.Permissions.Update);
     var canDelete = await PermissionService.HasPermissionAsync(user, Web.Constants.Modules.CompanyRoles, Web.Constants.Permissions.Delete);
 }
 
-<div class="bean-panel-head">
-    <div>
-        <h1 class="bean-panel-title">Gestión de roles</h1>
-        <p class="bean-panel-sub">Define los roles de tu empresa y los permisos granulares de cada uno.</p>
+<div class="flex flex-col gap-6 border-b border-ink/15 pb-7 sm:flex-row sm:items-end sm:justify-between">
+    <div class="max-w-2xl">
+        <h1 class="font-display text-3xl leading-none tracking-[-0.04em] text-ink sm:text-4xl">Gestión de roles</h1>
+        <p class="mt-3 text-sm leading-6 text-ink/65 sm:text-base">Define los roles de tu empresa y los permisos granulares de cada uno.</p>
     </div>
     @if (canCreate)
     {
-        <a asp-action="Create" class="bean-prov-newlot"><i class="fas fa-plus"></i> Crear rol</a>
+        <a asp-action="Create" class="inline-flex min-h-11 shrink-0 cursor-pointer items-center justify-center gap-2 bg-clay px-5 py-3 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream">
+            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+            Crear rol
+        </a>
     }
 </div>
 
-<div class="bean-panel-tablewrap">
-    <table class="bean-panel-table">
-        <thead>
-            <tr>
-                <th>Nombre</th>
-                <th>Descripción</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
+@if (!Model.Any())
+{
+    <div class="mt-6 border border-ink/15 bg-white px-5 py-12 text-center sm:px-8">
+        <svg class="mx-auto size-9 text-clay-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="3" /><circle cx="17" cy="10" r="2.5" /><path d="M2.5 19c.4-4 2.2-6 5.5-6s5.1 2 5.5 6M14 14c3.7-.6 6.1 1.1 6.5 5" /></svg>
+        <h2 class="mt-4 text-lg font-extrabold text-ink">Aún no hay roles personalizados</h2>
+        <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-ink/60">Crea un rol para agrupar los permisos que necesita cada persona de tu equipo.</p>
+    </div>
+}
+else
+{
+    <div class="mt-6 divide-y divide-ink/10 border border-ink/15 bg-white md:hidden">
+        @foreach (var item in Model)
+        {
+            <article class="p-5">
+                <h2 class="text-base font-extrabold text-ink">@item.Name</h2>
+                <p class="mt-2 text-sm leading-6 text-ink/60">@item.Description</p>
+                @if (canUpdate || canDelete)
+                {
+                    <div class="mt-5 flex flex-wrap items-center gap-2 border-t border-ink/10 pt-4">
+                        @if (canUpdate)
+                        {
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 border border-ink/25 px-4 py-2 text-xs font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">
+                                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m4 16-.8 4 4-.8L18.5 7.9l-3.2-3.2L4 16Z" /><path d="m13.8 6.2 3.2 3.2" /></svg>
+                                Editar
+                            </a>
+                            <a asp-action="ManagePermissions" asp-route-id="@item.Id" class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 bg-ink px-4 py-2 text-xs font-extrabold text-white transition-colors hover:bg-clay focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">
+                                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="8" cy="15" r="4" /><path d="m11 12 8-8M16 7l2 2M14 9l2 2" /></svg>
+                                Permisos
+                            </a>
+                        }
+                        @if (canDelete)
+                        {
+                            <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('¿Está seguro de eliminar este rol?');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 border border-clay/40 px-4 py-2 text-xs font-extrabold text-clay-dark transition-colors hover:bg-clay hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">
+                                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" /></svg>
+                                    Eliminar
+                                </button>
+                            </form>
+                        }
+                    </div>
+                }
+            </article>
+        }
+    </div>
+
+    <div class="mt-6 hidden overflow-x-auto border border-ink/15 bg-white md:block">
+        <table class="w-full min-w-[680px] border-collapse text-left">
+            <thead class="bg-ink text-white">
+                <tr class="font-data text-[10px] font-semibold uppercase tracking-[0.12em]">
+                    <th scope="col" class="w-1/4 px-5 py-4">Nombre</th>
+                    <th scope="col" class="px-5 py-4">Descripción</th>
+                    <th scope="col" class="px-5 py-4 text-right">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-ink/10">
             @foreach (var item in Model)
             {
-                <tr>
-                    <td class="bean-td-name">@item.Name</td>
-                    <td>@item.Description</td>
-                    <td>
-                        <div class="bean-td-actions">
+                <tr class="transition-colors hover:bg-cream/70">
+                    <td class="px-5 py-4 text-sm font-extrabold text-ink">@item.Name</td>
+                    <td class="px-5 py-4 text-sm leading-6 text-ink/65">@item.Description</td>
+                    <td class="px-5 py-4">
+                        <div class="flex items-center justify-end gap-2">
                             @if (canUpdate)
                             {
-                                <a asp-action="Edit" asp-route-id="@item.Id" class="bean-btn-pill outline icon" title="Editar">
-                                    <i class="fas fa-edit"></i>
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="grid size-11 cursor-pointer place-items-center border border-ink/25 text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay" title="Editar" aria-label="Editar rol @item.Name">
+                                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m4 16-.8 4 4-.8L18.5 7.9l-3.2-3.2L4 16Z" /><path d="m13.8 6.2 3.2 3.2" /></svg>
                                 </a>
-                                <a asp-action="ManagePermissions" asp-route-id="@item.Id" class="bean-btn-pill primary icon" title="Permisos">
-                                    <i class="fas fa-key"></i>
+                                <a asp-action="ManagePermissions" asp-route-id="@item.Id" class="grid size-11 cursor-pointer place-items-center bg-ink text-white transition-colors hover:bg-clay focus:outline-none focus-visible:ring-2 focus-visible:ring-clay" title="Permisos" aria-label="Gestionar permisos de @item.Name">
+                                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="8" cy="15" r="4" /><path d="m11 12 8-8M16 7l2 2M14 9l2 2" /></svg>
                                 </a>
                             }
                             @if (canDelete)
                             {
-                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline;" onsubmit="return confirm('¿Está seguro de eliminar este rol?');">
+                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('¿Está seguro de eliminar este rol?');">
                                     @Html.AntiForgeryToken()
-                                    <button type="submit" class="bean-btn-pill danger icon" title="Eliminar">
-                                        <i class="fas fa-trash"></i>
+                                    <button type="submit" class="grid size-11 cursor-pointer place-items-center border border-clay/40 text-clay-dark transition-colors hover:bg-clay hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay" title="Eliminar" aria-label="Eliminar rol @item.Name">
+                                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" /></svg>
                                     </button>
                                 </form>
                             }
@@ -61,6 +110,7 @@
                     </td>
                 </tr>
             }
-        </tbody>
-    </table>
-</div>
+            </tbody>
+        </table>
+    </div>
+}

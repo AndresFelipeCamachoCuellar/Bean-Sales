@@ -11,321 +11,183 @@
 
 @{
     ViewData["Title"] = "Recibir Producto";
-    Layout = "_Layout";
+    Layout = "_LayoutAdminTailwind";
     var isActive = Model.ProductStatus == ProductStatus.Active;
-
-    // E1: bodegas operativas y saldo actual del lote (los llena ProductApprovalController).
     var receiveWarehouses = ViewBag.ReceiveWarehouses as List<InventoryFilterOption> ?? new List<InventoryFilterOption>();
     var receiveBalances = ViewBag.ReceiveBalances as List<InventoryBalanceRowViewModel> ?? new List<InventoryBalanceRowViewModel>();
     var sinBodegas = receiveWarehouses.Count == 0;
 
-    // ⚠️ TRAMPA DE DOBLE CONTEO: la migración AddWarehouseInventory ya creó StockItems con el
-    //    stock DECLARADO por el proveedor. Si además se prellena la cantidad a recibir con
-    //    Model.Stock, confirmar la recepción sumaría el lote dos veces. Por eso solo se
-    //    sugiere la cantidad cuando el lote todavía NO tiene saldo en ninguna bodega.
+    // Reception suma al libro. Solo se sugiere el stock declarado si aún no existe saldo.
     var yaTieneSaldo = receiveBalances.Any(b => b.QuantityOnHand != 0);
-    var cantidadSugerida = (!isActive && !yaTieneSaldo && Model.Stock > 0)
-        ? Model.Stock.ToString()
-        : string.Empty;
-
+    var cantidadSugerida = (!isActive && !yaTieneSaldo && Model.Stock > 0) ? Model.Stock.ToString() : string.Empty;
     var co = System.Globalization.CultureInfo.GetCultureInfo("es-CO");
 
     var pricingUser = await UserManager.GetUserAsync(User);
-    var canReadPricing = pricingUser != null
-        && await PermissionService.HasPermissionAsync(pricingUser, Modules.Pricing, Permissions.Read);
-    var canSetPrice = pricingUser != null
-        && await PermissionService.HasPermissionAsync(pricingUser, Modules.Pricing, Permissions.Update);
-
-    // Valores de márgenes para el panel. ViewBag los llena ProductApprovalController.
+    var canReadPricing = pricingUser != null && await PermissionService.HasPermissionAsync(pricingUser, Modules.Pricing, Permissions.Read);
+    var canSetPrice = pricingUser != null && await PermissionService.HasPermissionAsync(pricingUser, Modules.Pricing, Permissions.Update);
     var targetMargin = ViewBag.TargetMarginPercent is decimal t ? t : 30m;
     var minimumMargin = ViewBag.MinimumMarginPercent is decimal m ? m : 15m;
     var roundingStep = ViewBag.RoundingStep is decimal r ? r : 50m;
-
     var receiveMargin = PricingCalculator.CalculateMargin(Model.Price, Model.SupplierPrice);
     var receiveSuggested = PricingCalculator.SuggestPrice(Model.SupplierPrice, targetMargin, roundingStep);
     var priceMissing = Model.Price <= 0m;
     var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
-
-    // Textos precalculados: evita interpolaciones con comillas anidadas dentro de Razor.
     var receivePriceText = priceMissing ? "sin fijar" : Model.Price.ToString("C0", co);
-    var receiveMarginText = receiveMargin.IsCalculable
-        ? receiveMargin.Percent.ToString("N2") + " % · " + receiveMargin.Amount.ToString("C0", co)
-        : "—";
+    var receiveMarginText = receiveMargin.IsCalculable ? receiveMargin.Percent.ToString("N2") + " % · " + receiveMargin.Amount.ToString("C0", co) : "—";
     var receiveSuggestedText = receiveSuggested > 0 ? receiveSuggested.ToString("C0", co) : "—";
+    const string labelClass = "font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/65";
+    const string inputClass = "mt-2 min-h-12 w-full border border-ink/25 bg-cream px-4 py-2 text-base text-ink caret-clay outline-none transition-colors placeholder:text-ink/40 hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25";
+    const string selectClass = "mt-2 min-h-12 w-full cursor-pointer border border-ink/25 bg-cream px-3 py-2 text-sm font-semibold text-ink outline-none transition-colors hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25";
 }
 
-<div class="bean-panel-head">
-    <div>
-        <h1 class="bean-panel-title">@(isActive ? "Gestionar disponibilidad" : "Recibir producto")</h1>
-        <p class="bean-panel-sub">@(isActive ? "Actualiza en qué países está disponible este lote." : "Confirma la recepción del lote y publícalo en los países seleccionados.")</p>
+<header class="flex flex-col gap-6 border-b border-ink/15 pb-7 lg:flex-row lg:items-end lg:justify-between">
+    <div class="max-w-3xl">
+        <h1 class="font-display text-3xl leading-none tracking-[-0.04em] text-ink sm:text-4xl">@(isActive ? "Gestionar disponibilidad" : "Recibir producto")</h1>
+        <p class="mt-3 max-w-2xl text-sm leading-6 text-ink/65 sm:text-base">@(isActive ? "Actualiza los países visibles y registra reposiciones cuando corresponda." : "Confirma la entrada física a bodega y publica el lote en los países aprobados.")</p>
     </div>
-    <a asp-action="Index" class="bean-btn-receive manage"><i class="fas fa-arrow-left"></i> Volver</a>
-</div>
+    <a asp-action="Index" class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 self-start border border-ink/20 bg-white px-5 py-3 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream lg:self-auto"><svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5m6 6-6-6 6-6" /></svg>Volver</a>
+</header>
 
-<div class="bean-panel-card">
-    <div class="bean-panel-datagrid">
-        <div class="k">Producto</div><div class="v">@Model.Name</div>
-        <div class="k">Proveedor</div><div class="v">@Model.Provider?.Name</div>
-        <div class="k">Estado actual</div>
-        <div class="v">
-            @switch (Model.ProductStatus)
+<dl class="mt-8 grid border border-ink/15 bg-white sm:grid-cols-2 xl:grid-cols-5">
+    <div class="border-b border-oat p-4 sm:border-r xl:border-b-0"><dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/50">Producto</dt><dd class="mt-2 font-extrabold text-ink">@Model.Name</dd></div>
+    <div class="border-b border-oat p-4 xl:border-b-0 xl:border-r"><dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/50">Proveedor</dt><dd class="mt-2 font-semibold text-ink">@(Model.Provider?.Name ?? "—")</dd></div>
+    <div class="border-b border-oat p-4 sm:border-r xl:border-b-0"><dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/50">Estado</dt><dd class="mt-2"><span class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-data text-[10px] font-semibold uppercase tracking-[0.08em] @(isActive ? "bg-leaf/10 text-leaf" : "bg-ink/10 text-ink")"><span class="size-2 rounded-full bg-current" aria-hidden="true"></span>@(isActive ? "Activo · en venta" : Model.ProductStatus == ProductStatus.Shipped ? "Enviado · por recibir" : Model.ProductStatus.ToString())</span></dd></div>
+    <div class="border-b border-oat p-4 sm:border-b-0 sm:border-r"><dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/50">Stock declarado</dt><dd class="mt-2 font-data text-sm font-semibold tabular-nums text-ink">@Model.Stock unidades</dd></div>
+    <div class="p-4"><dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/50">Precio de venta</dt><dd class="mt-2 font-extrabold tabular-nums @(priceMissing ? "text-clay-dark" : "text-ink")">@receivePriceText</dd></div>
+</dl>
+
+@foreach (var notice in new[]
+{
+    (Key: "PricingError", Error: true), (Key: "PricingOk", Error: false),
+    (Key: "ReceiveError", Error: true), (Key: "ReceiveOk", Error: false)
+})
+{
+    if (TempData[notice.Key] != null)
+    {
+        <div class="mt-5 flex items-start gap-3 border px-4 py-3 text-sm font-semibold leading-6 @(notice.Error ? "border-clay/35 bg-clay/10 text-clay-dark" : "border-leaf/30 bg-leaf/10 text-leaf")" role="@(notice.Error ? "alert" : "status")">
+            @if (notice.Error)
             {
-                case ProductStatus.Shipped:
-                    <span class="bean-status transit"><span class="dot"></span>Enviado / por recibir</span>
-                    break;
-                case ProductStatus.Active:
-                    <span class="bean-status active"><span class="dot"></span>Activo · en venta</span>
-                    break;
-                default:
-                    <text>@Model.ProductStatus</text>
-                    break;
+                <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 2.8 20h18.4L12 3Z" /><path d="M12 9v5M12 17h.01" /></svg>
             }
+            else
+            {
+                <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m8 12 2.5 2.5L16 9" /></svg>
+            }
+            <div>@TempData[notice.Key]</div>
         </div>
-        <div class="k">Stock declarado</div><div class="v">@Model.Stock unidades</div>
-        <div class="k">Precio de venta</div>
-        <div class="v">@receivePriceText</div>
-    </div>
-</div>
-
-@if (TempData["PricingError"] != null)
-{
-    <div class="bean-panel-note danger">
-        <i class="fas fa-exclamation-triangle"></i>
-        <div>@TempData["PricingError"]</div>
-    </div>
-}
-@if (TempData["PricingOk"] != null)
-{
-    <div class="bean-panel-note">
-        <i class="fas fa-check-circle"></i>
-        <div>@TempData["PricingOk"]</div>
-    </div>
-}
-@if (TempData["ReceiveError"] != null)
-{
-    <div class="bean-panel-note danger">
-        <i class="fas fa-exclamation-triangle"></i>
-        <div>@TempData["ReceiveError"]</div>
-    </div>
-}
-@if (TempData["ReceiveOk"] != null)
-{
-    <div class="bean-panel-note">
-        <i class="fas fa-check-circle"></i>
-        <div>@TempData["ReceiveOk"]</div>
-    </div>
+    }
 }
 
-@*
-    Panel de pricing (E2). El costo y el margen son información INTERNA: solo se pintan
-    con Pricing/Read, y el formulario para fijar el PVP solo con Pricing/Update.
-    🔒 Candado: sin PVP fijado el lote no puede pasar a ACTIVO (lo bloquea el POST de
-    Receive, no solo esta vista).
-*@
 @if (canReadPricing)
 {
-    <div class="bean-panel-card">
-        <h2 class="bean-panel-title" style="font-size:19px; margin:0 0 6px;">Precio y margen</h2>
-
-        <div class="bean-panel-datagrid">
-            <div class="k">Costo del proveedor</div>
-            <div class="v">@Model.SupplierPrice.ToString("C0", co)</div>
-            <div class="k">Precio de venta (PVP)</div>
-            <div class="v">@receivePriceText</div>
-            <div class="k">Margen</div>
-            <div class="v">@receiveMarginText</div>
-            <div class="k">Precio sugerido (@targetMargin.ToString("N0") %)</div>
-            <div class="v">@receiveSuggestedText</div>
-        </div>
+    <section class="mt-8 border border-ink/15 bg-white" aria-labelledby="pricing-title">
+        <div class="border-b border-oat px-4 py-5 sm:px-6"><h2 id="pricing-title" class="text-xl font-extrabold tracking-[-0.03em] text-ink">Precio y margen</h2><p class="mt-2 text-sm leading-6 text-ink/60">Información interna de Bean. Sin PVP el lote no puede activarse.</p></div>
+        <dl class="grid sm:grid-cols-2 xl:grid-cols-4">
+            <div class="border-b border-oat p-4 sm:border-r xl:border-b-0 sm:p-5"><dt class="font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-ink/50">Costo proveedor</dt><dd class="mt-2 font-extrabold tabular-nums">@Model.SupplierPrice.ToString("C0", co)</dd></div>
+            <div class="border-b border-oat p-4 xl:border-b-0 xl:border-r sm:p-5"><dt class="font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-ink/50">PVP</dt><dd class="mt-2 font-extrabold tabular-nums @(priceMissing ? "text-clay-dark" : "text-ink")">@receivePriceText</dd></div>
+            <div class="border-b border-oat p-4 sm:border-b-0 sm:border-r sm:p-5"><dt class="font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-ink/50">Margen</dt><dd class="mt-2 font-extrabold tabular-nums">@receiveMarginText</dd></div>
+            <div class="p-4 sm:p-5"><dt class="font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-ink/50">Sugerido · @targetMargin.ToString("N0") %</dt><dd class="mt-2 font-extrabold tabular-nums">@receiveSuggestedText</dd></div>
+        </dl>
 
         @if (priceMissing)
         {
-            <div class="bean-panel-note danger">
-                <i class="fas fa-lock"></i>
-                <div>
-                    Este lote todavía no tiene precio de venta. <strong>No se puede activar sin PVP</strong>:
-                    es la garantía de que Bean nunca venda al costo.
-                </div>
-            </div>
+            <div class="m-4 flex items-start gap-3 border border-clay/35 bg-clay/10 px-4 py-3 text-sm font-semibold leading-6 text-clay-dark sm:m-6" role="alert"><svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="10" width="14" height="10" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg><div>Este lote todavía no tiene precio de venta. <strong>No se puede activar sin PVP.</strong></div></div>
         }
 
         @if (canSetPrice)
         {
-            @* Fuera del form de países: no se anidan formularios. *@
-            <form asp-controller="Pricing" asp-action="SetPrice" method="post"
-                  style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-top:14px;">
+            @* Formulario independiente del POST Receive. *@
+            <form asp-controller="Pricing" asp-action="SetPrice" method="post" class="grid gap-4 border-t border-oat bg-cream p-4 sm:p-6 lg:grid-cols-[12rem_minmax(16rem,1fr)_auto] lg:items-end">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="id" value="@Model.ProductID" />
                 <input type="hidden" name="returnUrl" value="@returnUrl" />
-
-                <div class="bean-field" style="margin:0;">
-                    <label class="bean-label">Precio de venta (COP)</label>
-                    <input type="number" name="price" step="0.01" min="0" class="bean-input" style="width:170px;"
-                           value="@(Model.Price > 0 ? Model.Price : receiveSuggested)" />
-                </div>
-                <div class="bean-field" style="margin:0;">
-                    <label class="bean-label">Motivo (si baja del mínimo @minimumMargin.ToString("N0") %)</label>
-                    <input type="text" name="reason" class="bean-input" style="width:280px;" maxlength="300" />
-                </div>
-                <button type="submit" class="bean-btn-approve" style="padding:12px 20px;">
-                    <i class="fas fa-tag"></i> Fijar precio
-                </button>
+                <div><label class="@labelClass" for="receive-price">Precio de venta (COP)</label><input id="receive-price" type="number" name="price" step="0.01" min="0" class="@inputClass" value="@(Model.Price > 0 ? Model.Price : receiveSuggested)" /></div>
+                <div><label class="@labelClass" for="receive-reason">Motivo (si baja del mínimo @minimumMargin.ToString("N0") %)</label><input id="receive-reason" type="text" name="reason" class="@inputClass" maxlength="300" placeholder="Promoción, liquidación u otra justificación" /></div>
+                <button type="submit" class="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 bg-clay px-5 py-3 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 13 11 22l-9-9V4h9l9 9Z" /><circle cx="7" cy="9" r="1" /></svg>Fijar precio</button>
             </form>
         }
-    </div>
+    </section>
 }
 
-@*
-    Gestor de fotos ANTES del formulario de países (y fuera de él: no se anidan forms).
-    Este es el punto que pidió el PO: cuando el lote físico llega a bodega es cuando Bean
-    lo fotografía, y ahora se hace en la misma pantalla que lo activa.
-*@
+@* El gestor debe permanecer fuera de cualquier form: usa POST AJAX independientes. *@
 @if (ViewBag.ImageManager is Web.Models.ViewModels.ProductImageManagerViewModel imageManager)
 {
-    <div class="bean-panel-card">
-        <partial name="_ProductImageManager" model="imageManager" />
-    </div>
+    <section class="mt-8 border border-ink/15 bg-white p-4 sm:p-6" aria-label="Gestor de fotos del lote"><partial name="_ProductImageManager" model="imageManager" /></section>
 }
 
-<form asp-action="Receive" method="post" class="bean-panel-card">
+<form asp-action="Receive" method="post" class="mt-8 space-y-8">
+    @Html.AntiForgeryToken()
     <input type="hidden" name="id" value="@Model.ProductID" />
 
-    @* ---------------- E1: entrada física a bodega ---------------- *@
-    <h2 class="bean-panel-title" style="font-size:19px; margin:0 0 6px;">Entrada a bodega</h2>
-    <p class="bean-panel-sub" style="margin:0 0 16px;">
-        @if (isActive)
+    <section class="border border-ink/15 bg-white" aria-labelledby="bodega-title">
+        <div class="border-b border-oat px-4 py-5 sm:px-6">
+            <h2 id="bodega-title" class="text-xl font-extrabold tracking-[-0.03em] text-ink">Entrada a bodega</h2>
+            <p class="mt-2 max-w-4xl text-sm leading-6 text-ink/60">
+                @if (isActive)
+                {
+                    <text>Si registras una <strong class="text-ink">reposición</strong>, indica bodega y cantidad. Si solo ajustas países, deja la cantidad vacía.</text>
+                }
+                else
+                {
+                    <text>Indica dónde entra el lote, cuántas unidades llegaron y su costo unitario. <strong class="text-ink">Sin bodega no se puede recibir.</strong></text>
+                }
+            </p>
+        </div>
+
+        @if (sinBodegas)
         {
-            <text>
-                Este lote ya está activo. Si estás registrando una <strong>reposición</strong>, indica bodega y
-                cantidad; si solo vienes a ajustar países, deja la cantidad vacía.
-            </text>
+            <div class="m-4 flex items-start gap-3 border border-clay/35 bg-clay/10 px-4 py-3 text-sm font-semibold leading-6 text-clay-dark sm:m-6" role="alert"><svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 2.8 20h18.4L12 3Z" /><path d="M12 9v5M12 17h.01" /></svg><div>No hay bodegas operativas. Crea una en <strong>Bodegas</strong> antes de recibir este lote.</div></div>
         }
         else
         {
-            <text>
-                Indica en qué bodega entra el lote, cuántas unidades llegaron y a qué costo unitario.
-                <strong>Sin bodega no se puede recibir</strong>: el inventario se lleva por ubicación.
-            </text>
-        }
-    </p>
-
-    @if (sinBodegas)
-    {
-        <div class="bean-panel-note danger">
-            <i class="fas fa-exclamation-triangle"></i>
-            <div>
-                No hay bodegas operativas. Crea una en <strong>Bodegas</strong> antes de poder recibir este lote.
-            </div>
-        </div>
-    }
-    else
-    {
-        <div class="bean-form-grid cols-3">
-            <div class="bean-field">
-                <label class="bean-label" for="rcv-wh">Bodega @(isActive ? "" : "(obligatoria)")</label>
-                <select id="rcv-wh" name="warehouseId" class="bean-select">
-                    @if (isActive)
-                    {
-                        <option value="">— Sin entrada de inventario —</option>
-                    }
-                    @foreach (var w in receiveWarehouses)
-                    {
-                        <option value="@w.Id">@w.Label</option>
-                    }
-                </select>
-            </div>
-
-            <div class="bean-field">
-                <label class="bean-label" for="rcv-qty">Cantidad recibida</label>
-                <input id="rcv-qty" type="number" name="receiveQuantity" min="0" step="1" class="bean-input"
-                       value="@cantidadSugerida" placeholder="ej. 120" />
-                <span class="bean-field-hint">
-                    Unidades físicas que entraron a esa bodega. <strong>Se SUMAN</strong> al saldo actual.
-                </span>
-            </div>
-
-            <div class="bean-field">
-                <label class="bean-label" for="rcv-cost">Costo unitario (COP)</label>
-                <div class="bean-input-affix">
-                    <span class="affix">$</span>
-                    <input id="rcv-cost" type="number" name="receiveUnitCost" min="0" step="0.01" class="bean-input"
-                           value="@(Model.SupplierPrice > 0m ? Model.SupplierPrice.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : string.Empty)" />
+            <div class="grid gap-x-6 gap-y-5 p-4 sm:p-6 lg:grid-cols-3">
+                <div><label class="@labelClass" for="rcv-wh">Bodega @(isActive ? "" : "(obligatoria)")</label><select id="rcv-wh" name="warehouseId" class="@selectClass">@if (isActive){<option value="">— Sin entrada de inventario —</option>}@foreach (var w in receiveWarehouses){<option value="@w.Id">@w.Label</option>}</select></div>
+                <div><label class="@labelClass" for="rcv-qty">Cantidad recibida</label><input id="rcv-qty" type="number" name="receiveQuantity" min="0" step="1" class="@inputClass" value="@cantidadSugerida" placeholder="Ej: 120" /><span class="mt-2 block text-xs font-medium leading-5 text-ink/50">Unidades físicas recibidas. <strong class="text-ink">Se suman</strong> al saldo actual.</span></div>
+                <div>
+                    <label class="@labelClass" for="rcv-cost">Costo unitario (COP)</label>
+                    <div class="relative mt-2"><span class="pointer-events-none absolute inset-y-0 left-0 grid w-11 place-items-center border-r border-ink/15 font-data text-xs font-semibold text-ink/55">$</span><input id="rcv-cost" type="number" name="receiveUnitCost" min="0" step="0.01" class="min-h-12 w-full border border-ink/25 bg-cream py-2 pl-14 pr-4 text-base tabular-nums text-ink caret-clay outline-none transition-colors hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25" value="@(Model.SupplierPrice > 0m ? Model.SupplierPrice.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : string.Empty)" /></div>
+                    <span class="mt-2 block text-xs font-medium leading-5 text-ink/50">Vacío usa el costo del proveedor. Alimenta la liquidación.</span>
                 </div>
-                <span class="bean-field-hint">Si lo dejas vacío se usa el costo del proveedor. Alimenta la liquidación.</span>
             </div>
-        </div>
+            <div class="mx-4 mb-4 flex items-start gap-3 border border-ink/15 bg-cream px-4 py-3 text-sm font-semibold leading-6 text-ink/70 sm:mx-6 sm:mb-6"><svg class="mt-0.5 size-5 shrink-0 text-clay-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7h.01" /></svg><div>El catálogo publicará el inventario real disponible: <strong class="text-ink">en mano − reservado</strong>.</div></div>
+        }
 
-        <div class="bean-panel-note">
-            <i class="fas fa-info-circle"></i>
-            <div>
-                Al confirmar, el stock que publica el catálogo pasa a ser el <strong>inventario real de bodega</strong>
-                (disponible = en mano − reservado), no la cantidad declarada por el proveedor.
-            </div>
-        </div>
-    }
-
-    @if (receiveBalances.Count > 0)
-    {
-        <div class="bean-panel-note" style="margin-top:14px;">
-            <i class="fas fa-info-circle"></i>
-            <div>
-                <strong>Este lote ya tiene saldo en bodega.</strong> Lo que escribas se <strong>suma</strong>
-                a lo que ya hay: si el stock que ves abajo ya corresponde a este lote, deja la cantidad vacía
-                para no contarlo dos veces.
-            </div>
-        </div>
-
-        <div class="bean-panel-datagrid" style="margin-top:14px;">
-            @foreach (var b in receiveBalances)
-            {
-                <div class="k">@b.Code · @b.City</div>
-                <div class="v">@b.QuantityAvailable disponibles (@b.QuantityOnHand en mano)</div>
-            }
-        </div>
-    }
-
-    <h2 class="bean-panel-title" style="font-size:19px; margin:26px 0 6px;">Disponibilidad por país</h2>
-    <p class="bean-panel-sub" style="margin:0 0 16px;">Selecciona los países donde este producto estará visible para la venta. Por defecto se marcan los solicitados por el proveedor.</p>
-
-    <div class="bean-panel-checkgrid">
-        @foreach (var pc in Model.ProductCountries)
+        @if (receiveBalances.Count > 0)
         {
-            @* Se marca por IsAvailable; en la primera recepción (Shipped) se sugieren los solicitados. *@
-            var isChecked = pc.IsAvailable;
-            if (Model.ProductStatus == ProductStatus.Shipped && pc.IsTargeted)
-            {
-                isChecked = true;
-            }
-            <div class="bean-panel-check">
-                <input class="form-check-input" type="checkbox" name="availableCountryIds" value="@pc.CountryID" id="c_@pc.CountryID" @(isChecked ? "checked" : "") />
-                <label for="c_@pc.CountryID">
-                    @pc.Country?.Name
-                    @if (pc.IsTargeted)
+            <div class="border-t border-oat bg-oat/45 p-4 sm:p-6">
+                <div class="flex items-start gap-3 text-sm font-semibold leading-6 text-ink/70"><svg class="mt-0.5 size-5 shrink-0 text-honey" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 2.8 20h18.4L12 3Z" /><path d="M12 9v5M12 17h.01" /></svg><div><strong class="text-ink">Este lote ya tiene saldo.</strong> La cantidad nueva se suma. Déjala vacía si el inventario actual ya corresponde a esta recepción.</div></div>
+                <dl class="mt-4 grid gap-px bg-ink/10 sm:grid-cols-2 lg:grid-cols-3">
+                    @foreach (var balance in receiveBalances)
                     {
-                        <span class="bean-country-chip" style="margin-left:6px;">Solicitado</span>
+                        <div class="bg-white p-4"><dt class="font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-clay-dark">@balance.Code · @balance.City</dt><dd class="mt-2 text-sm font-extrabold tabular-nums text-ink">@balance.QuantityAvailable disponibles <span class="font-medium text-ink/50">(@balance.QuantityOnHand en mano)</span></dd></div>
                     }
-                    @if (pc.IsAvailable)
-                    {
-                        <span class="bean-status active" style="margin-left:6px; padding:3px 9px; font-size:11px;"><span class="dot"></span>Activo</span>
-                    }
-                </label>
+                </dl>
             </div>
         }
-    </div>
+    </section>
 
-    <div class="bean-panel-note">
-        <i class="fas fa-exclamation-circle"></i>
-        <div>Al confirmar, el producto pasará a estado <strong>ACTIVO</strong> y será visible en el catálogo de los países seleccionados.</div>
-    </div>
+    <section class="border border-ink/15 bg-white" aria-labelledby="disponibilidad-title">
+        <div class="border-b border-oat px-4 py-5 sm:px-6"><h2 id="disponibilidad-title" class="text-xl font-extrabold tracking-[-0.03em] text-ink">Disponibilidad por país</h2><p class="mt-2 text-sm leading-6 text-ink/60">Selecciona dónde estará visible. En la primera recepción se sugieren los países solicitados por el proveedor.</p></div>
+        <div class="grid gap-3 p-4 sm:grid-cols-2 sm:p-6 lg:grid-cols-3">
+            @foreach (var pc in Model.ProductCountries)
+            {
+                var isChecked = pc.IsAvailable;
+                if (Model.ProductStatus == ProductStatus.Shipped && pc.IsTargeted)
+                {
+                    isChecked = true;
+                }
+                <label for="c_@pc.CountryID" class="flex min-h-14 cursor-pointer items-center gap-3 border border-ink/15 bg-cream px-4 py-3 text-sm font-extrabold text-ink transition-colors hover:border-clay">
+                    <input class="size-4 shrink-0 cursor-pointer rounded-none accent-clay focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream" type="checkbox" name="availableCountryIds" value="@pc.CountryID" id="c_@pc.CountryID" @(isChecked ? "checked" : "") />
+                    <span class="min-w-0"><span>@pc.Country?.Name</span><span class="mt-1 flex flex-wrap gap-1.5">@if (pc.IsTargeted){<span class="rounded-full bg-oat px-2 py-0.5 font-data text-[10px] font-semibold uppercase tracking-[0.08em] text-ink/65">Solicitado</span>}@if (pc.IsAvailable){<span class="rounded-full bg-leaf/10 px-2 py-0.5 font-data text-[10px] font-semibold uppercase tracking-[0.08em] text-leaf">Activo</span>}</span></span>
+                </label>
+            }
+        </div>
+        <div class="mx-4 mb-4 flex items-start gap-3 border border-honey/40 bg-honey/10 px-4 py-3 text-sm font-semibold leading-6 text-ink sm:mx-6 sm:mb-6"><svg class="mt-0.5 size-5 shrink-0 text-honey" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 2.8 20h18.4L12 3Z" /><path d="M12 9v5M12 17h.01" /></svg><div>Al confirmar, el producto pasará a <strong>Activo</strong> y será visible en el catálogo de los países seleccionados.</div></div>
+    </section>
 
-    <div style="display:flex; gap:12px; align-items:center; margin-top:22px;">
-        @* Sin PVP (candado E2) o sin bodegas (candado E1) la recepción inicial no puede cerrarse.
-           El botón deshabilitado es cortesía: los dos candados se validan en el POST. *@
-        <button type="submit" class="bean-btn-approve" style="padding:12px 22px; font-size:14px;"
-                @((priceMissing || sinBodegas) && !isActive ? "disabled" : "")>
-            <i class="fas fa-check-circle"></i> Confirmar recepción
-        </button>
-        <a asp-action="Index" class="bean-btn-receive manage">Cancelar</a>
+    <div class="flex flex-col-reverse gap-3 border-t border-ink/15 pt-6 sm:flex-row sm:justify-end">
+        <a asp-action="Index" class="inline-flex min-h-12 cursor-pointer items-center justify-center border border-ink/20 bg-white px-6 py-3 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Cancelar</a>
+        <button type="submit" class="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 bg-clay px-6 py-3 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-4 focus-visible:ring-offset-cream disabled:cursor-not-allowed disabled:bg-ink/25 disabled:text-white" @((priceMissing || sinBodegas) && !isActive ? "disabled" : "")><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m8 12 2.5 2.5L16 9" /></svg>Confirmar recepción</button>
     </div>
 </form>
 

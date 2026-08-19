@@ -7,83 +7,175 @@
 
 @{
     ViewData["Title"] = "Gestión de Usuarios (Empresa)";
-    Layout = "_Layout";
+    Layout = "_LayoutAdminTailwind";
     var user = await UserManager.GetUserAsync(User);
+    var currentUserId = user?.Id.ToString();
     var canCreate = await PermissionService.HasPermissionAsync(user, Modules.CompanyUsers, Permissions.Create);
     var canUpdate = await PermissionService.HasPermissionAsync(user, Modules.CompanyUsers, Permissions.Update);
 }
 
-<div class="bean-panel-head">
-    <div>
-        <h1 class="bean-panel-title">Usuarios de la empresa</h1>
-        <p class="bean-panel-sub">Administra las cuentas del equipo de tu empresa, sus roles y su acceso.</p>
+<div class="flex flex-col gap-6 border-b border-ink/15 pb-7 sm:flex-row sm:items-end sm:justify-between">
+    <div class="max-w-2xl">
+        <h1 class="font-display text-3xl leading-none tracking-[-0.04em] text-ink sm:text-4xl">Usuarios de la empresa</h1>
+        <p class="mt-3 text-sm leading-6 text-ink/65 sm:text-base">Administra las cuentas del equipo de tu empresa, sus roles y su acceso.</p>
     </div>
     @if (canCreate)
     {
-        <a asp-action="Create" class="bean-prov-newlot"><i class="fas fa-plus"></i> Crear nuevo usuario</a>
+        <a asp-action="Create" class="inline-flex min-h-11 shrink-0 cursor-pointer items-center justify-center gap-2 bg-clay px-5 py-3 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream">
+            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+            Crear nuevo usuario
+        </a>
     }
 </div>
 
-<div class="bean-panel-tablewrap">
-    <table class="bean-panel-table">
-        <thead>
-            <tr>
-                <th>Documento</th>
-                <th>Nombre completo</th>
-                <th>Email</th>
-                <th>Roles</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model)
-            {
-                <tr>
-                    <td>@item.DocumentNumber</td>
-                    <td class="bean-td-name">@item.FullName</td>
-                    <td>@item.Email</td>
-                    <td>
-                        @foreach (var role in item.Roles)
+@if (!Model.Any())
+{
+    <div class="mt-6 border border-ink/15 bg-white px-5 py-12 text-center sm:px-8">
+        <svg class="mx-auto size-9 text-clay-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="9" cy="8" r="3" /><path d="M3.5 19c.4-4 2.3-6 5.5-6s5.1 2 5.5 6M17 8v6M14 11h6" /></svg>
+        <h2 class="mt-4 text-lg font-extrabold text-ink">Aún no hay usuarios de equipo</h2>
+        <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-ink/60">Crea la primera cuenta y asígnale un rol para empezar a delegar tareas.</p>
+    </div>
+}
+else
+{
+    <div class="mt-6 space-y-3 md:hidden">
+        @foreach (var item in Model)
+        {
+            <article class="border border-ink/15 bg-white p-5">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0">
+                        <h2 class="break-words text-base font-extrabold text-ink">@item.FullName</h2>
+                        <p class="mt-1 break-all text-sm text-ink/60">@item.Email</p>
+                    </div>
+                    @if (item.Status)
+                    {
+                        <span class="inline-flex shrink-0 items-center gap-2 rounded-full border border-leaf/30 bg-leaf/10 px-3 py-1.5 font-data text-[10px] font-semibold uppercase tracking-[0.1em] text-leaf"><span class="size-1.5 rounded-full bg-leaf" aria-hidden="true"></span>Activo</span>
+                    }
+                    else
+                    {
+                        <span class="inline-flex shrink-0 items-center gap-2 rounded-full border border-clay/30 bg-clay/10 px-3 py-1.5 font-data text-[10px] font-semibold uppercase tracking-[0.1em] text-clay-dark"><span class="size-1.5 rounded-full bg-clay" aria-hidden="true"></span>Inactivo</span>
+                    }
+                </div>
+                <dl class="mt-5 grid grid-cols-2 gap-4 border-t border-ink/10 pt-4">
+                    <div>
+                        <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/50">Documento</dt>
+                        <dd class="mt-1 text-sm font-bold text-ink">@item.DocumentNumber</dd>
+                    </div>
+                    <div>
+                        <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/50">Roles</dt>
+                        <dd class="mt-1 flex flex-wrap gap-1.5">
+                            @foreach (var role in item.Roles)
+                            {
+                                <span class="rounded-full bg-oat px-2.5 py-1 text-xs font-extrabold text-ink">@role</span>
+                            }
+                        </dd>
+                    </div>
+                </dl>
+                @if (canUpdate)
+                {
+                    <div class="mt-5 flex items-center justify-end gap-2 border-t border-ink/10 pt-4">
+                        @if (item.Id != currentUserId)
                         {
-                            <span class="bean-role-chip">@role</span>
-                        }
-                    </td>
-                    <td>
-                        @if (item.Status)
-                        {
-                            <span class="bean-status active"><span class="dot"></span>Activo</span>
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 border border-ink/25 px-4 py-2 text-xs font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">
+                                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m4 16-.8 4 4-.8L18.5 7.9l-3.2-3.2L4 16Z" /><path d="m13.8 6.2 3.2 3.2" /></svg>
+                                Editar
+                            </a>
+                            <form asp-action="ToggleStatus" asp-route-id="@item.Id" method="post" onsubmit="return confirm('¿Estás seguro de cambiar el estado de este usuario?');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 border px-4 py-2 text-xs font-extrabold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-clay @(item.Status ? "border-clay/40 text-clay-dark hover:bg-clay hover:text-white" : "border-leaf/40 text-leaf hover:bg-leaf hover:text-white")">
+                                    @if (item.Status)
+                                    {
+                                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="8" r="3" /><path d="M3.5 19c.4-4 2.3-6 5.5-6 1.3 0 2.4.3 3.3 1M16 16l5 5M21 16l-5 5" /></svg>
+                                        <span>Desactivar</span>
+                                    }
+                                    else
+                                    {
+                                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="8" r="3" /><path d="M3.5 19c.4-4 2.3-6 5.5-6 1.3 0 2.4.3 3.3 1M16 18l2 2 4-5" /></svg>
+                                        <span>Activar</span>
+                                    }
+                                </button>
+                            </form>
                         }
                         else
                         {
-                            <span class="bean-status rejected"><span class="dot"></span>Inactivo</span>
+                            <span class="rounded-full bg-oat px-3 py-1.5 font-data text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/65">Tu cuenta</span>
+                        }
+                    </div>
+                }
+            </article>
+        }
+    </div>
+
+    <div class="mt-6 hidden overflow-x-auto border border-ink/15 bg-white md:block">
+        <table class="w-full min-w-[820px] border-collapse text-left">
+            <thead class="bg-ink text-white">
+                <tr class="font-data text-[10px] font-semibold uppercase tracking-[0.12em]">
+                    <th scope="col" class="px-5 py-4">Documento</th>
+                    <th scope="col" class="px-5 py-4">Nombre completo</th>
+                    <th scope="col" class="px-5 py-4">Email</th>
+                    <th scope="col" class="px-5 py-4">Roles</th>
+                    <th scope="col" class="px-5 py-4">Estado</th>
+                    <th scope="col" class="px-5 py-4 text-right">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-ink/10">
+            @foreach (var item in Model)
+            {
+                <tr class="transition-colors hover:bg-cream/70">
+                    <td class="px-5 py-4 font-data text-xs font-semibold text-ink/65">@item.DocumentNumber</td>
+                    <td class="px-5 py-4 text-sm font-extrabold text-ink">@item.FullName</td>
+                    <td class="max-w-64 break-all px-5 py-4 text-sm text-ink/65">@item.Email</td>
+                    <td class="px-5 py-4">
+                        <div class="flex flex-wrap gap-1.5">
+                        @foreach (var role in item.Roles)
+                        {
+                            <span class="rounded-full bg-oat px-2.5 py-1 text-xs font-extrabold text-ink">@role</span>
+                        }
+                        </div>
+                    </td>
+                    <td class="px-5 py-4">
+                        @if (item.Status)
+                        {
+                            <span class="inline-flex items-center gap-2 rounded-full border border-leaf/30 bg-leaf/10 px-3 py-1.5 font-data text-[10px] font-semibold uppercase tracking-[0.1em] text-leaf"><span class="size-1.5 rounded-full bg-leaf" aria-hidden="true"></span>Activo</span>
+                        }
+                        else
+                        {
+                            <span class="inline-flex items-center gap-2 rounded-full border border-clay/30 bg-clay/10 px-3 py-1.5 font-data text-[10px] font-semibold uppercase tracking-[0.1em] text-clay-dark"><span class="size-1.5 rounded-full bg-clay" aria-hidden="true"></span>Inactivo</span>
                         }
                     </td>
-                    <td>
-                        <div class="bean-td-actions">
+                    <td class="px-5 py-4">
+                        <div class="flex items-center justify-end gap-2">
                             @if (canUpdate)
                             {
-                                @if (item.Id != user.Id.ToString())
+                                @if (item.Id != currentUserId)
                                 {
-                                    <a asp-action="Edit" asp-route-id="@item.Id" class="bean-btn-pill outline icon" title="Editar">
-                                        <i class="fas fa-edit"></i>
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="grid size-11 cursor-pointer place-items-center border border-ink/25 text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay" title="Editar" aria-label="Editar a @item.FullName">
+                                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m4 16-.8 4 4-.8L18.5 7.9l-3.2-3.2L4 16Z" /><path d="m13.8 6.2 3.2 3.2" /></svg>
                                     </a>
-                                    <form asp-action="ToggleStatus" asp-route-id="@item.Id" method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro de cambiar el estado de este usuario?');">
+                                    <form asp-action="ToggleStatus" asp-route-id="@item.Id" method="post" onsubmit="return confirm('¿Estás seguro de cambiar el estado de este usuario?');">
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="bean-btn-pill @(item.Status ? "danger" : "primary") icon" title="@(item.Status ? "Desactivar" : "Activar")">
-                                            <i class="fas @(item.Status ? "fa-user-slash" : "fa-user-check")"></i>
+                                        <button type="submit" class="grid size-11 cursor-pointer place-items-center border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-clay @(item.Status ? "border-clay/40 text-clay-dark hover:bg-clay hover:text-white" : "border-leaf/40 text-leaf hover:bg-leaf hover:text-white")" title="@(item.Status ? "Desactivar" : "Activar")" aria-label="@(item.Status ? $"Desactivar a {item.FullName}" : $"Activar a {item.FullName}")">
+                                            @if (item.Status)
+                                            {
+                                                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="8" r="3" /><path d="M3.5 19c.4-4 2.3-6 5.5-6 1.3 0 2.4.3 3.3 1M16 16l5 5M21 16l-5 5" /></svg>
+                                            }
+                                            else
+                                            {
+                                                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="8" r="3" /><path d="M3.5 19c.4-4 2.3-6 5.5-6 1.3 0 2.4.3 3.3 1M16 18l2 2 4-5" /></svg>
+                                            }
                                         </button>
                                     </form>
                                 }
                                 else
                                 {
-                                    <span class="bean-role-chip">Tú</span>
+                                    <span class="rounded-full bg-oat px-3 py-1.5 font-data text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/65">Tú</span>
                                 }
                             }
                         </div>
                     </td>
                 </tr>
             }
-        </tbody>
-    </table>
-</div>
+            </tbody>
+        </table>
+    </div>
+}

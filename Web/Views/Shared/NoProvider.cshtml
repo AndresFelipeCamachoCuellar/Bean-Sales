@@ -1,0 +1,16 @@
+@{
+    Layout = "_LayoutHome";
+    ViewData["Title"] = "Empresa no asignada";
+}
+
+<section class="grid min-h-[70svh] place-items-center bg-cream px-4 py-16 sm:px-6 lg:px-10">
+    <div class="w-full max-w-3xl border border-oat bg-white p-8 text-center sm:p-12">
+        <svg class="mx-auto size-14 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 20V9l8-5 8 5v11H4Z" /><path d="M8 20v-6h8v6M12 8v2" /></svg>
+        <h1 class="mt-7 text-balance font-display text-4xl leading-[0.94] tracking-[-0.04em] sm:text-5xl">Tu cuenta no tiene una empresa asignada.</h1>
+        <p class="mx-auto mt-6 max-w-xl text-base leading-7 text-ink/60">Necesitas una empresa aprobada para administrar este perfil. Si ya completaste el registro, solicita que revisen la asignación de tu usuario.</p>
+        <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            <a asp-controller="Home" asp-action="Index" class="inline-flex min-h-13 cursor-pointer items-center justify-center bg-clay px-7 py-4 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-4 focus-visible:ring-offset-white">Volver a la tienda</a>
+            <a asp-controller="Account" asp-action="RegisterProvider" class="inline-flex min-h-13 cursor-pointer items-center justify-center border border-ink/25 px-7 py-4 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Registrar empresa</a>
+        </div>
+    </div>
+</section>

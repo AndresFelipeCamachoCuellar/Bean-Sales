@@ -1,19 +1,7 @@
 @model Web.Models.ViewModels.ProductImageManagerViewModel
 @*
-    Gestor de fotos del lote. Partial COMPARTIDA por:
-      · Views/Products/Edit.cshtml          (proveedor, lote en Borrador/Rechazado)
-      · Views/ProductImages/Manage.cshtml   (staff de Bean, cualquier lote)
-      · Views/ProductApproval/Receive.cshtml(staff, al recibir el lote en bodega)
-
-    ⚠️ Debe renderizarse FUERA de cualquier <form>: contiene su propio token
-       antiforgery y no debe anidarse en el formulario del producto.
-
-    ⚠️ La vista anfitriona debe cargar el script:
-           <script src="~/js/bean-media.js" asp-append-version="true"></script>
-       dentro de su @@section Scripts.
-
-    NO viaja aquí ningún secreto: el api_key de Cloudinary se entrega solo dentro
-    del ticket firmado, y solo después de autorizar al usuario sobre este producto.
+    Partial compartida por Products/Edit, ProductImages/Manage y ProductApproval/Receive.
+    Debe permanecer fuera de otros forms: contiene su propio token y POST independientes.
 *@
 @{
     var jsonOptions = new System.Text.Json.JsonSerializerOptions
@@ -24,8 +12,7 @@
     var maxMb = Model.MaxFileSizeMb.ToString("0.#", new System.Globalization.CultureInfo("es-CO"));
 }
 
-<div class="bean-media"
-     data-bean-media
+<div data-bean-media
      data-product-id="@Model.ProductID"
      data-max-images="@Model.MaxImages"
      data-max-bytes="@Model.MaxFileSizeBytes"
@@ -38,79 +25,60 @@
      data-delete-url="@Url.Action("Delete", "ProductImages")"
      data-cover-url="@Url.Action("Cover", "ProductImages")"
      data-reorder-url="@Url.Action("Reorder", "ProductImages")"
-     data-alt-url="@Url.Action("Alt", "ProductImages")">
+     data-alt-url="@Url.Action("Alt", "ProductImages")"
+     aria-busy="false">
 
     @Html.AntiForgeryToken()
 
-    <div class="bean-media-head">
-        <div>
-            <h3 class="bean-media-title">Fotos del lote</h3>
-            <p class="bean-media-sub">
-                La primera foto (o la que marques como portada) es la que se ve en el catálogo,
-                el carrito y los pedidos.
-            </p>
+    <div class="flex flex-col gap-4 border-b border-oat pb-5 sm:flex-row sm:items-start sm:justify-between">
+        <div class="max-w-3xl">
+            <h2 class="text-xl font-extrabold tracking-[-0.03em] text-ink">Fotos del lote</h2>
+            <p class="mt-2 text-sm leading-6 text-ink/60">La portada aparece en catálogo, carrito y pedidos. Ordena las demás para construir la galería del lote.</p>
         </div>
-        <span class="bean-media-count" data-bean-media-count>@Model.Count de @Model.MaxImages</span>
+        <span class="inline-flex w-fit shrink-0 rounded-full bg-oat px-3 py-1.5 font-data text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/70" data-bean-media-count>@Model.Count de @Model.MaxImages</span>
     </div>
 
-    <div class="bean-media-alert" data-bean-media-error style="display:none;"></div>
+    <div data-bean-media-error class="mt-5 border border-clay/35 bg-clay/10 px-4 py-3 text-sm font-semibold leading-6 text-clay-dark" role="alert" aria-live="assertive" hidden></div>
+    <div data-bean-media-status class="sr-only" role="status" aria-live="polite"></div>
 
     @if (!Model.StorageEnabled)
     {
-        <div class="bean-panel-note">
-            <i class="fas fa-camera"></i>
-            <div>
-                <strong>La galería de fotos aún no está configurada.</strong><br />
-                Falta cargar las credenciales de Cloudinary en el servidor. Mientras tanto el catálogo
-                usa el patrón de respaldo y el resto del formulario funciona con normalidad.
-            </div>
+        <div class="mt-5 flex items-start gap-3 border border-ink/15 bg-cream px-4 py-3 text-sm font-semibold leading-6 text-ink/70">
+            <svg class="mt-0.5 size-5 shrink-0 text-clay-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="6" width="18" height="14" /><path d="m3 16 5-5 4 4 3-3 6 6M9 6l1-2h4l1 2" /></svg>
+            <div><strong class="text-ink">La galería aún no está configurada.</strong><br />Faltan las credenciales de Cloudinary en el servidor. El resto del formulario sigue funcionando y el catálogo usa el respaldo visual.</div>
         </div>
     }
     else if (!Model.CanEdit)
     {
-        <div class="bean-panel-note">
-            <i class="fas fa-lock"></i>
-            <div>
-                Este lote ya salió de tu bandeja: a partir de ahora las fotos las gestiona el equipo de Bean.
-            </div>
+        <div class="mt-5 flex items-start gap-3 border border-ink/15 bg-cream px-4 py-3 text-sm font-semibold leading-6 text-ink/70">
+            <svg class="mt-0.5 size-5 shrink-0 text-clay-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="10" width="14" height="10" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>
+            <div>Este lote ya salió de tu bandeja. A partir de ahora las fotos las gestiona el equipo de Bean.</div>
         </div>
     }
     else
     {
-        <div class="bean-media-drop @(Model.MaxImagesReached ? "is-full" : "")" data-bean-media-drop>
-            <input type="file"
-                   class="bean-media-input"
-                   accept="@Model.AcceptAttribute"
-                   multiple
-                   data-bean-media-input />
-            <span class="bean-media-drop-ico"><i class="fas fa-cloud-upload-alt"></i></span>
-            <span class="bean-media-drop-main" data-bean-media-pickhint
-                  style="@(Model.MaxImagesReached ? "display:none;" : "")">
-                Arrastra tus fotos aquí o haz clic para elegir
-            </span>
-            <span class="bean-media-drop-main" data-bean-media-fullhint
-                  style="@(Model.MaxImagesReached ? "" : "display:none;")">
-                Llegaste al máximo de @Model.MaxImages fotos. Elimina una para subir otra.
-            </span>
-            <span class="bean-media-drop-hint">
-                @Model.FormatsLabel · máx @maxMb MB
-                @if (Model.MinDimensionPx > 0)
-                {
-                    @* Paréntesis explícitos: el "×" pegado a una expresión implícita es
-                       terreno resbaladizo en Razor. *@
-                    <text>· mínimo @(Model.MinDimensionPx)×@(Model.MinDimensionPx) px</text>
-                }
-            </span>
+        <div data-bean-media-drop aria-disabled="@(Model.MaxImagesReached ? "true" : "false")" class="relative mt-5 grid min-h-48 cursor-pointer place-items-center border border-dashed border-ink/30 bg-cream p-6 text-center transition-colors hover:border-clay hover:bg-oat/55 focus-within:border-clay focus-within:ring-2 focus-within:ring-clay focus-within:ring-offset-2 focus-within:ring-offset-white">
+            <input type="file" class="absolute inset-0 z-10 size-full cursor-pointer opacity-0 disabled:cursor-not-allowed" accept="@Model.AcceptAttribute" multiple data-bean-media-input aria-label="Elegir fotos del lote" />
+            <div class="pointer-events-none max-w-xl">
+                <svg class="mx-auto size-10 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5 5 5" /><path d="M5 13v7h14v-7" /></svg>
+                <p data-bean-media-pickhint class="mt-4 text-base font-extrabold text-ink" hidden="@Model.MaxImagesReached">Arrastra tus fotos aquí o haz clic para elegir</p>
+                <p data-bean-media-fullhint class="mt-4 text-base font-extrabold text-clay-dark" hidden="@(!Model.MaxImagesReached)">Llegaste al máximo de @Model.MaxImages fotos. Elimina una para subir otra.</p>
+                <p class="mt-2 font-data text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/55">
+                    @Model.FormatsLabel · máx @maxMb MB
+                    @if (Model.MinDimensionPx > 0)
+                    {
+                        <text> · mínimo @(Model.MinDimensionPx)×@(Model.MinDimensionPx) px</text>
+                    }
+                </p>
+            </div>
         </div>
     }
 
-    <div class="bean-media-grid" data-bean-media-grid></div>
+    <div data-bean-media-grid class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3"></div>
 
-    <div class="bean-media-empty" data-bean-media-empty style="@(Model.Count == 0 ? "" : "display:none;")">
-        <span class="bean-img bean-media-empty-ph o1"></span>
-        <div>
-            <strong>Aún no hay fotos de este lote.</strong><br />
-            Sin fotos, el catálogo muestra el patrón de granos de respaldo.
-        </div>
+    <div data-bean-media-empty class="mt-6 flex flex-col items-center justify-center border border-oat bg-cream px-6 py-10 text-center" hidden="@(Model.Count != 0)">
+        <svg class="size-12 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="5" width="18" height="15" /><path d="m3 16 5-5 4 4 3-3 6 6" /><circle cx="16.5" cy="9.5" r="1.5" /></svg>
+        <p class="mt-4 font-extrabold text-ink">Aún no hay fotos de este lote.</p>
+        <p class="mt-2 max-w-lg text-sm leading-6 text-ink/60">Sin fotos, el catálogo muestra el patrón de granos de respaldo.</p>
     </div>
 </div>

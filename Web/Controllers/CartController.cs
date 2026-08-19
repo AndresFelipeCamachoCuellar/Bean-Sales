@@ -67,10 +67,19 @@ public class CartController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddToCart(Guid productId, int quantity = 1)
     {
-        var product = await _context.Products.FindAsync(productId);
-        if (product == null || !product.Status) return NotFound();
+        var selectedCountryId = await GetSelectedCountryIdAsync();
+        if (!selectedCountryId.HasValue) return NotFound();
+
+        var product = await _context.Products.FirstOrDefaultAsync(candidate =>
+            candidate.ProductID == productId &&
+            candidate.Status &&
+            candidate.ProductStatus == ProductStatus.Active &&
+            candidate.ProductCountries.Any(country =>
+                country.CountryID == selectedCountryId.Value && country.IsAvailable));
+        if (product == null) return NotFound();
 
         if (quantity < 1) quantity = 1;
 
@@ -78,6 +87,8 @@ public class CartController : Controller
         if (User.Identity?.IsAuthenticated == true)
         {
             var user = await _userManager.GetUserAsync(User);
+            if (user is null) return Challenge();
+
             var cartItem = await _context.ShoppingCartItems
                 .FirstOrDefaultAsync(c => c.UserID == user.Id && c.ProductID == productId);
 
@@ -151,6 +162,7 @@ public class CartController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> UpdateQuantity(Guid id, int quantity)
     {
         if (quantity < 1) quantity = 1; // Minimum 1
@@ -158,6 +170,8 @@ public class CartController : Controller
         if (User.Identity?.IsAuthenticated == true)
         {
             var user = await _userManager.GetUserAsync(User);
+            if (user is null) return Challenge();
+
             var item = await _context.ShoppingCartItems
                 .FirstOrDefaultAsync(c => c.ShoppingCartItemID == id && c.UserID == user.Id);
             
@@ -195,6 +209,12 @@ public class CartController : Controller
         //     Está acotado y con cooldown; nunca lanza.
         await _paymentExpiration.SweepAsync(ct);
 
+        var user = await _userManager.GetUserAsync(User);
+        if (user is null)
+        {
+            return RedirectToAction("Register", "Account", new { returnUrl = Url.Action("Checkout", "Cart") });
+        }
+
         // 2. Validate Cart Content
         var cartItems = await GetCartItemsAsync();
         if (!cartItems.Any())
@@ -204,8 +224,6 @@ public class CartController : Controller
 
         // 3. Prellenar el formulario con el perfil real del cliente.
         //    (Antes se ponía User.Identity.Name en "Nombre", que es el email.)
-        var user = await _userManager.GetUserAsync(User);
-
         // 3b. ¿Hay un pedido esperando pago? Se ofrece retomarlo en vez de duplicarlo.
         var pendiente = await FindLivePendingOrderAsync(user.Id, ct);
         if (pendiente != null)
@@ -322,6 +340,10 @@ public class CartController : Controller
         }
 
         var user = await _userManager.GetUserAsync(User);
+        if (user is null)
+        {
+            return RedirectToAction("Register", "Account", new { returnUrl = Url.Action("Checkout", "Cart") });
+        }
 
         // 1b. Anti doble clic / doble envío del formulario: si el usuario ya tiene un
         //     pedido esperando pago, se retoma ese en vez de crear otro (que duplicaría
@@ -598,6 +620,7 @@ public class CartController : Controller
     public async Task<IActionResult> Pay(Guid id, CancellationToken ct)
     {
         var user = await _userManager.GetUserAsync(User);
+        if (user is null) return Challenge();
 
         var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderID == id, ct);
         if (order == null) return NotFound();
@@ -669,6 +692,7 @@ public class CartController : Controller
     public async Task<IActionResult> PaymentResult(Guid orderId, string? id, CancellationToken ct)
     {
         var user = await _userManager.GetUserAsync(User);
+        if (user is null) return Challenge();
 
         var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderID == orderId, ct);
         if (order == null) return NotFound();
@@ -705,6 +729,7 @@ public class CartController : Controller
     public async Task<IActionResult> RetryPayment(Guid id, CancellationToken ct)
     {
         var user = await _userManager.GetUserAsync(User);
+        if (user is null) return Challenge();
 
         var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderID == id, ct);
         if (order == null) return NotFound();
@@ -738,6 +763,7 @@ public class CartController : Controller
     public async Task<IActionResult> CancelPayment(Guid id, CancellationToken ct)
     {
         var user = await _userManager.GetUserAsync(User);
+        if (user is null) return Challenge();
 
         var order = await _context.Orders
             .Include(o => o.Items)
@@ -764,6 +790,10 @@ public class CartController : Controller
         }
 
         var user = await _userManager.GetUserAsync(User);
+        if (user is null)
+        {
+            return RedirectToAction("Login", "Account");
+        }
 
         var order = await _context.Orders
             .Include(o => o.Items)
@@ -792,11 +822,14 @@ public class CartController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Remove(Guid id)
     {
         if (User.Identity?.IsAuthenticated == true)
         {
             var user = await _userManager.GetUserAsync(User);
+            if (user is null) return Challenge();
+
             var item = await _context.ShoppingCartItems
                 .FirstOrDefaultAsync(c => c.ShoppingCartItemID == id && c.UserID == user.Id);
             
@@ -1079,9 +1112,14 @@ public class CartController : Controller
         if (User.Identity?.IsAuthenticated == true)
         {
             var user = await _userManager.GetUserAsync(User);
+            if (user is null)
+            {
+                return new List<ShoppingCartItem>();
+            }
+
             return await _context.ShoppingCartItems
                 .Include(c => c.Product)
-                .ThenInclude(p => p.Provider)
+                .ThenInclude(p => p!.Provider)
                 .Where(c => c.UserID == user.Id)
                 .ToListAsync();
         }
@@ -1101,6 +1139,25 @@ public class CartController : Controller
             }
             return sessionCart;
         }
+    }
+
+    private async Task<Guid?> GetSelectedCountryIdAsync()
+    {
+        var selectedCountryIdStr = HttpContext.Request.Cookies["UserCountryId"];
+        if (Guid.TryParse(selectedCountryIdStr, out var parsedId) &&
+            await _context.Countries.AsNoTracking().AnyAsync(country =>
+                country.CountryID == parsedId && country.Status))
+        {
+            return parsedId;
+        }
+
+        return await _context.Countries
+            .AsNoTracking()
+            .Where(country => country.Status)
+            .OrderBy(country => country.Name == "Colombia" ? 0 : 1)
+            .ThenBy(country => country.Name)
+            .Select(country => (Guid?)country.CountryID)
+            .FirstOrDefaultAsync();
     }
 
     private List<ShoppingCartItem> GetSessionCart()

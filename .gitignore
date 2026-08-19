@@ -65,3 +65,6 @@ appsettings.Production.json
 **/appsettings.Production.json
 appsettings.Development.json
 **/appsettings.Development.json
+
+# Frontend dependencies (Tailwind CLI)
+node_modules/

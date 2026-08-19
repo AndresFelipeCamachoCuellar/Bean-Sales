@@ -9,141 +9,189 @@
 
 @{
     ViewData["Title"] = "Pedidos";
-    Layout = "_Layout";
+    Layout = "_LayoutAdminTailwind";
 
     var co = System.Globalization.CultureInfo.GetCultureInfo("es-CO");
-
     var currentUser = await UserManager.GetUserAsync(User);
     var canUpdate = currentUser != null
         && await PermissionService.HasPermissionAsync(currentUser, Modules.Orders, Permissions.Update);
-
     var estado = Model.Estado;
     var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
 
-    string TabClass(OrderStatus? s) => estado == s ? "bean-tab active" : "bean-tab";
+    string TabClass(OrderStatus? target) => estado == target
+        ? "inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2 rounded-full border border-ink bg-ink px-4 py-2 text-xs font-extrabold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream"
+        : "inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2 rounded-full border border-ink/20 bg-transparent px-4 py-2 text-xs font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream";
+
+    string StatusTone(OrderStatus status) => status switch
+    {
+        OrderStatus.Pending => "border-ink/20 bg-ink/5 text-ink/60",
+        OrderStatus.Confirmed => "border-honey/40 bg-honey/10 text-ink",
+        OrderStatus.Processing => "border-clay/30 bg-clay/10 text-clay-dark",
+        OrderStatus.Shipped => "border-clay/30 bg-clay/10 text-clay-dark",
+        OrderStatus.Delivered => "border-leaf/30 bg-leaf/10 text-leaf",
+        OrderStatus.Cancelled => "border-ink/20 bg-ink/5 text-ink/60",
+        _ => "border-ink/20 bg-ink/5 text-ink/60"
+    };
+
+    string StatusDot(OrderStatus status) => status switch
+    {
+        OrderStatus.Confirmed => "bg-honey",
+        OrderStatus.Processing => "bg-clay",
+        OrderStatus.Shipped => "bg-clay",
+        OrderStatus.Delivered => "bg-leaf",
+        OrderStatus.Cancelled => "bg-ink/35",
+        _ => "bg-ink/35"
+    };
 }
 
-<div class="bean-panel-head">
-    <div>
-        <h1 class="bean-panel-title">Pedidos</h1>
-        <p class="bean-panel-sub">Administra las compras de la tienda: confirma, prepara, despacha y cierra cada pedido.</p>
+<header class="grid gap-6 border-b border-ink/15 pb-7 xl:grid-cols-12 xl:items-end">
+    <div class="xl:col-span-7">
+        <h1 class="font-display text-4xl leading-[0.94] tracking-[-0.04em] sm:text-5xl">Pedidos</h1>
+        <p class="mt-3 max-w-2xl text-sm leading-6 text-ink/60 sm:text-base sm:leading-7">
+            Confirma, prepara, despacha y cierra cada compra de la tienda desde una sola bandeja.
+        </p>
     </div>
 
-    <form method="get" asp-action="Index" style="display:flex; gap:8px; align-items:center;">
+    <form method="get" asp-action="Index" class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto] xl:col-span-5" role="search">
         @if (estado.HasValue)
         {
             <input type="hidden" name="estado" value="@estado.Value" />
         }
-        <input type="text" name="q" value="@Model.Query" class="bean-input" style="min-width:250px;"
-               placeholder="Buscar por cliente o correo…" />
-        <button type="submit" class="bean-btn-pill outline"><i class="fas fa-search"></i> Buscar</button>
+        <label for="order-search" class="sr-only">Buscar por cliente, correo o identificador</label>
+        <div class="relative min-w-0">
+            <svg class="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-ink/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" />
+            </svg>
+            <input id="order-search" type="search" name="q" value="@Model.Query"
+                   class="min-h-12 w-full border border-ink/20 bg-white py-3 pl-11 pr-4 text-sm text-ink outline-none transition-colors placeholder:text-ink/40 hover:border-ink/40 focus:border-clay focus:ring-2 focus:ring-clay/20"
+                   placeholder="Cliente, correo o ID completo" />
+        </div>
+        <button type="submit" class="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 bg-ink px-5 py-3 text-sm font-extrabold text-white transition-colors hover:bg-clay focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream">
+            Buscar
+        </button>
         @if (!string.IsNullOrWhiteSpace(Model.Query))
         {
-            <a class="bean-btn-pill outline" asp-action="Index" asp-route-estado="@estado">Limpiar</a>
+            <a asp-action="Index" asp-route-estado="@estado"
+               class="inline-flex min-h-12 cursor-pointer items-center justify-center border border-ink/20 px-5 py-3 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">
+                Limpiar
+            </a>
         }
     </form>
-</div>
+</header>
 
-<div class="bean-tabs" style="margin-top:16px;">
-    <a class="@(TabClass(null))" asp-action="Index" asp-route-q="@Model.Query">
-        Todos <span class="cnt">· @Model.CountAll</span>
+<nav class="mt-6 flex gap-2 overflow-x-auto pb-2" aria-label="Filtrar pedidos por estado">
+    <a class="@TabClass(null)" aria-current="@(!estado.HasValue ? "page" : null)" asp-action="Index" asp-route-q="@Model.Query">
+        Todos <span class="font-data text-[10px] tabular-nums opacity-70">@Model.CountAll</span>
     </a>
-    <a class="@(TabClass(OrderStatus.Confirmed))" asp-action="Index" asp-route-estado="Confirmed" asp-route-q="@Model.Query">
-        Nuevos <span class="cnt">· @Model.CountNew</span>
+    <a class="@TabClass(OrderStatus.Confirmed)" aria-current="@(estado == OrderStatus.Confirmed ? "page" : null)" asp-action="Index" asp-route-estado="Confirmed" asp-route-q="@Model.Query">
+        Nuevos <span class="font-data text-[10px] tabular-nums opacity-70">@Model.CountNew</span>
     </a>
-    <a class="@(TabClass(OrderStatus.Processing))" asp-action="Index" asp-route-estado="Processing" asp-route-q="@Model.Query">
-        En preparación <span class="cnt">· @Model.CountProcessing</span>
+    <a class="@TabClass(OrderStatus.Processing)" aria-current="@(estado == OrderStatus.Processing ? "page" : null)" asp-action="Index" asp-route-estado="Processing" asp-route-q="@Model.Query">
+        En preparación <span class="font-data text-[10px] tabular-nums opacity-70">@Model.CountProcessing</span>
     </a>
-    <a class="@(TabClass(OrderStatus.Shipped))" asp-action="Index" asp-route-estado="Shipped" asp-route-q="@Model.Query">
-        Enviados <span class="cnt">· @Model.CountShipped</span>
+    <a class="@TabClass(OrderStatus.Shipped)" aria-current="@(estado == OrderStatus.Shipped ? "page" : null)" asp-action="Index" asp-route-estado="Shipped" asp-route-q="@Model.Query">
+        Enviados <span class="font-data text-[10px] tabular-nums opacity-70">@Model.CountShipped</span>
     </a>
-    <a class="@(TabClass(OrderStatus.Delivered))" asp-action="Index" asp-route-estado="Delivered" asp-route-q="@Model.Query">
-        Entregados <span class="cnt">· @Model.CountDelivered</span>
+    <a class="@TabClass(OrderStatus.Delivered)" aria-current="@(estado == OrderStatus.Delivered ? "page" : null)" asp-action="Index" asp-route-estado="Delivered" asp-route-q="@Model.Query">
+        Entregados <span class="font-data text-[10px] tabular-nums opacity-70">@Model.CountDelivered</span>
     </a>
-    <a class="@(TabClass(OrderStatus.Cancelled))" asp-action="Index" asp-route-estado="Cancelled" asp-route-q="@Model.Query">
-        Cancelados <span class="cnt">· @Model.CountCancelled</span>
+    <a class="@TabClass(OrderStatus.Cancelled)" aria-current="@(estado == OrderStatus.Cancelled ? "page" : null)" asp-action="Index" asp-route-estado="Cancelled" asp-route-q="@Model.Query">
+        Cancelados <span class="font-data text-[10px] tabular-nums opacity-70">@Model.CountCancelled</span>
     </a>
-</div>
+</nav>
 
 @if (TempData["OrderOk"] != null)
 {
-    <div class="bean-panel-note" style="margin-top:16px;">
-        <i class="fas fa-check-circle"></i>
+    <div class="mt-5 flex gap-3 border border-leaf/25 bg-leaf/10 px-4 py-3 text-sm leading-6 text-leaf" role="status">
+        <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m8 12 2.5 2.5L16 9" /></svg>
         <div>@TempData["OrderOk"]</div>
     </div>
 }
 @if (TempData["OrderError"] != null)
 {
-    <div class="bean-panel-note danger" style="margin-top:16px;">
-        <i class="fas fa-exclamation-triangle"></i>
+    <div class="mt-5 flex gap-3 border border-clay/30 bg-clay/10 px-4 py-3 text-sm leading-6 text-clay-dark" role="alert">
+        <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Z" /><path d="M12 9v5m0 3h.01" /></svg>
         <div>@TempData["OrderError"]</div>
     </div>
 }
 
 @if (Model.Orders.Count == 0)
 {
-    <div class="bean-appr-empty" style="margin-top:22px;">
-        <div class="ico"><i class="fas fa-receipt"></i></div>
-        <h3>No hay pedidos en esta vista</h3>
-        <p>Cuando entren compras con este estado aparecerán aquí.</p>
-    </div>
+    <section class="mt-7 grid min-h-80 place-items-center border border-ink/15 bg-white px-6 py-14 text-center" aria-labelledby="empty-orders-title">
+        <div class="max-w-md">
+            <svg class="mx-auto size-14 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" /><path d="M9 8h6M9 12h6" /></svg>
+            <h2 id="empty-orders-title" class="mt-6 text-xl font-extrabold tracking-[-0.03em]">No hay pedidos en esta vista</h2>
+            <p class="mt-2 text-sm leading-6 text-ink/55">Cuando entren compras con este estado aparecerán aquí.</p>
+        </div>
+    </section>
 }
 else
 {
-    <div class="bean-panel-tablewrap">
-        <table class="bean-panel-table">
-            <thead>
-                <tr>
-                    <th>Pedido</th>
-                    <th>Cliente</th>
-                    <th>Fecha</th>
-                    <th>Ítems</th>
-                    <th>Total</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
+    <div class="mt-7 overflow-x-auto border border-ink/15 bg-white">
+        <table class="w-full min-w-[70rem] border-collapse text-left text-sm">
+            <thead class="bg-ink text-white">
+                <tr class="font-data text-[10px] font-semibold uppercase tracking-[0.14em]">
+                    <th scope="col" class="px-5 py-4">Pedido</th>
+                    <th scope="col" class="px-5 py-4">Cliente</th>
+                    <th scope="col" class="px-5 py-4">Fecha</th>
+                    <th scope="col" class="px-5 py-4">Contenido</th>
+                    <th scope="col" class="px-5 py-4">Total</th>
+                    <th scope="col" class="px-5 py-4">Estado</th>
+                    <th scope="col" class="px-5 py-4 text-right">Acciones</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody class="divide-y divide-ink/10">
                 @foreach (var o in Model.Orders)
                 {
                     var ui = OrderStatusUi.For(o.Status);
                     var next = OrderWorkflow.NextStates(o.Status);
 
-                    <tr>
-                        <td class="bean-td-name">
-                            <a asp-action="Details" asp-route-id="@o.OrderID" style="color:inherit; text-decoration:none;">
+                    <tr class="transition-colors hover:bg-cream/70">
+                        <td class="px-5 py-5 align-middle">
+                            <a asp-action="Details" asp-route-id="@o.OrderID"
+                               class="cursor-pointer font-data text-xs font-semibold tracking-[0.08em] text-clay-dark underline decoration-clay/30 underline-offset-4 transition-colors hover:text-clay focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">
                                 #@o.ShortId
                             </a>
                         </td>
-                        <td>
-                            <div style="font-weight:700; color:var(--bean-ink);">@o.FullName</div>
-                            <div style="font-size:12.5px; color:var(--bean-muted);">@o.Email</div>
+                        <td class="px-5 py-5 align-middle">
+                            <p class="font-extrabold text-ink">@o.FullName</p>
+                            <p class="mt-1 max-w-52 truncate text-xs text-ink/50">@o.Email</p>
                         </td>
-                        <td>@o.OrderDate.ToString("d MMM yyyy '·' HH:mm", co)</td>
-                        <td>@o.Bags bolsas · @o.Lines lotes</td>
-                        <td style="font-weight:700; color:var(--bean-ink);">@o.TotalAmount.ToString("C0", co)</td>
-                        <td><span class="@ui.CssClass"><span class="dot"></span>@ui.Label</span></td>
-                        <td class="bean-td-actions">
-                            <a asp-action="Details" asp-route-id="@o.OrderID" class="bean-btn-pill outline icon" title="Ver detalle">
-                                <i class="fas fa-eye"></i>
-                            </a>
+                        <td class="whitespace-nowrap px-5 py-5 align-middle text-ink/65">@o.OrderDate.ToString("d MMM yyyy '·' HH:mm", co)</td>
+                        <td class="whitespace-nowrap px-5 py-5 align-middle text-ink/65">@o.Bags bolsas · @o.Lines lotes</td>
+                        <td class="whitespace-nowrap px-5 py-5 align-middle font-extrabold tabular-nums text-ink">@o.TotalAmount.ToString("C0", co)</td>
+                        <td class="px-5 py-5 align-middle">
+                            <span class="inline-flex min-h-8 items-center gap-2 rounded-full border px-3 py-1 font-data text-[10px] font-semibold uppercase tracking-[0.09em] @StatusTone(o.Status)">
+                                <span class="size-1.5 rounded-full @StatusDot(o.Status)" aria-hidden="true"></span>@ui.Label
+                            </span>
+                        </td>
+                        <td class="px-5 py-5 align-middle">
+                            <div class="flex items-center justify-end gap-2">
+                                <a asp-action="Details" asp-route-id="@o.OrderID"
+                                   class="grid size-11 shrink-0 cursor-pointer place-items-center border border-ink/20 text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay"
+                                   title="Ver detalle" aria-label="Ver detalle del pedido #@o.ShortId">
+                                    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.5" /></svg>
+                                </a>
 
-                            @if (canUpdate && next.Count > 0)
-                            {
-                                var nextState = next[0];
-                                var nextLabel = OrderStatusUi.For(nextState).Label;
-                                var shortLabel = OrderWorkflow.ShortActionLabel(nextState);
+                                @if (canUpdate && next.Count > 0)
+                                {
+                                    var nextState = next[0];
+                                    var nextLabel = OrderStatusUi.For(nextState).Label;
+                                    var shortLabel = OrderWorkflow.ShortActionLabel(nextState);
 
-                                <form asp-action="UpdateStatus" method="post" style="display:inline;"
-                                      onsubmit="return confirm('¿Marcar el pedido #@o.ShortId como @nextLabel?');">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@o.OrderID" />
-                                    <input type="hidden" name="nuevoEstado" value="@nextState" />
-                                    <input type="hidden" name="estadoActual" value="@o.Status" />
-                                    <input type="hidden" name="returnUrl" value="@returnUrl" />
-                                    <button type="submit" class="bean-btn-pill primary">@shortLabel</button>
-                                </form>
-                            }
+                                    <form asp-action="UpdateStatus" method="post"
+                                          onsubmit="return confirm('¿Marcar el pedido #@o.ShortId como @nextLabel?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@o.OrderID" />
+                                        <input type="hidden" name="nuevoEstado" value="@nextState" />
+                                        <input type="hidden" name="estadoActual" value="@o.Status" />
+                                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                        <button type="submit" class="inline-flex min-h-11 cursor-pointer items-center justify-center bg-clay px-4 py-2 text-xs font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-white">
+                                            @shortLabel
+                                        </button>
+                                    </form>
+                                }
+                            </div>
                         </td>
                     </tr>
                 }
@@ -151,21 +199,27 @@ else
         </table>
     </div>
 
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-top:16px;">
-        <span style="font-size:13px; color:var(--bean-muted);">
-            Página @Model.Page de @Model.TotalPages · @Model.TotalCount pedidos
-        </span>
-        <div style="display:flex; gap:8px;">
+    <nav class="mt-5 flex flex-col gap-4 border-t border-ink/15 pt-5 sm:flex-row sm:items-center sm:justify-between" aria-label="Paginación de pedidos">
+        <p class="text-xs font-semibold text-ink/50">
+            Página <span class="tabular-nums text-ink">@Model.Page</span> de <span class="tabular-nums text-ink">@Model.TotalPages</span> · @Model.TotalCount pedidos
+        </p>
+        <div class="flex gap-2">
             @if (Model.HasPrev)
             {
-                <a class="bean-btn-pill outline" asp-action="Index" asp-route-q="@Model.Query"
-                   asp-route-estado="@Model.Estado" asp-route-page="@(Model.Page - 1)">&larr; Anterior</a>
+                <a asp-action="Index" asp-route-q="@Model.Query" asp-route-estado="@Model.Estado" asp-route-page="@(Model.Page - 1)"
+                   class="inline-flex min-h-11 cursor-pointer items-center gap-2 border border-ink/20 px-4 py-2 text-xs font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6" /></svg>
+                    Anterior
+                </a>
             }
             @if (Model.HasNext)
             {
-                <a class="bean-btn-pill outline" asp-action="Index" asp-route-q="@Model.Query"
-                   asp-route-estado="@Model.Estado" asp-route-page="@(Model.Page + 1)">Siguiente &rarr;</a>
+                <a asp-action="Index" asp-route-q="@Model.Query" asp-route-estado="@Model.Estado" asp-route-page="@(Model.Page + 1)"
+                   class="inline-flex min-h-11 cursor-pointer items-center gap-2 border border-ink/20 px-4 py-2 text-xs font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">
+                    Siguiente
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+                </a>
             }
         </div>
-    </div>
+    </nav>
 }

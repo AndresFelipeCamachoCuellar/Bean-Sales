@@ -9,7 +9,7 @@
 
 @{
     ViewData["Title"] = "Pedido";
-    Layout = "_Layout";
+    Layout = "_LayoutAdminTailwind";
 
     var co = System.Globalization.CultureInfo.GetCultureInfo("es-CO");
     var order = Model.Order;
@@ -20,10 +20,8 @@
         && await PermissionService.HasPermissionAsync(currentUser, Modules.Orders, Permissions.Update);
     var canCancel = Model.CanCancel && currentUser != null
         && await PermissionService.HasPermissionAsync(currentUser, Modules.Orders, Permissions.Delete);
-
     var isCancelled = order.OrderStatus == OrderStatus.Cancelled;
 
-    // Paso actual de la línea de tiempo (mismo criterio que Cart/Confirmation).
     var step = order.OrderStatus switch
     {
         OrderStatus.Confirmed => 1,
@@ -49,199 +47,259 @@
         return "future";
     }
 
+    string StatusTone(OrderStatus status) => status switch
+    {
+        OrderStatus.Pending => "border-ink/20 bg-ink/5 text-ink/60",
+        OrderStatus.Confirmed => "border-honey/40 bg-honey/10 text-ink",
+        OrderStatus.Processing => "border-clay/30 bg-clay/10 text-clay-dark",
+        OrderStatus.Shipped => "border-clay/30 bg-clay/10 text-clay-dark",
+        OrderStatus.Delivered => "border-leaf/30 bg-leaf/10 text-leaf",
+        OrderStatus.Cancelled => "border-ink/20 bg-ink/5 text-ink/60",
+        _ => "border-ink/20 bg-ink/5 text-ink/60"
+    };
+
+    string StatusDot(OrderStatus status) => status switch
+    {
+        OrderStatus.Confirmed => "bg-honey",
+        OrderStatus.Processing => "bg-clay",
+        OrderStatus.Shipped => "bg-clay",
+        OrderStatus.Delivered => "bg-leaf",
+        OrderStatus.Cancelled => "bg-ink/35",
+        _ => "bg-ink/35"
+    };
+
+    string MarkerClass(string state) => state switch
+    {
+        "done" => "border-leaf bg-leaf text-white",
+        "active" => "border-clay bg-clay text-white ring-4 ring-clay/15",
+        _ => "border-ink/20 bg-white text-ink/35"
+    };
+
+    string LineClass(string state) => state == "done" ? "bg-leaf" : "bg-ink/15";
+    string TitleClass(string state) => state == "future" ? "text-ink/45" : "text-ink";
+
     var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
-    var clienteEmail = order.User?.Email ?? "—";
+    var clienteEmail = order.User?.Email ?? "Sin correo registrado";
 }
 
-<div class="bean-panel-head">
-    <div>
-        <h1 class="bean-panel-title">Pedido #@Model.ShortId</h1>
-        <p class="bean-panel-sub">
+<header class="grid gap-6 border-b border-ink/15 pb-7 lg:grid-cols-12 lg:items-end">
+    <div class="lg:col-span-8">
+        <div class="flex flex-wrap items-center gap-3">
+            <h1 class="font-display text-4xl leading-[0.94] tracking-[-0.04em] sm:text-5xl">Pedido #@Model.ShortId</h1>
+            <span class="inline-flex min-h-8 items-center gap-2 rounded-full border px-3 py-1 font-data text-[10px] font-semibold uppercase tracking-[0.09em] @StatusTone(order.OrderStatus)">
+                <span class="size-1.5 rounded-full @StatusDot(order.OrderStatus)" aria-hidden="true"></span>@ui.Label
+            </span>
+        </div>
+        <p class="mt-3 text-sm leading-6 text-ink/60">
             @order.OrderDate.ToString("d 'de' MMMM, yyyy '·' HH:mm", co)
             · @order.FirstName @order.LastName
             · Pago: @order.PaymentMethod
         </p>
     </div>
-    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-        <span class="@ui.CssClass"><span class="dot"></span>@ui.Label</span>
-        <a class="bean-btn-pill outline" asp-action="Index">&larr; Volver a pedidos</a>
+    <div class="lg:col-span-4 lg:text-right">
+        <a asp-action="Index" class="inline-flex min-h-11 cursor-pointer items-center gap-2 border border-ink/20 px-4 py-2 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">
+            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6" /></svg>
+            Volver a pedidos
+        </a>
     </div>
-</div>
+</header>
 
 @if (TempData["OrderOk"] != null)
 {
-    <div class="bean-panel-note" style="margin-top:16px;">
-        <i class="fas fa-check-circle"></i>
+    <div class="mt-5 flex gap-3 border border-leaf/25 bg-leaf/10 px-4 py-3 text-sm leading-6 text-leaf" role="status">
+        <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m8 12 2.5 2.5L16 9" /></svg>
         <div>@TempData["OrderOk"]</div>
     </div>
 }
 @if (TempData["OrderError"] != null)
 {
-    <div class="bean-panel-note danger" style="margin-top:16px;">
-        <i class="fas fa-exclamation-triangle"></i>
+    <div class="mt-5 flex gap-3 border border-clay/30 bg-clay/10 px-4 py-3 text-sm leading-6 text-clay-dark" role="alert">
+        <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Z" /><path d="M12 9v5m0 3h.01" /></svg>
         <div>@TempData["OrderError"]</div>
     </div>
 }
 
-<div class="bean-dash-cols" style="margin-top:22px;">
-    @* ---------------- Columna izquierda: líneas del pedido ---------------- *@
-    <div class="bean-dash-card">
-        <div class="bean-dash-cardhead">
-            <h2 class="bean-dash-cardtitle">Líneas del pedido</h2>
-            <span style="font-size:13px; color:var(--bean-muted);">@order.Items.Count líneas</span>
+<div class="mt-7 grid gap-6 xl:grid-cols-12 xl:items-start">
+    <section class="min-w-0 border border-ink/15 bg-white xl:col-span-8" aria-labelledby="order-lines-title">
+        <div class="flex items-center justify-between gap-4 border-b border-ink/15 px-5 py-5 sm:px-6">
+            <h2 id="order-lines-title" class="text-lg font-extrabold tracking-[-0.03em]">Líneas del pedido</h2>
+            <span class="font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-ink/45">@order.Items.Count líneas</span>
         </div>
 
-        <table class="bean-panel-table">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Proveedor</th>
-                    <th>Cant.</th>
-                    <th>Precio unit.</th>
-                    <th>Subtotal</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (order.Items.Count == 0)
-                {
-                    <tr>
-                        <td colspan="5" style="color:var(--bean-muted);">Este pedido no tiene líneas registradas.</td>
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[46rem] border-collapse text-left text-sm">
+                <thead class="bg-cream">
+                    <tr class="border-b border-ink/10 font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-ink/55">
+                        <th scope="col" class="px-5 py-4 sm:px-6">Producto</th>
+                        <th scope="col" class="px-5 py-4">Proveedor</th>
+                        <th scope="col" class="px-5 py-4 text-right">Cant.</th>
+                        <th scope="col" class="px-5 py-4 text-right">Precio unit.</th>
+                        <th scope="col" class="px-5 py-4 text-right sm:pr-6">Subtotal</th>
                     </tr>
-                }
-                else
-                {
-                    foreach (var i in order.Items)
+                </thead>
+                <tbody class="divide-y divide-ink/10">
+                    @if (order.Items.Count == 0)
                     {
-                        var proveedor = i.Product?.Provider?.Name ?? "—";
-
                         <tr>
-                            @* Snapshots: el nombre y el precio son los del momento de la compra. *@
-                            <td class="bean-td-name">@i.ProductName</td>
-                            <td>@proveedor</td>
-                            <td>@i.Quantity</td>
-                            <td>@i.UnitPrice.ToString("C0", co)</td>
-                            <td style="font-weight:700; color:var(--bean-ink);">@i.SubTotal.ToString("C0", co)</td>
+                            <td colspan="5" class="px-5 py-8 text-center text-sm text-ink/50 sm:px-6">Este pedido no tiene líneas registradas.</td>
                         </tr>
                     }
-                }
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td colspan="4" style="text-align:right; color:var(--bean-muted);">Subtotal</td>
-                    <td>@order.Subtotal.ToString("C0", co)</td>
-                </tr>
-                <tr>
-                    <td colspan="4" style="text-align:right; color:var(--bean-muted);">Envío</td>
-                    <td>@order.ShippingCost.ToString("C0", co)</td>
-                </tr>
-                <tr>
-                    <td colspan="4" style="text-align:right; font-weight:700; color:var(--bean-ink);">Total</td>
-                    <td style="font-weight:800; color:var(--bean-ink);">
-                        @order.TotalAmount.ToString("C0", co) <small>@order.CurrencyCode</small>
-                    </td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
+                    else
+                    {
+                        foreach (var i in order.Items)
+                        {
+                            var proveedor = i.Product?.Provider?.Name ?? "Sin proveedor";
 
-    @* ---------------- Columna derecha: cliente / seguimiento / acciones ---------------- *@
-    <div style="display:flex; flex-direction:column; gap:20px;">
+                            <tr>
+                                <td class="px-5 py-5 font-extrabold text-ink sm:px-6">@i.ProductName</td>
+                                <td class="px-5 py-5 text-ink/60">@proveedor</td>
+                                <td class="px-5 py-5 text-right tabular-nums text-ink/60">@i.Quantity</td>
+                                <td class="whitespace-nowrap px-5 py-5 text-right tabular-nums text-ink/60">@i.UnitPrice.ToString("C0", co)</td>
+                                <td class="whitespace-nowrap px-5 py-5 text-right font-extrabold tabular-nums text-ink sm:pr-6">@i.SubTotal.ToString("C0", co)</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+                <tfoot class="border-t border-ink/15 bg-cream/70 text-sm">
+                    <tr>
+                        <th scope="row" colspan="4" class="px-5 pt-5 text-right font-medium text-ink/55">Subtotal</th>
+                        <td class="whitespace-nowrap px-5 pt-5 text-right font-bold tabular-nums text-ink sm:pr-6">@order.Subtotal.ToString("C0", co)</td>
+                    </tr>
+                    <tr>
+                        <th scope="row" colspan="4" class="px-5 py-3 text-right font-medium text-ink/55">Envío</th>
+                        <td class="whitespace-nowrap px-5 py-3 text-right font-bold tabular-nums text-ink sm:pr-6">@order.ShippingCost.ToString("C0", co)</td>
+                    </tr>
+                    <tr>
+                        <th scope="row" colspan="4" class="px-5 pb-5 text-right text-base font-extrabold text-ink">Total</th>
+                        <td class="whitespace-nowrap px-5 pb-5 text-right text-lg font-extrabold tabular-nums text-ink sm:pr-6">
+                            @order.TotalAmount.ToString("C0", co) <small class="font-data text-[10px] font-semibold tracking-[0.1em] text-ink/45">@order.CurrencyCode</small>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
 
-        <div class="bean-dash-card">
-            <div class="bean-dash-cardhead">
-                <h2 class="bean-dash-cardtitle">Cliente y envío</h2>
+    <div class="grid gap-6 xl:col-span-4">
+        <section class="border border-ink/15 bg-white" aria-labelledby="customer-title">
+            <div class="border-b border-ink/15 px-5 py-5 sm:px-6">
+                <h2 id="customer-title" class="text-lg font-extrabold tracking-[-0.03em]">Cliente y envío</h2>
             </div>
-            <div style="font-size:13.5px; color:var(--bean-body); line-height:1.7;">
-                <div style="font-weight:700; color:var(--bean-ink);">@order.FirstName @order.LastName</div>
-                <div>@clienteEmail</div>
+            <div class="px-5 py-5 text-sm leading-7 text-ink/65 sm:px-6">
+                <p class="font-extrabold text-ink">@order.FirstName @order.LastName</p>
+                <p class="break-all">@clienteEmail</p>
                 @if (!string.IsNullOrWhiteSpace(order.CustomerPhone))
                 {
-                    <div>Cel. @order.CustomerPhone</div>
+                    <p>Cel. @order.CustomerPhone</p>
                 }
-                <div style="margin-top:10px;">@order.Address</div>
-                <div>
-                    @order.State
-                    @if (!string.IsNullOrWhiteSpace(order.ZipCode))
-                    {
-                        <text>· @order.ZipCode</text>
-                    }
-                </div>
-                <div>@order.ShippingCountry</div>
-                <div style="margin-top:10px;">Método de pago: <strong>@order.PaymentMethod</strong></div>
+                <address class="mt-4 not-italic">
+                    <p>@order.Address</p>
+                    <p>
+                        @order.State
+                        @if (!string.IsNullOrWhiteSpace(order.ZipCode))
+                        {
+                            <text>· @order.ZipCode</text>
+                        }
+                    </p>
+                    <p>@order.ShippingCountry</p>
+                </address>
+                <p class="mt-4">Método de pago: <strong class="text-ink">@order.PaymentMethod</strong></p>
             </div>
-            <div class="bean-panel-note" style="margin-top:14px;">
-                <i class="fas fa-info-circle"></i>
-                <div>Pago sin pasarela real (placeholder). Verifica el cobro por fuera del sistema antes de despachar.</div>
-            </div>
-        </div>
-
-        <div class="bean-dash-card">
-            <div class="bean-dash-cardhead">
-                <h2 class="bean-dash-cardtitle">Seguimiento</h2>
-            </div>
-
-            @if (isCancelled)
+            @if (order.PaymentStatus == PaymentStatus.Approved && !isCancelled)
             {
-                <div class="bean-panel-note danger">
-                    <i class="fas fa-ban"></i>
-                    <div>Pedido cancelado. El cliente ya no verá avance en su línea de tiempo.</div>
+                <div class="mx-5 mb-5 flex gap-3 border border-leaf/30 bg-leaf/10 px-4 py-3 text-xs leading-5 text-leaf sm:mx-6">
+                    <svg class="mt-0.5 size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m8 12 2.5 2.5L16 9" /></svg>
+                    <p><strong>Pago aprobado.</strong> La orden está habilitada para continuar su flujo logístico.</p>
+                </div>
+            }
+            else if (order.PaymentStatus == PaymentStatus.Approved)
+            {
+                <div class="mx-5 mb-5 flex gap-3 border border-clay/30 bg-clay/10 px-4 py-3 text-xs leading-5 text-clay-dark sm:mx-6">
+                    <svg class="mt-0.5 size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m7 7 10 10" /></svg>
+                    <p><strong>Pago aprobado, pedido cancelado.</strong> No continúes el despacho; revisa la gestión del reembolso por separado.</p>
                 </div>
             }
             else
             {
-                <div class="bean-timeline">
+                <div class="mx-5 mb-5 flex gap-3 border border-honey/35 bg-honey/10 px-4 py-3 text-xs leading-5 text-ink/70 sm:mx-6">
+                    <svg class="mt-0.5 size-4 shrink-0 text-honey" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v6m0-10h.01" /></svg>
+                    <p><strong>Pago @order.PaymentStatus.</strong> No despaches hasta que Wompi confirme el cobro.</p>
+                </div>
+            }
+        </section>
+
+        <section class="border border-ink/15 bg-white" aria-labelledby="tracking-title">
+            <div class="border-b border-ink/15 px-5 py-5 sm:px-6">
+                <h2 id="tracking-title" class="text-lg font-extrabold tracking-[-0.03em]">Seguimiento</h2>
+            </div>
+
+            @if (isCancelled)
+            {
+                <div class="m-5 flex gap-3 border border-clay/30 bg-clay/10 px-4 py-3 text-sm leading-6 text-clay-dark sm:m-6">
+                    <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m7 7 10 10" /></svg>
+                    <p>Pedido cancelado. El cliente ya no verá avance en su línea de tiempo.</p>
+                </div>
+            }
+            else
+            {
+                <ol class="px-5 py-6 sm:px-6">
                     @foreach (var h in hitos)
                     {
                         var estadoHito = EstadoHito(h.Num);
 
-                        <div class="bean-tl-item @estadoHito">
-                            <div class="bean-tl-marker">
+                        <li class="relative flex gap-4 pb-7 last:pb-0">
+                            @if (h.Num < hitos.Length)
+                            {
+                                <span class="absolute left-[15px] top-8 h-[calc(100%-2rem)] w-px @LineClass(estadoHito)" aria-hidden="true"></span>
+                            }
+                            <span class="relative z-10 grid size-8 shrink-0 place-items-center rounded-full border @MarkerClass(estadoHito)" aria-hidden="true">
                                 @if (estadoHito == "done")
                                 {
-                                    <i class="fas fa-check"></i>
+                                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 12 4 4 8-8" /></svg>
                                 }
                                 else
                                 {
-                                    <span class="dot"></span>
+                                    <span class="size-1.5 rounded-full bg-current"></span>
                                 }
+                            </span>
+                            <div class="pt-1">
+                                <p class="text-sm font-extrabold @TitleClass(estadoHito)">@h.Titulo</p>
+                                <p class="mt-1 text-xs leading-5 text-ink/50">@h.Detalle</p>
                             </div>
-                            <div class="bean-tl-body">
-                                <div class="bean-tl-title">@h.Titulo</div>
-                                <div class="bean-tl-detail">@h.Detalle</div>
-                            </div>
-                        </div>
+                        </li>
                     }
-                </div>
+                </ol>
             }
-        </div>
+        </section>
 
-        <div class="bean-dash-card">
-            <div class="bean-dash-cardhead">
-                <h2 class="bean-dash-cardtitle">Acciones</h2>
+        <section class="border border-ink/15 bg-white" aria-labelledby="actions-title">
+            <div class="border-b border-ink/15 px-5 py-5 sm:px-6">
+                <h2 id="actions-title" class="text-lg font-extrabold tracking-[-0.03em]">Acciones</h2>
             </div>
+            <div class="grid gap-3 px-5 py-5 sm:px-6">
+                @if (Model.IsTerminal && !canCancel)
+                {
+                    <div class="flex gap-3 border border-ink/15 bg-cream px-4 py-3 text-sm leading-6 text-ink/60">
+                        <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="10" width="14" height="10" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>
+                        <p>Este pedido está cerrado.</p>
+                    </div>
+                }
 
-            @if (Model.IsTerminal && !canCancel)
-            {
-                <div class="bean-panel-note">
-                    <i class="fas fa-lock"></i>
-                    <div>Este pedido está cerrado.</div>
-                </div>
-            }
-
-            <div style="display:flex; flex-direction:column; gap:10px;">
                 @if (canUpdate)
                 {
                     foreach (var next in Model.NextStates)
                     {
                         var label = OrderWorkflow.ActionLabel(next);
+                        var nextLabel = OrderStatusUi.For(next).Label;
 
-                        <form asp-action="UpdateStatus" method="post">
+                        <form asp-action="UpdateStatus" method="post"
+                              onsubmit="return confirm('¿Actualizar este pedido a @nextLabel?');">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="id" value="@order.OrderID" />
                             <input type="hidden" name="nuevoEstado" value="@next" />
                             <input type="hidden" name="estadoActual" value="@order.OrderStatus" />
                             <input type="hidden" name="returnUrl" value="@returnUrl" />
-                            <button type="submit" class="bean-btn-pill primary" style="width:100%; justify-content:center;">
+                            <button type="submit" class="inline-flex min-h-12 w-full cursor-pointer items-center justify-center bg-clay px-5 py-3 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-white">
                                 @label
                             </button>
                         </form>
@@ -250,53 +308,101 @@
 
                 @if (canCancel)
                 {
-                    <button type="button" class="bean-btn-pill danger" style="width:100%; justify-content:center;"
-                            data-bs-toggle="modal" data-bs-target="#cancelOrderModal">
-                        <i class="fas fa-ban"></i> Cancelar pedido
+                    <button id="cancelOrderOpen" type="button"
+                            class="inline-flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 border border-clay/40 px-5 py-3 text-sm font-extrabold text-clay-dark transition-colors hover:bg-clay hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay"
+                            aria-haspopup="dialog" aria-controls="cancelOrderDialog">
+                        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m7 7 10 10" /></svg>
+                        Cancelar pedido
                     </button>
                 }
             </div>
-        </div>
+        </section>
     </div>
 </div>
 
 @if (canCancel)
 {
-    <div class="modal fade" id="cancelOrderModal" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Cancelar pedido #@Model.ShortId</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+    <dialog id="cancelOrderDialog"
+            class="m-auto w-[min(92vw,36rem)] max-h-[90svh] overflow-y-auto border border-ink/20 bg-white p-0 text-ink shadow-lift backdrop:bg-ink/75"
+            aria-labelledby="cancel-order-title" aria-describedby="cancel-order-description">
+        <form asp-action="Cancel" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@order.OrderID" />
+            <input type="hidden" name="estadoActual" value="@order.OrderStatus" />
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+            <div class="flex items-start gap-4 border-b border-ink/15 bg-ink px-5 py-5 text-white sm:px-6">
+                <div class="min-w-0 flex-1">
+                    <p class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-clay-light">Acción irreversible</p>
+                    <h2 id="cancel-order-title" class="mt-2 text-xl font-extrabold tracking-[-0.03em]">Cancelar pedido #@Model.ShortId</h2>
                 </div>
-                <form asp-action="Cancel" method="post">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="id" value="@order.OrderID" />
-                    <input type="hidden" name="estadoActual" value="@order.OrderStatus" />
-                    <div class="modal-body">
-                        @if (Model.WillRestock)
-                        {
-                            <p style="margin:0;">
-                                Vas a cancelar el pedido <strong>#@Model.ShortId</strong> y se devolverán
-                                <strong>@Model.UnitsToRestock unidades</strong> al inventario.
-                                Esta acción no se puede deshacer.
-                            </p>
-                        }
-                        else
-                        {
-                            <p style="margin:0;">
-                                Vas a cancelar el pedido <strong>#@Model.ShortId</strong>, que ya salió de bodega:
-                                el inventario no se reintegra automáticamente — ajústalo a mano cuando recibas la devolución.
-                                Esta acción no se puede deshacer.
-                            </p>
-                        }
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="bean-btn-pill outline" data-bs-dismiss="modal">Volver</button>
-                        <button type="submit" class="bean-btn-pill danger">Sí, cancelar pedido</button>
-                    </div>
-                </form>
+                <button type="button" data-cancel-close
+                        class="grid size-11 shrink-0 cursor-pointer place-items-center text-husk transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light"
+                        aria-label="Cerrar confirmación">
+                    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+                </button>
             </div>
-        </div>
-    </div>
+
+            <div id="cancel-order-description" class="px-5 py-6 text-sm leading-7 text-ink/70 sm:px-6">
+                @if (Model.WillRestock)
+                {
+                    <p>
+                        Vas a cancelar el pedido <strong class="text-ink">#@Model.ShortId</strong> y se devolverán
+                        <strong class="text-ink">@Model.UnitsToRestock unidades</strong> al inventario.
+                        Esta acción no se puede deshacer.
+                    </p>
+                }
+                else
+                {
+                    <p>
+                        Vas a cancelar el pedido <strong class="text-ink">#@Model.ShortId</strong>, que ya salió de bodega.
+                        El inventario no se reintegra automáticamente; ajústalo a mano cuando recibas la devolución.
+                        Esta acción no se puede deshacer.
+                    </p>
+                }
+            </div>
+
+            <div class="grid gap-2 border-t border-ink/15 bg-cream px-5 py-4 sm:grid-cols-2 sm:px-6">
+                <button type="button" data-cancel-close autofocus
+                        class="inline-flex min-h-12 cursor-pointer items-center justify-center border border-ink/20 bg-white px-5 py-3 text-sm font-extrabold text-ink transition-colors hover:border-ink/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">
+                    Volver
+                </button>
+                <button type="submit"
+                        class="inline-flex min-h-12 cursor-pointer items-center justify-center bg-clay px-5 py-3 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream">
+                    Sí, cancelar pedido
+                </button>
+            </div>
+        </form>
+    </dialog>
+}
+
+@section Scripts {
+    @if (canCancel)
+    {
+        <script>
+            (function () {
+                var dialog = document.getElementById('cancelOrderDialog');
+                var trigger = document.getElementById('cancelOrderOpen');
+                var closeButtons = dialog ? dialog.querySelectorAll('[data-cancel-close]') : [];
+
+                if (!dialog || !trigger || typeof dialog.showModal !== 'function') return;
+
+                trigger.addEventListener('click', function () {
+                    dialog.showModal();
+                });
+
+                Array.prototype.forEach.call(closeButtons, function (button) {
+                    button.addEventListener('click', function () { dialog.close(); });
+                });
+
+                dialog.addEventListener('click', function (event) {
+                    if (event.target === dialog) dialog.close();
+                });
+
+                dialog.addEventListener('close', function () {
+                    trigger.focus();
+                });
+            })();
+        </script>
+    }
 }

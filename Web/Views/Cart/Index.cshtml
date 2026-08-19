@@ -1,86 +1,176 @@
 @model List<Web.Models.ShoppingCartItem>
 
 @{
-    ViewData["Title"] = "Carrito de Compras";
+    Layout = "_LayoutHome";
+    ViewData["Title"] = "Tu carrito";
     var co = new System.Globalization.CultureInfo("es-CO");
-    var bolsas = Model.Sum(x => x.Quantity);
-    var lotes = Model.Count;
-    // Importes servidos por el controlador (fuente única del costo de envío).
-    var envio = (decimal)ViewBag.Shipping;
-    var granTotal = (decimal)ViewBag.GrandTotal;
+    var bags = Model.Sum(item => item.Quantity);
+    var lots = Model.Count;
+    var shipping = (decimal)ViewBag.Shipping;
+    var subtotal = (decimal)ViewBag.Total;
+    var grandTotal = (decimal)ViewBag.GrandTotal;
 }
 
-<section class="bean-cart">
-    <div class="bean-container">
+<section class="min-h-[70svh] bg-cream px-4 pb-20 pt-10 sm:px-6 sm:pb-24 sm:pt-14 lg:px-10 lg:pb-32">
+    <div class="mx-auto max-w-[90rem]">
         @if (TempData["CartError"] != null)
         {
-            <div class="bean-alert-error" role="alert">
-                <i class="fas fa-exclamation-circle"></i> @TempData["CartError"]
+            <div class="mb-8 flex items-start gap-3 border border-clay/30 bg-white px-5 py-4 text-sm font-semibold text-clay-dark" role="alert">
+                <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v6M12 17h.01" /></svg>
+                <span>@TempData["CartError"]</span>
             </div>
         }
 
-        @if (!Model.Any())
+        @if (Model.Count == 0)
         {
-            <div class="bean-empty">
-                <div class="ico"><i class="fas fa-shopping-basket"></i></div>
-                <h3>Tu carrito está vacío</h3>
-                <p>Aún no has agregado lotes. Explora nuestro catálogo de micro-lotes trazables.</p>
-                <a asp-controller="Home" asp-action="Index" class="btn-bean">Explorar catálogo</a>
+            <div class="grid min-h-[32rem] place-items-center border border-oat bg-white px-6 py-16 text-center">
+                <div class="max-w-lg">
+                    <svg class="mx-auto size-16 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8Z" /><path d="M8 8a4 4 0 0 1 8 0M9 14h6" /></svg>
+                    <h1 class="mt-7 text-balance font-display text-4xl leading-[0.95] tracking-[-0.04em] sm:text-5xl">Tu canasto espera el primer lote.</h1>
+                    <p class="mx-auto mt-5 max-w-md text-base leading-7 text-ink/60">Explora cafés trazables y reúne distintas fincas en una sola compra.</p>
+                    <a asp-controller="Home" asp-action="Index" asp-fragment="lotes" class="mt-8 inline-flex min-h-13 cursor-pointer items-center justify-center gap-3 bg-clay px-7 py-4 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-4 focus-visible:ring-offset-white">
+                        Explorar lotes
+                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+                    </a>
+                </div>
             </div>
         }
         else
         {
-            <h1 class="bean-cart-title">Tu carrito <small>· @bolsas bolsas · @lotes lotes</small></h1>
+            <header class="flex flex-col gap-4 border-b border-ink/15 pb-7 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h1 class="font-display text-4xl leading-[0.95] tracking-[-0.045em] sm:text-5xl lg:text-6xl">Tu carrito</h1>
+                    <p class="mt-3 font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-clay-dark">
+                        @bags @(bags == 1 ? "bolsa" : "bolsas") · @lots @(lots == 1 ? "lote" : "lotes")
+                    </p>
+                </div>
+                <a asp-controller="Home" asp-action="Index" asp-fragment="lotes" class="inline-flex cursor-pointer items-center gap-2 self-start border-b border-ink pb-1 text-sm font-extrabold text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-clay sm:self-auto">
+                    Seguir comprando
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+                </a>
+            </header>
 
-            <div class="bean-cart-grid">
-                <!-- ===== Lista de ítems ===== -->
-                <div class="bean-cart-list">
+            <div class="mt-10 grid gap-10 lg:grid-cols-12 lg:items-start">
+                <div class="min-w-0 border-t border-ink/15 lg:col-span-8">
                     @foreach (var item in Model)
                     {
-                        <div class="bean-cart-item">
-                            <div class="bean-cart-thumb bean-img o1" style="@(string.IsNullOrEmpty(item.Product?.ImageUrl) ? "" : $"background-image:url('{item.Product.ImageUrl}');background-size:cover;background-position:center;")"></div>
-                            <div class="bean-cart-item-info">
-                                <h3 class="bean-cart-item-name">
-                                    <a asp-controller="Home" asp-action="Details" asp-route-id="@item.ProductID">@item.Product?.Name</a>
-                                </h3>
-                                <div class="bean-cart-item-meta">@item.Product?.Provider?.Name · 340 g</div>
+                        var productName = item.Product?.Name ?? "Producto no disponible";
+                        var productInitial = string.IsNullOrWhiteSpace(productName) ? "B" : productName.Trim()[..1].ToUpperInvariant();
+                        var unitPrice = item.Product?.Price ?? 0m;
+                        var itemSubtotal = item.Quantity * unitPrice;
+                        var maxQuantity = Math.Max(1, Math.Min(item.Product?.Stock ?? item.Quantity, 99));
+
+                        <article class="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] gap-x-4 gap-y-5 border-b border-ink/15 py-6 sm:grid-cols-[7rem_minmax(0,1fr)_auto] sm:gap-x-6 sm:py-7">
+                            <a asp-controller="Home" asp-action="Details" asp-route-id="@item.ProductID" class="row-span-1 block aspect-[4/5] cursor-pointer overflow-hidden bg-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream sm:row-span-2">
+                                @if (!string.IsNullOrWhiteSpace(item.Product?.ImageUrl))
+                                {
+                                    <img src="@item.Product.ImageUrl" alt="@productName" class="h-full w-full object-cover" />
+                                }
+                                else
+                                {
+                                    <span class="grid h-full place-items-center font-display text-4xl text-cream">@productInitial</span>
+                                }
+                            </a>
+
+                            <div class="flex min-w-0 items-start justify-between gap-3 sm:col-span-2">
+                                <div class="min-w-0">
+                                    <h2 class="text-balance text-lg font-extrabold leading-tight tracking-[-0.03em] sm:text-xl">
+                                        <a asp-controller="Home" asp-action="Details" asp-route-id="@item.ProductID" class="cursor-pointer hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">@productName</a>
+                                    </h2>
+                                    <p class="mt-2 truncate text-xs font-semibold text-ink/50 sm:text-sm">@(item.Product?.Provider?.Name ?? "Productor colombiano") · 340 g</p>
+                                </div>
+                                <form asp-action="Remove" asp-route-id="@item.ShoppingCartItemID" method="post" class="shrink-0">
+                                    <button type="submit" class="grid size-11 cursor-pointer place-items-center text-ink/40 transition-colors hover:bg-white hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay" aria-label="Eliminar @productName del carrito">
+                                        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" /></svg>
+                                    </button>
+                                </form>
                             </div>
 
-                            <form asp-action="UpdateQuantity" asp-route-id="@item.ShoppingCartItemID" method="post">
-                                <div class="bean-stepper">
-                                    <button class="minus" type="button" onclick="this.parentNode.querySelector('input[type=number]').stepDown(); this.form.submit();">−</button>
-                                    <input type="number" name="quantity" value="@item.Quantity" min="1" onchange="this.form.submit()">
-                                    <button class="plus" type="button" onclick="this.parentNode.querySelector('input[type=number]').stepUp(); this.form.submit();">+</button>
+                            <div class="col-span-2 flex min-w-0 items-center justify-between gap-4 sm:col-span-2 sm:col-start-2">
+                                <form asp-action="UpdateQuantity" asp-route-id="@item.ShoppingCartItemID" method="post" class="shrink-0" data-quantity-form>
+                                    <div class="grid min-h-11 grid-cols-[2.75rem_3rem_2.75rem] border border-ink/20" aria-label="Cantidad de @productName">
+                                        <button type="button" class="grid cursor-pointer place-items-center text-lg text-ink/60 transition-colors hover:bg-white hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-clay disabled:cursor-not-allowed disabled:opacity-35" aria-label="Disminuir cantidad de @productName" data-quantity-delta="-1" @(item.Quantity <= 1 ? "disabled" : null)>−</button>
+                                        <input type="number" name="quantity" value="@item.Quantity" min="1" max="@maxQuantity" inputmode="numeric" class="min-w-0 border-x border-ink/20 bg-transparent text-center font-data text-sm font-semibold outline-none focus:ring-2 focus:ring-inset focus:ring-clay" aria-label="Cantidad de bolsas de @productName" data-quantity-input />
+                                        <button type="button" class="grid cursor-pointer place-items-center bg-ink text-lg text-white transition-colors hover:bg-clay focus:outline-none focus-visible:ring-2 focus-visible:ring-clay disabled:cursor-not-allowed disabled:opacity-35" aria-label="Aumentar cantidad de @productName" data-quantity-delta="1" @(item.Quantity >= maxQuantity ? "disabled" : null)>+</button>
+                                    </div>
+                                </form>
+                                <div class="min-w-0 text-right">
+                                    <p class="font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-ink/40">Subtotal</p>
+                                    <p class="mt-1 whitespace-nowrap text-base font-extrabold tracking-[-0.02em] sm:text-lg">$@itemSubtotal.ToString("#,##0", co)</p>
                                 </div>
-                            </form>
-
-                            <div class="bean-cart-item-sub">$@((item.Quantity * (item.Product?.Price ?? 0)).ToString("#,##0", co))</div>
-
-                            <form asp-action="Remove" asp-route-id="@item.ShoppingCartItemID" method="post">
-                                <button type="submit" class="bean-cart-remove" title="Eliminar"><i class="fas fa-trash-alt"></i></button>
-                            </form>
-                        </div>
+                            </div>
+                        </article>
                     }
-                    <div class="bean-cart-continue">
-                        <a asp-controller="Home" asp-action="Index">← Seguir comprando</a>
-                    </div>
                 </div>
 
-                <!-- ===== Resumen ===== -->
-                <aside class="bean-summary">
-                    <h3>Resumen del pedido</h3>
-                    <div class="bean-summary-row"><span>Subtotal</span><span class="val">$@(((decimal)ViewBag.Total).ToString("#,##0", co))</span></div>
-                    <div class="bean-summary-row"><span>Envío a Colombia</span><span class="val">$@envio.ToString("#,##0", co)</span></div>
-                    <div class="bean-summary-row"><span>Impuestos</span><span class="val">Incluidos</span></div>
-                    <div class="bean-summary-sep"></div>
-                    <div class="bean-summary-total">
-                        <span class="lbl">Total</span>
-                        <span class="amt">$@(granTotal.ToString("#,##0", co)) <small>COP</small></span>
+                <aside class="bg-ink p-6 text-white shadow-tray sm:p-8 lg:sticky lg:top-28 lg:col-span-4" aria-labelledby="summary-title">
+                    <div class="flex items-center justify-between border-b border-white/15 pb-5">
+                        <h2 id="summary-title" class="text-lg font-extrabold tracking-[-0.025em]">Resumen</h2>
+                        <span class="font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-clay-light">COP</span>
                     </div>
-                    <a asp-action="Checkout" class="btn-bean btn-bean-block">Proceder al pago →</a>
-                    <div class="bean-secure-note">🔒 Pago seguro · Visa · Mastercard · PayPal · PSE</div>
+
+                    <dl class="divide-y divide-white/10 text-sm">
+                        <div class="flex items-center justify-between gap-4 py-4">
+                            <dt class="text-husk">Subtotal</dt>
+                            <dd class="font-bold">$@subtotal.ToString("#,##0", co)</dd>
+                        </div>
+                        <div class="flex items-center justify-between gap-4 py-4">
+                            <dt class="text-husk">Envío estimado</dt>
+                            <dd class="font-bold">$@shipping.ToString("#,##0", co)</dd>
+                        </div>
+                        <div class="flex items-center justify-between gap-4 py-4">
+                            <dt class="text-husk">Impuestos</dt>
+                            <dd class="font-bold">Incluidos</dd>
+                        </div>
+                    </dl>
+
+                    <div class="flex items-end justify-between gap-4 border-t border-white/20 pt-6">
+                        <span class="text-sm font-bold text-husk">Total</span>
+                        <span class="text-right font-display text-3xl tracking-[-0.04em]">$@grandTotal.ToString("#,##0", co)</span>
+                    </div>
+
+                    <a asp-action="Checkout" class="mt-7 inline-flex min-h-13 w-full cursor-pointer items-center justify-center gap-3 bg-clay px-6 py-4 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-ink">
+                        Continuar al checkout
+                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+                    </a>
+
+                    <p class="mt-5 flex items-start gap-2 text-xs font-semibold leading-5 text-husk">
+                        <svg class="mt-0.5 size-4 shrink-0 text-clay-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" /></svg>
+                        El valor del envío se confirma con tu ciudad antes de pagar.
+                    </p>
                 </aside>
             </div>
         }
     </div>
 </section>
+
+@section Scripts {
+    <script>
+        (function () {
+            var forms = document.querySelectorAll('[data-quantity-form]');
+
+            Array.prototype.forEach.call(forms, function (form) {
+                var input = form.querySelector('[data-quantity-input]');
+                var buttons = form.querySelectorAll('[data-quantity-delta]');
+                if (!input) return;
+
+                function submitQuantity(value) {
+                    var minimum = parseInt(input.min, 10) || 1;
+                    var maximum = parseInt(input.max, 10) || 99;
+                    input.value = Math.min(maximum, Math.max(minimum, value));
+                    form.requestSubmit();
+                }
+
+                Array.prototype.forEach.call(buttons, function (button) {
+                    button.addEventListener('click', function () {
+                        submitQuantity((parseInt(input.value, 10) || 1) + parseInt(button.getAttribute('data-quantity-delta'), 10));
+                    });
+                });
+
+                input.addEventListener('change', function () {
+                    submitQuantity(parseInt(input.value, 10) || 1);
+                });
+            });
+        })();
+    </script>
+}

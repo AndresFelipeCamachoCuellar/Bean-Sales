@@ -1,26 +1,34 @@
 @{
+    Layout = "_LayoutAuthTailwind";
     ViewData["Title"] = "Registro recibido";
 }
 
-@section AuthAside {
-    <div class="bean-auth-panel-top">
-        <a class="bean-brand" asp-controller="Home" asp-action="Index"><span class="bean-drop"></span> Bean</a>
-        <span class="bean-auth-badge-emp">Empresas</span>
+<div class="border-y border-ink/20 py-10 sm:py-12">
+    <div class="grid size-16 place-items-center bg-clay text-white" aria-hidden="true">
+        <svg class="size-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m5 12 4 4L19 6" /></svg>
     </div>
-    <div class="bean-auth-panel-body">
-        <h2>Bienvenido a Bean.</h2>
-        <p>Estamos revisando los datos de tu empresa. En cuanto quede aprobada, tendrás acceso a precios de mayoreo, cupo mensual y facturación.</p>
-        <div class="bean-auth-panel-checks">
-            <span>Verificación en 1 día hábil</span>
-        </div>
-    </div>
-}
 
-<div class="bean-auth-success">
-    <div class="circle">✓</div>
-    <h1>¡Registro recibido!</h1>
-    <p>Tu empresa y tu cuenta de administrador se crearon correctamente.</p>
-    <div class="bean-auth-pill-state">Estado: pendiente de verificación</div>
-    <p>Un administrador de la plataforma revisará tus datos y aprobará tu acceso pronto. Te notificaremos por correo cuando tu cuenta esté activa.</p>
-    <a asp-action="Login" class="bean-auth-cta" style="max-width:260px;margin:10px auto 0;">Volver a iniciar sesión</a>
+    <h1 class="mt-8 text-balance font-display text-4xl leading-[0.95] tracking-[-0.04em] sm:text-5xl">Registro recibido</h1>
+    <p class="mt-4 text-base leading-7 text-ink/65">La empresa y su usuario administrador fueron creados correctamente.</p>
+
+    <dl class="mt-8 border border-ink/20 bg-white">
+        <div class="grid gap-2 border-b border-ink/15 p-5 sm:grid-cols-[9rem_1fr] sm:gap-5 sm:p-6">
+            <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-ink/60">Estado actual</dt>
+            <dd class="flex items-center gap-2 text-sm font-extrabold text-ink">
+                <span class="size-2 rounded-full bg-honey" aria-hidden="true"></span>
+                Pendiente de revisión
+            </dd>
+        </div>
+        <div class="grid gap-2 p-5 sm:grid-cols-[9rem_1fr] sm:gap-5 sm:p-6">
+            <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-ink/60">Qué sigue</dt>
+            <dd class="text-sm leading-6 text-ink/70">Un administrador de Bean revisará la información. Cuando la empresa sea aprobada, podrás acceder con el correo y la contraseña del usuario administrador.</dd>
+        </div>
+    </dl>
+
+    <a asp-action="Login" class="mt-8 inline-flex min-h-13 w-full cursor-pointer items-center justify-center gap-3 bg-clay px-7 py-4 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-4 focus-visible:ring-offset-cream sm:w-auto">
+        Volver a iniciar sesión
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+    </a>
 </div>
+
+<p class="mt-6 text-sm leading-6 text-ink/60">El acceso al panel permanecerá bloqueado hasta que finalice la revisión.</p>

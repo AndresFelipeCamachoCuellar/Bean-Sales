@@ -1,0 +1,21 @@
+@{
+    Layout = "_LayoutHome";
+    ViewData["Title"] = "Acceso restringido";
+}
+
+<section class="grid min-h-[70svh] place-items-center bg-cream px-4 py-16 sm:px-6 lg:px-10">
+    <div class="grid w-full max-w-[70rem] border border-oat bg-white lg:grid-cols-12">
+        <div class="bg-ink p-8 text-white sm:p-12 lg:col-span-5">
+            <p class="font-data text-[10px] font-semibold uppercase tracking-[0.18em] text-clay-light">Permiso requerido</p>
+            <div class="mt-10 font-display text-8xl leading-none tracking-[-0.07em] text-clay-light" aria-hidden="true">403</div>
+        </div>
+        <div class="p-8 sm:p-12 lg:col-span-7">
+            <h1 class="text-balance font-display text-4xl leading-[0.94] tracking-[-0.04em] sm:text-5xl">Este espacio no está asignado a tu cuenta.</h1>
+            <p class="mt-6 max-w-xl text-base leading-7 text-ink/60">Tu sesión está activa, pero el rol actual no permite abrir esta sección. Vuelve al inicio o entra al panel que corresponde a tu cuenta.</p>
+            <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+                <a asp-controller="Home" asp-action="Index" class="inline-flex min-h-13 cursor-pointer items-center justify-center bg-clay px-7 py-4 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-4 focus-visible:ring-offset-white">Ir a la tienda</a>
+                <a asp-controller="Account" asp-action="Login" class="inline-flex min-h-13 cursor-pointer items-center justify-center border border-ink/25 px-7 py-4 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Cambiar de cuenta</a>
+            </div>
+        </div>
+    </div>
+</section>

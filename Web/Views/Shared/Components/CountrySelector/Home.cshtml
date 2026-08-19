@@ -1,0 +1,67 @@
+@model IEnumerable<Web.Models.Country>
+@{
+    var countries = Model.ToList();
+    Guid? selectedCountryId = ViewBag.SelectedCountryId is Guid id ? id : null;
+    var selectedCountry = countries.FirstOrDefault(country => country.CountryID == selectedCountryId)
+        ?? countries.FirstOrDefault();
+
+    string NativeName(string name) => name.Equals("Canada", StringComparison.OrdinalIgnoreCase)
+        || name.Equals("Canadá", StringComparison.OrdinalIgnoreCase)
+        ? "Canada"
+        : name;
+
+    string FlagPath(string name) => name.Equals("Colombia", StringComparison.OrdinalIgnoreCase)
+        ? "/images/flags/co.svg"
+        : name.Equals("Canada", StringComparison.OrdinalIgnoreCase)
+          || name.Equals("Canadá", StringComparison.OrdinalIgnoreCase)
+            ? "/images/flags/ca.svg"
+            : string.Empty;
+}
+
+@if (selectedCountry != null)
+{
+    <details class="group relative">
+        <summary class="flex min-h-11 min-w-40 cursor-pointer list-none items-center gap-3 rounded-full border border-white/15 bg-white/5 px-3 py-2 text-sm font-bold text-white transition-colors hover:border-white/30 hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-light [&::-webkit-details-marker]:hidden">
+            @if (!string.IsNullOrEmpty(FlagPath(selectedCountry.Name)))
+            {
+                <img src="@FlagPath(selectedCountry.Name)" alt="" class="h-5 w-7 rounded-[3px] object-cover shadow-sm" />
+            }
+            else
+            {
+                <svg class="size-5 text-clay-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c3 3 4 6 4 9s-1 6-4 9c-3-3-4-6-4-9s1-6 4-9Z" /></svg>
+            }
+            <span class="flex-1 text-left">@NativeName(selectedCountry.Name)</span>
+            <svg class="size-4 shrink-0 text-husk transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+        </summary>
+
+        <div class="absolute right-0 top-[calc(100%+10px)] z-50 w-64 border border-oat bg-white p-2 text-ink shadow-lift">
+            <p class="px-3 pb-2 pt-1 font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-clay-dark">Enviar a</p>
+            <div class="flex flex-col">
+                @foreach (var country in countries)
+                {
+                    var isSelected = country.CountryID == selectedCountry.CountryID;
+                    <form asp-controller="Home" asp-action="SetCountry" method="post">
+                        <input type="hidden" name="countryId" value="@country.CountryID" />
+                        <button type="submit"
+                                class="flex min-h-12 w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left text-sm font-bold transition-colors hover:bg-cream focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-clay @(isSelected ? "bg-cream text-clay-dark" : "text-ink")"
+                                aria-current="@(isSelected ? "true" : null)">
+                            @if (!string.IsNullOrEmpty(FlagPath(country.Name)))
+                            {
+                                <img src="@FlagPath(country.Name)" alt="" class="h-5 w-7 rounded-[3px] object-cover shadow-sm" />
+                            }
+                            else
+                            {
+                                <svg class="size-5 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c3 3 4 6 4 9s-1 6-4 9c-3-3-4-6-4-9s1-6 4-9Z" /></svg>
+                            }
+                            <span class="flex-1">@NativeName(country.Name)</span>
+                            @if (isSelected)
+                            {
+                                <svg class="size-4 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+                            }
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+    </details>
+}

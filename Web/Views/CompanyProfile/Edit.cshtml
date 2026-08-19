@@ -2,60 +2,64 @@
 
 @{
     ViewData["Title"] = "Editar Empresa";
-    Layout = "_Layout";
+    Layout = "_LayoutAdminTailwind";
 }
 
-<div class="bean-panel-head">
-    <div>
-        <h1 class="bean-panel-title">Editar información</h1>
-        <p class="bean-panel-sub">Actualiza los datos de contacto de tu empresa.</p>
-    </div>
+<div class="max-w-3xl border-b border-ink/15 pb-7">
+    <h1 class="font-display text-3xl leading-none tracking-[-0.04em] text-ink sm:text-4xl">Editar información</h1>
+    <p class="mt-3 text-sm leading-6 text-ink/65 sm:text-base">Actualiza los datos de contacto de tu empresa.</p>
 </div>
 
-<div class="bean-form-card">
-    <form asp-action="Edit">
-        <div asp-validation-summary="ModelOnly" class="bean-form-summary"></div>
+<div class="mt-6 max-w-4xl border border-ink/15 bg-white">
+    <form asp-action="Edit" method="post">
+        <div asp-validation-summary="ModelOnly" class="m-5 hidden border border-clay bg-clay/10 p-4 text-sm font-semibold leading-6 text-clay-dark [&.validation-summary-errors]:block [&_ul]:space-y-1 sm:m-6" role="alert" aria-live="polite"></div>
         <input type="hidden" asp-for="ProviderID" />
         <input type="hidden" asp-for="Name" />
         <input type="hidden" asp-for="NIT" />
         <input type="hidden" asp-for="Email" />
 
-        <h2 class="bean-form-section-title">Datos de la empresa</h2>
-        <div class="bean-form-grid">
-            <div class="bean-field">
-                <label asp-for="Name" class="bean-label"></label>
-                <input asp-for="Name" class="bean-input" placeholder="Nombre" disabled />
-                <span class="bean-field-hint">El nombre no se puede editar.</span>
+        <fieldset class="p-5 sm:p-6">
+            <legend class="w-full border-b border-ink/15 pb-3 text-base font-extrabold text-ink">Datos de la empresa</legend>
+            <div class="mt-6 grid gap-5 sm:grid-cols-2">
+            <div>
+                <label asp-for="Name" class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/65"></label>
+                <input asp-for="Name" class="mt-2 block min-h-12 w-full border border-ink/15 bg-oat/45 px-4 py-3 text-sm font-semibold text-ink/55 disabled:cursor-not-allowed" placeholder="Nombre" disabled aria-describedby="name-help" />
+                <span id="name-help" class="mt-2 block text-xs leading-5 text-ink/55">El nombre no se puede editar.</span>
             </div>
-            <div class="bean-field">
-                <label asp-for="NIT" class="bean-label"></label>
-                <input asp-for="NIT" class="bean-input" placeholder="NIT" disabled />
-                <span class="bean-field-hint">El NIT no se puede editar.</span>
+            <div>
+                <label asp-for="NIT" class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/65"></label>
+                <input asp-for="NIT" class="mt-2 block min-h-12 w-full border border-ink/15 bg-oat/45 px-4 py-3 text-sm font-semibold text-ink/55 disabled:cursor-not-allowed" placeholder="NIT" disabled aria-describedby="nit-help" />
+                <span id="nit-help" class="mt-2 block text-xs leading-5 text-ink/55">El NIT no se puede editar.</span>
             </div>
-            <div class="bean-field">
-                <label asp-for="Email" class="bean-label"></label>
-                <input asp-for="Email" class="bean-input" placeholder="Email" disabled />
-                <span class="bean-field-hint">Contacte a soporte para cambiar el email.</span>
+            <div>
+                <label asp-for="Email" class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/65"></label>
+                <input asp-for="Email" class="mt-2 block min-h-12 w-full border border-ink/15 bg-oat/45 px-4 py-3 text-sm font-semibold text-ink/55 disabled:cursor-not-allowed" placeholder="Email" disabled aria-describedby="email-help" />
+                <span id="email-help" class="mt-2 block text-xs leading-5 text-ink/55">Contacta a soporte para cambiar el email.</span>
             </div>
-            <div class="bean-field">
-                <label asp-for="Phone" class="bean-label"></label>
-                <input asp-for="Phone" class="bean-input" placeholder="Teléfono" />
-                <span asp-validation-for="Phone" class="bean-form-error"></span>
+            <div>
+                <label asp-for="Phone" class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/65"></label>
+                <input asp-for="Phone" class="mt-2 block min-h-12 w-full border border-ink/25 bg-white px-4 py-3 text-sm font-semibold text-ink outline-none transition-colors placeholder:text-ink/40 hover:border-ink/45 focus:border-clay focus:ring-2 focus:ring-clay/20" placeholder="Teléfono" autocomplete="tel" />
+                <span asp-validation-for="Phone" class="block pt-2 text-xs font-bold leading-5 text-clay-dark [&.field-validation-valid]:hidden" aria-live="polite"></span>
             </div>
-            <div class="bean-field" style="grid-column: 1 / -1;">
-                <label asp-for="Address" class="bean-label"></label>
-                <input asp-for="Address" class="bean-input" placeholder="Dirección" />
-                <span asp-validation-for="Address" class="bean-form-error"></span>
+            <div class="sm:col-span-2">
+                <label asp-for="Address" class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/65"></label>
+                <input asp-for="Address" class="mt-2 block min-h-12 w-full border border-ink/25 bg-white px-4 py-3 text-sm font-semibold text-ink outline-none transition-colors placeholder:text-ink/40 hover:border-ink/45 focus:border-clay focus:ring-2 focus:ring-clay/20" placeholder="Dirección" autocomplete="street-address" />
+                <span asp-validation-for="Address" class="block pt-2 text-xs font-bold leading-5 text-clay-dark [&.field-validation-valid]:hidden" aria-live="polite"></span>
             </div>
-        </div>
+            </div>
+        </fieldset>
 
-        <div class="bean-form-actions">
-            <a asp-action="Index" class="bean-btn-pill outline">Cancelar</a>
-            <button type="submit" class="bean-btn-pill primary"><i class="fas fa-save"></i> Guardar cambios</button>
+        <div class="flex flex-col-reverse gap-3 border-t border-ink/15 bg-cream/55 p-5 sm:flex-row sm:justify-end sm:p-6">
+            <a asp-action="Index" class="inline-flex min-h-11 cursor-pointer items-center justify-center border border-ink/25 px-5 py-3 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Cancelar</a>
+            <button type="submit" class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 bg-clay px-5 py-3 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream">
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 4h12l2 2v14H5V4Z" /><path d="M8 4v6h8V4M8 20v-6h8v6" /></svg>
+                Guardar cambios
+            </button>
         </div>
     </form>
 </div>
 
 @section Scripts {
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }

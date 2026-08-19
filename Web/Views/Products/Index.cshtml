@@ -2,210 +2,229 @@
 @using Web.Models.Enums
 @inject Web.Services.IPermissionService PermissionService
 @inject Microsoft.AspNetCore.Identity.UserManager<Web.Models.ApplicationUser> UserManager
-@inject Web.Data.ApplicationDbContext Context
+@inject Web.Data.ApplicationDbContext Database
 
 @{
     ViewData["Title"] = "Mis productos";
-    Layout = "_Layout";
+    Layout = "_LayoutAdminTailwind";
     var user = await UserManager.GetUserAsync(User);
 
     var items = Model.ToList();
     var canCreate = user != null && await PermissionService.HasPermissionAsync(user, Web.Constants.Modules.Products, Web.Constants.Permissions.Create);
 
-    // --- Resumen del encabezado (datos reales del propio catálogo) ---
     int nPublicados = items.Count(p => p.ProductStatus == ProductStatus.Active);
     int nPendientes = items.Count(p => p.ProductStatus == ProductStatus.PendingApproval);
     int nBorradores = items.Count(p => p.ProductStatus == ProductStatus.Draft);
 
-    // --- Stats (vista 12) ---
-    // Valoración media / reseñas: reales, desde los campos de Product.
     var rated = items.Where(p => p.Rating.HasValue).ToList();
     decimal? avgRating = rated.Count > 0 ? Math.Round(rated.Average(p => p.Rating!.Value), 1) : (decimal?)null;
     int totalReviews = items.Where(p => p.ReviewCount.HasValue).Sum(p => p.ReviewCount!.Value);
 
-    // Ventas del mes / bolsas vendidas: reales, agregando las líneas de pedido
-    // de los productos de este proveedor (scoping por ProviderID, igual que el controlador).
     decimal ventasMes = 0m;
     int bolsasVendidas = 0;
     if (user?.ProviderID != null)
     {
         var providerId = user.ProviderID.Value;
         var monthStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-        var soldQuery = Context.OrderItems.Where(oi => oi.Product != null && oi.Product.ProviderID == providerId);
+        var soldQuery = Database.OrderItems.Where(oi =>
+            oi.Product != null &&
+            oi.Product.ProviderID == providerId &&
+            oi.Order != null &&
+            oi.Order.PaymentStatus == PaymentStatus.Approved &&
+            oi.Order.OrderStatus != OrderStatus.Cancelled);
         bolsasVendidas = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
             .SumAsync(soldQuery, oi => (int?)oi.Quantity) ?? 0;
         ventasMes = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
-            .SumAsync(soldQuery.Where(oi => oi.Order != null && oi.Order.OrderDate >= monthStart), oi => (decimal?)oi.SubTotal) ?? 0m;
+            .SumAsync(soldQuery.Where(oi => oi.Order!.OrderDate >= monthStart), oi => (decimal?)oi.SubTotal) ?? 0m;
     }
 
-    var origin = 0;
+    string StatusLabel(ProductStatus status) => status switch
+    {
+        ProductStatus.Draft => "Borrador",
+        ProductStatus.PendingApproval => "Pendiente aprobación",
+        ProductStatus.ApprovedToShip => "Aprobado para envío",
+        ProductStatus.Shipped => "Enviado",
+        ProductStatus.Active => "Publicado",
+        ProductStatus.Rejected => "Rechazado",
+        _ => status.ToString()
+    };
+
+    string StatusClass(ProductStatus status) => status switch
+    {
+        ProductStatus.Active => "bg-leaf/10 text-leaf",
+        ProductStatus.PendingApproval => "bg-honey/15 text-ink",
+        ProductStatus.ApprovedToShip => "bg-clay/10 text-clay-dark",
+        ProductStatus.Shipped => "bg-ink/10 text-ink",
+        ProductStatus.Rejected => "bg-clay/15 text-clay-dark",
+        _ => "bg-oat text-ink/70"
+    };
 }
 
-<div class="bean-panel-head">
-    <div>
-        <h1 class="bean-panel-title">Mis productos</h1>
-        <p class="bean-panel-sub">
+<header class="flex flex-col gap-6 border-b border-ink/15 pb-7 lg:flex-row lg:items-end lg:justify-between">
+    <div class="max-w-3xl">
+        <h1 class="font-display text-3xl leading-none tracking-[-0.04em] text-ink sm:text-4xl">Mis productos</h1>
+        <p class="mt-3 text-sm leading-6 text-ink/65 sm:text-base">
             @items.Count lote@(items.Count == 1 ? "" : "s") · @nPublicados publicado@(nPublicados == 1 ? "" : "s") · @nPendientes pendiente@(nPendientes == 1 ? "" : "s") · @nBorradores borrador@(nBorradores == 1 ? "" : "es")
         </p>
     </div>
     @if (canCreate)
     {
-        <a asp-action="Create" class="bean-prov-newlot"><i class="fas fa-plus"></i> Publicar nuevo lote</a>
+        <a asp-action="Create" class="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 self-start bg-clay px-6 py-3 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-4 focus-visible:ring-offset-cream lg:self-auto">
+            <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+            Publicar nuevo lote
+        </a>
     }
-</div>
+</header>
 
-<div class="bean-prov-stats">
-    <div class="bean-prov-stat">
-        <div class="lbl">Ventas del mes</div>
-        <div class="val">@ventasMes.ToString("C0")</div>
-        <div class="sub">Pedidos de tus lotes este mes</div>
+<section class="mt-8 grid border border-ink/15 bg-white sm:grid-cols-3" aria-label="Resumen de productos">
+    <div class="border-b border-oat p-5 sm:border-b-0 sm:border-r sm:p-6">
+        <p class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/55">Ventas del mes</p>
+        <p class="mt-3 text-2xl font-extrabold tabular-nums tracking-[-0.04em] text-ink">@ventasMes.ToString("C0")</p>
+        <p class="mt-1 text-xs font-medium text-ink/50">Pedidos de tus lotes este mes</p>
     </div>
-    <div class="bean-prov-stat">
-        <div class="lbl">Bolsas vendidas</div>
-        <div class="val">@bolsasVendidas</div>
-        <div class="sub">Total histórico</div>
+    <div class="border-b border-oat p-5 sm:border-b-0 sm:border-r sm:p-6">
+        <p class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/55">Bolsas vendidas</p>
+        <p class="mt-3 text-2xl font-extrabold tabular-nums tracking-[-0.04em] text-ink">@bolsasVendidas</p>
+        <p class="mt-1 text-xs font-medium text-ink/50">Total histórico</p>
     </div>
-    <div class="bean-prov-stat">
-        <div class="lbl">Valoración media</div>
-        <div class="val">@(avgRating.HasValue ? $"{avgRating.Value:0.0} ★" : "—")</div>
-        <div class="sub">@totalReviews reseña@(totalReviews == 1 ? "" : "s")</div>
+    <div class="p-5 sm:p-6">
+        <p class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/55">Valoración media</p>
+        <p class="mt-3 text-2xl font-extrabold tabular-nums tracking-[-0.04em] text-ink">@(avgRating.HasValue ? $"{avgRating.Value:0.0} / 5" : "—")</p>
+        <p class="mt-1 text-xs font-medium text-ink/50">@totalReviews reseña@(totalReviews == 1 ? "" : "s")</p>
     </div>
-</div>
+</section>
 
 @if (items.Count == 0)
 {
-    <div class="bean-appr-empty">
-        <div class="ico"><i class="fas fa-box-open"></i></div>
-        <h3>Aún no tienes lotes</h3>
-        <p>Publica tu primer lote de café para que el equipo de Bean lo revise y salga al catálogo.</p>
-    </div>
+    <section class="mt-8 grid min-h-80 place-items-center border border-oat bg-white px-6 py-14 text-center" aria-labelledby="sin-lotes-title">
+        <div class="max-w-xl">
+            <svg class="mx-auto size-14 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Z" /><path d="m4 12 8 4 8-4M4 17l8 4 8-4" /></svg>
+            <h2 id="sin-lotes-title" class="mt-6 text-2xl font-extrabold tracking-[-0.03em] text-ink">Aún no tienes lotes</h2>
+            <p class="mx-auto mt-3 max-w-lg text-sm leading-6 text-ink/65">Publica tu primer lote de café para que el equipo de Bean lo revise y salga al catálogo.</p>
+        </div>
+    </section>
 }
 else
 {
-    <div class="bean-prov-list">
-        @foreach (var item in items)
-        {
-            origin = (origin % 6) + 1;
-            var stockClass = item.Stock <= 5 ? "stock-low" : "stock-ok";
-            // Portada real (Product.ImageUrl ya viene con la transformación de catálogo);
-            // si el lote no tiene fotos, se conserva el patrón de granos de respaldo.
-            var thumbStyle = string.IsNullOrEmpty(item.ImageUrl)
-                ? ""
-                : $"background-image:url('{item.ImageUrl}');background-size:cover;background-position:center;";
-            <div class="bean-prov-lot">
-                <span class="bean-img bean-prov-lot-thumb o@(origin)" style="@thumbStyle"></span>
-
-                <div class="bean-prov-lot-info">
-                    <div class="nm">@item.Name</div>
-                    <div class="meta">
-                        @(string.IsNullOrWhiteSpace(item.Origin) ? "Origen sin especificar" : item.Origin)
-                        @if (!string.IsNullOrWhiteSpace(item.Lot))
+    <section class="mt-8 border border-ink/15 bg-white shadow-tray" aria-label="Lotes del proveedor">
+        <div class="hidden grid-cols-[minmax(18rem,2fr)_repeat(3,minmax(6rem,0.7fr))_minmax(10rem,1fr)_minmax(13rem,auto)] gap-4 bg-ink px-5 py-4 font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-white xl:grid">
+            <span>Lote</span><span>Tu precio</span><span>PVP</span><span>Stock</span><span>Estado</span><span class="text-right">Acciones</span>
+        </div>
+        <div class="divide-y divide-oat">
+            @foreach (var item in items)
+            {
+                <article class="grid gap-5 p-4 sm:p-5 xl:grid-cols-[minmax(18rem,2fr)_repeat(3,minmax(6rem,0.7fr))_minmax(10rem,1fr)_minmax(13rem,auto)] xl:items-center">
+                    <div class="flex min-w-0 gap-4">
+                        @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
                         {
-                            <text> · Lote @item.Lot</text>
+                            <img src="@item.ImageUrl" alt="" class="size-20 shrink-0 object-cover sm:size-24" />
                         }
-                        @if (item.ProductStatus == ProductStatus.Rejected && !string.IsNullOrEmpty(item.RejectionReason))
+                        else
                         {
-                            <br /><span style="color:var(--bean-error-2);">Motivo: @item.RejectionReason</span>
+                            <span class="grid size-20 shrink-0 place-items-center bg-clay-dark text-cream sm:size-24" aria-hidden="true">
+                                <svg class="size-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M18.7 5.3C14.8 1.4 7.4 4.2 5 9.2c-2.3 4.8.1 9.4 4.6 9.8 5.3.5 10.2-5.2 9.4-10.1-.2-1.4-.3-2.5-.3-3.6Z" /><path d="M7.2 16.8c3.2-2 4.5-5.8 9.5-9.6" /></svg>
+                            </span>
+                        }
+                        <div class="min-w-0 self-center">
+                            <h2 class="truncate text-base font-extrabold text-ink sm:text-lg">@item.Name</h2>
+                            <p class="mt-1 text-xs font-semibold leading-5 text-ink/55">
+                                @(string.IsNullOrWhiteSpace(item.Origin) ? "Origen sin especificar" : item.Origin)
+                                @if (!string.IsNullOrWhiteSpace(item.Lot))
+                                {
+                                    <text> · Lote @item.Lot</text>
+                                }
+                            </p>
+                            @if (item.ProductStatus == ProductStatus.Rejected && !string.IsNullOrEmpty(item.RejectionReason))
+                            {
+                                <p class="mt-2 text-xs font-bold leading-5 text-clay-dark">Motivo: @item.RejectionReason</p>
+                            }
+                        </div>
+                    </div>
+
+                    <div><span class="font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-ink/45 xl:hidden">Tu precio</span><p class="mt-1 font-bold tabular-nums text-ink xl:mt-0">@item.SupplierPrice.ToString("C0")</p></div>
+                    <div><span class="font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-ink/45 xl:hidden">Precio en tienda</span><p class="mt-1 font-bold tabular-nums text-ink xl:mt-0">@(item.Price > 0 ? item.Price.ToString("C0") : "por fijar")</p></div>
+                    <div><span class="font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-ink/45 xl:hidden">Stock</span><p class="mt-1 font-data text-sm font-semibold @(item.Stock <= 5 ? "text-clay-dark" : "text-leaf") xl:mt-0">@item.Stock</p></div>
+                    <div><span class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-data text-[10px] font-semibold uppercase tracking-[0.08em] @(StatusClass(item.ProductStatus))"><span class="size-2 rounded-full bg-current" aria-hidden="true"></span>@StatusLabel(item.ProductStatus)</span></div>
+
+                    <div class="flex flex-wrap items-center gap-2 xl:justify-end">
+                        @if (item.ProductStatus == ProductStatus.Draft || item.ProductStatus == ProductStatus.Rejected)
+                        {
+                            <a asp-action="Edit" asp-route-id="@item.ProductID" class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 border border-ink/20 px-4 py-2 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">
+                                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m4 16-.8 4.8L8 20l11-11-4-4L4 16Z" /><path d="m13 7 4 4" /></svg>
+                                Editar
+                            </a>
+                            <form asp-action="SubmitForApproval" asp-route-id="@item.ProductID" method="post" onsubmit="return confirm('¿Enviar a aprobación? No podrás editarlo hasta que se revise.');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 bg-clay px-4 py-2 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-white">
+                                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m21 3-7.5 18-3.8-7.7L2 9.5 21 3Z" /><path d="m9.7 13.3 4.8-4.8" /></svg>
+                                    Enviar
+                                </button>
+                            </form>
+                        }
+                        else if (item.ProductStatus == ProductStatus.ApprovedToShip)
+                        {
+                            <button type="button" data-dialog-open="shipDialog-@item.ProductID" class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 bg-clay px-4 py-2 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-white">
+                                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 6h11v11H3zM14 10h4l3 3v4h-7z" /><circle cx="7" cy="18" r="2" /><circle cx="18" cy="18" r="2" /></svg>
+                                Registrar envío
+                            </button>
+
+                            <dialog id="shipDialog-@item.ProductID" class="m-auto w-[min(34rem,calc(100%-2rem))] max-w-none border border-ink/20 bg-cream p-0 text-ink shadow-lift backdrop:bg-ink/75">
+                                <form asp-action="Ship" asp-route-id="@item.ProductID" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <div class="flex items-start justify-between gap-5 border-b border-oat bg-white p-5 sm:p-6">
+                                        <div><h2 class="text-xl font-extrabold tracking-[-0.03em]">Registrar envío</h2><p class="mt-2 text-sm leading-6 text-ink/60">@item.Name</p></div>
+                                        <button type="button" data-dialog-close class="grid size-11 shrink-0 cursor-pointer place-items-center border border-ink/20 text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay" aria-label="Cerrar">
+                                            <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+                                        </button>
+                                    </div>
+                                    <div class="p-5 sm:p-6">
+                                        <label for="shippingDetails-@item.ProductID" class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/65">Datos de envío</label>
+                                        <textarea id="shippingDetails-@item.ProductID" name="shippingDetails" required rows="4" class="mt-2 w-full border border-ink/25 bg-white px-4 py-3 text-base text-ink caret-clay outline-none transition-colors placeholder:text-ink/40 hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25" placeholder="Ej: Servientrega Guía #123456789"></textarea>
+                                        <p class="mt-2 text-xs font-medium leading-5 text-ink/50">Incluye transportadora y número de guía para que Bean pueda recibir el lote.</p>
+                                    </div>
+                                    <div class="flex flex-col-reverse gap-2 border-t border-oat bg-white p-5 sm:flex-row sm:justify-end sm:p-6">
+                                        <button type="button" data-dialog-close class="inline-flex min-h-11 cursor-pointer items-center justify-center border border-ink/20 px-5 py-2 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Cancelar</button>
+                                        <button type="submit" class="inline-flex min-h-11 cursor-pointer items-center justify-center bg-clay px-5 py-2 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-white">Confirmar envío</button>
+                                    </div>
+                                </form>
+                            </dialog>
+                        }
+                        else
+                        {
+                            <a asp-action="Edit" asp-route-id="@item.ProductID" class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 border border-ink/20 px-4 py-2 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">
+                                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.5" /></svg>
+                                Ver
+                            </a>
                         }
                     </div>
-                </div>
+                </article>
+            }
+        </div>
+    </section>
 
-                @* HU-2.4: el proveedor ve SU precio (el costo que Bean le paga) y el PVP al
-                   que Bean lo vende. Nunca los de otro proveedor: la consulta ya está
-                   filtrada por ProviderID en ProductsController. *@
-                <div class="bean-prov-lot-col">
-                    <div class="k">Tu precio</div>
-                    <div class="v">@item.SupplierPrice.ToString("C0")</div>
-                </div>
-
-                <div class="bean-prov-lot-col">
-                    <div class="k">Precio en tienda</div>
-                    <div class="v">@(item.Price > 0 ? item.Price.ToString("C0") : "por fijar")</div>
-                </div>
-
-                <div class="bean-prov-lot-col">
-                    <div class="k">Stock</div>
-                    <div class="v @stockClass">@item.Stock</div>
-                </div>
-
-                <div class="bean-so-statuscell">
-                    @switch (item.ProductStatus)
-                    {
-                        case ProductStatus.Draft:
-                            <span class="bean-status draft"><span class="dot"></span>Borrador</span>
-                            break;
-                        case ProductStatus.PendingApproval:
-                            <span class="bean-status pending"><span class="dot"></span>Pendiente aprobación</span>
-                            break;
-                        case ProductStatus.ApprovedToShip:
-                            <span class="bean-status ship"><span class="dot"></span>Aprobado para envío</span>
-                            break;
-                        case ProductStatus.Shipped:
-                            <span class="bean-status transit"><span class="dot"></span>Enviado</span>
-                            break;
-                        case ProductStatus.Active:
-                            <span class="bean-status active"><span class="dot"></span>Publicado</span>
-                            break;
-                        case ProductStatus.Rejected:
-                            <span class="bean-status rejected"><span class="dot"></span>Rechazado</span>
-                            break;
-                    }
-                </div>
-
-                <div class="bean-so-ctacell" style="display:flex; gap:8px; align-items:center; justify-content:flex-end;">
-                    @if (item.ProductStatus == ProductStatus.Draft || item.ProductStatus == ProductStatus.Rejected)
-                    {
-                        <a asp-action="Edit" asp-route-id="@item.ProductID" class="bean-prov-lot-edit"><i class="fas fa-edit"></i> Editar</a>
-
-                        <form asp-action="SubmitForApproval" asp-route-id="@item.ProductID" method="post" class="bean-prov-submit" onsubmit="return confirm('¿Enviar a aprobación? No podrás editarlo hasta que se revise.');">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="bean-btn-approve" title="Enviar a aprobación">
-                                <i class="fas fa-paper-plane"></i> Enviar
-                            </button>
-                        </form>
-                    }
-                    else if (item.ProductStatus == ProductStatus.ApprovedToShip)
-                    {
-                        <button type="button" class="bean-so-cta primary" data-bs-toggle="modal" data-bs-target="#shipModal-@item.ProductID" title="Registrar envío">
-                            <i class="fas fa-shipping-fast"></i> Registrar envío
-                        </button>
-
-                        <!-- Ship Modal -->
-                        <div class="modal fade" id="shipModal-@item.ProductID" tabindex="-1" role="dialog" aria-hidden="true">
-                            <div class="modal-dialog" role="document">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Registrar envío</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <form asp-action="Ship" asp-route-id="@item.ProductID" method="post">
-                                        <div class="modal-body">
-                                            <p>Ingresa los detalles del envío (guía, transportadora, etc.) para que el administrador pueda recibirlo.</p>
-                                            <div class="form-group">
-                                                <label>Datos de envío:</label>
-                                                <textarea name="shippingDetails" class="form-control" required rows="3" placeholder="Ej: Servientrega Guía #123456789"></textarea>
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                            <button type="submit" class="btn btn-primary">Confirmar envío</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    }
-                    else
-                    {
-                        <a asp-action="Edit" asp-route-id="@item.ProductID" class="bean-prov-lot-edit disabled" title="Solo lectura"><i class="fas fa-eye"></i> Ver</a>
-                    }
-                </div>
-            </div>
-        }
+    <div class="mt-6 flex items-start gap-3 border border-honey/40 bg-honey/10 px-4 py-3 text-sm font-semibold leading-6 text-ink" role="note">
+        <svg class="mt-0.5 size-5 shrink-0 text-honey" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 18h6M10 22h4M8.5 14.5A7 7 0 1 1 15.5 14.5c-1 .8-1.5 1.7-1.5 3.5h-4c0-1.8-.5-2.7-1.5-3.5Z" /></svg>
+        <span><strong>Ficha completa, revisión más ágil.</strong> Completa origen, finca, proceso y notas de cata antes de enviar el lote a aprobación.</span>
     </div>
+}
 
-    <div class="bean-panel-note" style="margin-top:20px;">
-        <i class="fas fa-lightbulb"></i>
-        <span><strong>Sugerencia:</strong> los lotes con ficha de tueste completa (origen, finca, proceso y notas de cata) se aprueban más rápido. Completa los datos antes de enviarlos a aprobación.</span>
-    </div>
+@section Scripts {
+    <script>
+        (function () {
+            document.querySelectorAll('[data-dialog-open]').forEach(function (trigger) {
+                trigger.addEventListener('click', function () {
+                    var dialog = document.getElementById(trigger.getAttribute('data-dialog-open'));
+                    if (dialog && typeof dialog.showModal === 'function') dialog.showModal();
+                });
+            });
+            document.querySelectorAll('dialog').forEach(function (dialog) {
+                dialog.querySelectorAll('[data-dialog-close]').forEach(function (button) {
+                    button.addEventListener('click', function () { dialog.close(); });
+                });
+                dialog.addEventListener('click', function (event) {
+                    if (event.target === dialog) dialog.close();
+                });
+            });
+        })();
+    </script>
 }

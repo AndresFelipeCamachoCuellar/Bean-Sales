@@ -1,113 +1,138 @@
 @{
+    Layout = "_LayoutHome";
     ViewData["Title"] = "Nosotros";
 }
 
-<!-- ===== HERO DE MARCA ===== -->
-<section class="bean-pagehead">
-    <span class="bean-float f1"></span>
-    <span class="bean-float f2"></span>
-    <div class="bean-container">
-        <div class="bean-pagehead-eyebrow">Quiénes somos</div>
-        <h1 class="bean-fadeup">El supermercado global<br /><span class="shimmer">del café colombiano.</span></h1>
-        <p class="bean-fadeup" style="animation-delay:.08s">
-            Bean reúne en un solo lugar los micro-lotes de fincas y marcas colombianas de especialidad,
-            para que comprarlos sea tan simple como pedir uno solo.
-        </p>
+<section class="overflow-hidden bg-ink text-white">
+    <div class="mx-auto grid max-w-[90rem] lg:min-h-[38rem] lg:grid-cols-12">
+        <div class="flex flex-col justify-center px-4 py-16 sm:px-6 sm:py-20 lg:col-span-8 lg:border-r lg:border-white/10 lg:px-10 lg:py-28 xl:px-16">
+            <h1 class="max-w-5xl text-balance font-display text-[clamp(3.4rem,8vw,6.5rem)] leading-[0.86] tracking-[-0.04em]">
+                El supermercado global<br /><span class="text-clay-light">del café colombiano.</span>
+            </h1>
+            <p class="mt-8 max-w-2xl text-pretty text-lg leading-8 text-husk sm:text-xl">
+                Bean reúne en un solo lugar los micro-lotes de fincas y marcas colombianas de especialidad,
+                para que comprarlos sea tan simple como pedir uno solo.
+            </p>
+        </div>
+        <div class="relative flex min-h-80 items-end overflow-hidden bg-clay-dark p-4 sm:p-6 lg:col-span-4 lg:min-h-full lg:p-10">
+            <svg class="absolute inset-0 h-full w-full text-clay-light/35" viewBox="0 0 500 650" fill="none" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M-40 80C100 0 250 170 540 35M-50 190C120 70 310 270 550 140M-60 330C140 170 340 430 560 280M-30 480C120 350 340 600 550 430M-50 620C170 470 350 730 560 560" stroke="currentColor" stroke-width="2" />
+            </svg>
+            <div class="relative w-full border border-white/20 bg-ink/80 p-6 sm:p-8">
+                <svg class="size-12 text-clay-light" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path d="M24 5C10 5 6 15 6 25c0 11 8 18 18 18 12 0 18-8 18-19C42 14 36 5 24 5Z" />
+                    <path d="M25 6c-7 9-7 22-2 36" />
+                </svg>
+                <p class="mt-10 font-data text-[10px] font-semibold uppercase tracking-[0.18em] text-clay-light">Quiénes somos</p>
+                <p class="mt-3 text-xl font-extrabold leading-snug text-white">Una sola compra.<br />Muchos orígenes con nombre propio.</p>
+            </div>
+        </div>
     </div>
 </section>
 
-<!-- ===== MARQUEE de confianza ===== -->
-<div class="bean-marquee">
-    <div class="bean-marquee-track">
-        <span>Trazabilidad finca a taza ✦</span><span>Comercio justo ✦</span><span>Tueste semanal ✦</span><span>Envío Colombia · Canadá ✦</span><span>Compra unificada ✦</span>
-        <span>Trazabilidad finca a taza ✦</span><span>Comercio justo ✦</span><span>Tueste semanal ✦</span><span>Envío Colombia · Canadá ✦</span><span>Compra unificada ✦</span>
-    </div>
-</div>
+<section class="border-y border-clay-dark bg-clay text-white" aria-label="Compromisos de Bean">
+    <ul class="mx-auto grid max-w-[90rem] grid-cols-2 lg:grid-cols-5">
+        <li class="flex min-h-24 items-center border-b border-r border-white/20 px-4 py-5 font-data text-[10px] font-semibold uppercase leading-5 tracking-[0.12em] sm:px-6 lg:border-b-0">Trazabilidad finca a taza</li>
+        <li class="flex min-h-24 items-center border-b border-white/20 px-4 py-5 font-data text-[10px] font-semibold uppercase leading-5 tracking-[0.12em] sm:px-6 lg:border-b-0 lg:border-r">Comercio justo</li>
+        <li class="flex min-h-24 items-center border-r border-white/20 px-4 py-5 font-data text-[10px] font-semibold uppercase leading-5 tracking-[0.12em] sm:px-6 lg:border-r">Tueste semanal</li>
+        <li class="flex min-h-24 items-center px-4 py-5 font-data text-[10px] font-semibold uppercase leading-5 tracking-[0.12em] sm:px-6 lg:border-r">Envío Colombia · Canadá</li>
+        <li class="col-span-2 flex min-h-24 items-center border-t border-white/20 px-4 py-5 font-data text-[10px] font-semibold uppercase leading-5 tracking-[0.12em] sm:px-6 lg:col-span-1 lg:border-t-0">Compra unificada</li>
+    </ul>
+</section>
 
-<!-- ===== PROPUESTA DE VALOR ===== -->
-<section class="bean-catalog">
-    <div class="bean-container">
-        <div class="bean-section-head">
-            <h2>Un café de especialidad no debería ser difícil de conseguir</h2>
-            <p>
+<section class="bg-cream px-4 py-20 sm:px-6 sm:py-24 lg:px-10 lg:py-32">
+    <div class="mx-auto max-w-[90rem]">
+        <div class="grid gap-10 lg:grid-cols-12 lg:items-end">
+            <h2 class="max-w-4xl text-balance font-display text-4xl leading-[0.95] tracking-[-0.04em] sm:text-5xl lg:col-span-7 lg:text-6xl">Un café de especialidad no debería ser difícil de conseguir</h2>
+            <p class="max-w-2xl text-base leading-7 text-ink/65 lg:col-span-5 lg:justify-self-end">
                 Colombia produce algunos de los mejores cafés del mundo, pero cada finca vende por su cuenta:
                 pedidos separados, envíos separados, trámites separados. Bean centraliza esa oferta en una sola bodega
                 y una sola compra, sin quitarle el nombre a nadie.
             </p>
         </div>
 
-        <div class="bean-value-grid">
-            <div class="bean-value-card bean-fadeup">
-                <div class="ico"><i class="fas fa-mug-hot"></i></div>
-                <h3>Café colombiano de especialidad</h3>
-                <p>Trabajamos con fincas y marcas locales que cuidan el proceso desde la recolección hasta el tueste.</p>
-            </div>
-            <div class="bean-value-card bean-fadeup" style="animation-delay:.08s">
-                <div class="ico"><i class="fas fa-seedling"></i></div>
-                <h3>Trazabilidad finca a taza</h3>
-                <p>Cada lote llega con su origen, finca, altura, variedad y proceso. Sabes exactamente qué estás tomando.</p>
-            </div>
-            <div class="bean-value-card bean-fadeup" style="animation-delay:.16s">
-                <div class="ico"><i class="fas fa-fire"></i></div>
-                <h3>Tueste semanal</h3>
-                <p>Nada se queda en el estante. Tostamos por tandas cortas para que el café salga fresco hacia tu casa.</p>
-            </div>
-            <div class="bean-value-card bean-fadeup" style="animation-delay:.24s">
-                <div class="ico"><i class="fas fa-globe-americas"></i></div>
-                <h3>Envíos a Colombia y Canadá</h3>
-                <p>Empezamos en Colombia y abrimos camino a Canadá: nosotros asumimos la logística y los trámites.</p>
-            </div>
+        <div class="mt-14 grid border-t border-ink/15 md:grid-cols-2 xl:grid-cols-4">
+            <article class="border-b border-ink/15 py-8 md:border-r md:px-7 xl:px-8 xl:py-10">
+                <svg class="size-8 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 9h12v4a6 6 0 0 1-6 6 6 6 0 0 1-6-6V9Z" /><path d="M17 11h2a2 2 0 0 1 0 4h-3M8 5c0 1 1 1.5 1 2M12 4c0 1 1 1.5 1 3" /></svg>
+                <h3 class="mt-7 text-xl font-extrabold leading-tight tracking-[-0.03em]">Café colombiano de especialidad</h3>
+                <p class="mt-4 text-sm leading-6 text-ink/60">Trabajamos con fincas y marcas locales que cuidan el proceso desde la recolección hasta el tueste.</p>
+            </article>
+            <article class="border-b border-ink/15 py-8 md:px-7 xl:border-r xl:px-8 xl:py-10">
+                <svg class="size-8 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 21V9M12 15c-5 0-8-3-8-8 5 0 8 3 8 8ZM12 11c4 0 7-3 7-7-4 0-7 3-7 7Z" /></svg>
+                <h3 class="mt-7 text-xl font-extrabold leading-tight tracking-[-0.03em]">Trazabilidad finca a taza</h3>
+                <p class="mt-4 text-sm leading-6 text-ink/60">Cada lote llega con su origen, finca, altura, variedad y proceso. Sabes exactamente qué estás tomando.</p>
+            </article>
+            <article class="border-b border-ink/15 py-8 md:border-r md:px-7 xl:px-8 xl:py-10">
+                <svg class="size-8 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 21c4-3 6-6 6-10 0-3-2-6-5-9 0 4-2 6-4 8-2 2-3 4-3 6 0 3 2 5 6 5Z" /><path d="M12 21c-2-3-2-6 1-9" /></svg>
+                <h3 class="mt-7 text-xl font-extrabold leading-tight tracking-[-0.03em]">Tueste semanal</h3>
+                <p class="mt-4 text-sm leading-6 text-ink/60">Nada se queda en el estante. Tostamos por tandas cortas para que el café salga fresco hacia tu casa.</p>
+            </article>
+            <article class="border-b border-ink/15 py-8 md:px-7 xl:px-8 xl:py-10">
+                <svg class="size-8 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c3 3 4 6 4 9s-1 6-4 9c-3-3-4-6-4-9s1-6 4-9Z" /></svg>
+                <h3 class="mt-7 text-xl font-extrabold leading-tight tracking-[-0.03em]">Envíos a Colombia y Canadá</h3>
+                <p class="mt-4 text-sm leading-6 text-ink/60">Empezamos en Colombia y abrimos camino a Canadá: nosotros asumimos la logística y los trámites.</p>
+            </article>
         </div>
     </div>
 </section>
 
-<!-- ===== CÓMO FUNCIONA ===== -->
-<section class="bean-how">
-    <div class="bean-container">
-        <div class="bean-section-head">
-            <h2>Cómo funciona</h2>
-            <p>Cuatro pasos entre la finca y tu taza. Del lado del productor y del tuyo.</p>
+<section class="bg-roast px-4 py-20 text-white sm:px-6 sm:py-24 lg:px-10 lg:py-32">
+    <div class="mx-auto max-w-[90rem]">
+        <div class="grid gap-8 border-b border-white/15 pb-10 lg:grid-cols-12 lg:items-end">
+            <h2 class="text-balance font-display text-4xl leading-[0.95] tracking-[-0.04em] sm:text-5xl lg:col-span-7 lg:text-6xl">Cómo funciona</h2>
+            <p class="max-w-xl text-base leading-7 text-husk lg:col-span-5 lg:justify-self-end">Cuatro pasos entre la finca y tu taza. Del lado del productor y del tuyo.</p>
         </div>
 
-        @* .bean-how-step*: prefijo propio para no colisionar con el stepper del checkout. *@
-        <div class="bean-how-steps">
-            <div class="bean-how-step bean-fadeup">
-                <div class="n">01</div>
-                <h3>Proveedores verificados</h3>
-                <p>Revisamos documentos, capacidad y muestra física antes de publicar. Solo entra café que probaríamos nosotros.</p>
-            </div>
-            <div class="bean-how-step bean-fadeup" style="animation-delay:.08s">
-                <div class="n">02</div>
-                <h3>Bodega central</h3>
-                <p>Los lotes viajan a una sola bodega en Colombia, donde se revisan, se pesan y se preparan para despacho.</p>
-            </div>
-            <div class="bean-how-step bean-fadeup" style="animation-delay:.16s">
-                <div class="n">03</div>
-                <h3>Compra unificada</h3>
-                <p>Armas un pedido con cafés de distintas fincas y marcas. Un carrito, un pago, un envío.</p>
-            </div>
-            <div class="bean-how-step bean-fadeup" style="animation-delay:.24s">
-                <div class="n">04</div>
-                <h3>Envío y seguimiento</h3>
-                <p>Despachamos desde la bodega y puedes seguir tu pedido paso a paso hasta la entrega.</p>
-            </div>
-        </div>
+        <ol class="grid lg:grid-cols-4">
+            <li class="border-b border-white/15 py-9 lg:border-b-0 lg:border-r lg:px-7 lg:py-12">
+                <div class="flex items-center justify-between">
+                    <span class="font-data text-xs font-semibold tracking-[0.16em] text-clay-light">01</span>
+                    <svg class="size-7 text-clay-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" /></svg>
+                </div>
+                <h3 class="mt-8 text-xl font-extrabold tracking-[-0.03em]">Proveedores verificados</h3>
+                <p class="mt-4 text-sm leading-6 text-husk">Revisamos documentos, capacidad y muestra física antes de publicar. Solo entra café que probaríamos nosotros.</p>
+            </li>
+            <li class="border-b border-white/15 py-9 lg:border-b-0 lg:border-r lg:px-7 lg:py-12">
+                <div class="flex items-center justify-between">
+                    <span class="font-data text-xs font-semibold tracking-[0.16em] text-clay-light">02</span>
+                    <svg class="size-7 text-clay-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 20V9l8-5 8 5v11H4Z" /><path d="M9 20v-6h6v6M8 10h.01M16 10h.01" /></svg>
+                </div>
+                <h3 class="mt-8 text-xl font-extrabold tracking-[-0.03em]">Bodega central</h3>
+                <p class="mt-4 text-sm leading-6 text-husk">Los lotes viajan a una sola bodega en Colombia, donde se revisan, se pesan y se preparan para despacho.</p>
+            </li>
+            <li class="border-b border-white/15 py-9 lg:border-b-0 lg:border-r lg:px-7 lg:py-12">
+                <div class="flex items-center justify-between">
+                    <span class="font-data text-xs font-semibold tracking-[0.16em] text-clay-light">03</span>
+                    <svg class="size-7 text-clay-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 8h12l-1 12H7L6 8Z" /><path d="M9 9V6a3 3 0 0 1 6 0v3M9 13h6" /></svg>
+                </div>
+                <h3 class="mt-8 text-xl font-extrabold tracking-[-0.03em]">Compra unificada</h3>
+                <p class="mt-4 text-sm leading-6 text-husk">Armas un pedido con cafés de distintas fincas y marcas. Un carrito, un pago, un envío.</p>
+            </li>
+            <li class="py-9 lg:px-7 lg:py-12">
+                <div class="flex items-center justify-between">
+                    <span class="font-data text-xs font-semibold tracking-[0.16em] text-clay-light">04</span>
+                    <svg class="size-7 text-clay-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7h11v10H3V7Z" /><path d="M14 10h4l3 3v4h-7v-7Z" /><circle cx="7" cy="18" r="2" /><circle cx="17" cy="18" r="2" /></svg>
+                </div>
+                <h3 class="mt-8 text-xl font-extrabold tracking-[-0.03em]">Envío y seguimiento</h3>
+                <p class="mt-4 text-sm leading-6 text-husk">Despachamos desde la bodega y puedes seguir tu pedido paso a paso hasta la entrega.</p>
+            </li>
+        </ol>
     </div>
 </section>
 
-<!-- ===== CTA DOBLE ===== -->
-<section class="bean-catalog">
-    <div class="bean-container">
-        <div class="bean-b2b">
-            <div>
-                <div class="eyebrow">Empieza hoy</div>
-                <h3>Toma buen café, o llévalo a más gente.</h3>
-                <p>Compra los lotes de esta semana, o registra tu finca o marca y llega a nuevos mercados sin licencia de exportación propia.</p>
-            </div>
-            <div class="bean-b2b-ctas">
-                <a asp-controller="Home" asp-action="Index" asp-fragment="lotes" class="btn-bean">Explorar lotes →</a>
-                <a asp-controller="Account" asp-action="RegisterProvider" class="btn-bean-ghost-dark">Registrar mi empresa</a>
-            </div>
+<section class="bg-clay px-4 py-16 text-white sm:px-6 sm:py-20 lg:px-10">
+    <div class="mx-auto grid max-w-[90rem] gap-10 lg:grid-cols-12 lg:items-end">
+        <div class="lg:col-span-8">
+            <p class="font-data text-[10px] font-semibold uppercase tracking-[0.18em] text-cream">Empieza hoy</p>
+            <h2 class="mt-5 max-w-4xl text-balance font-display text-4xl leading-[0.95] tracking-[-0.04em] sm:text-5xl lg:text-6xl">Toma buen café, o llévalo a más gente.</h2>
+            <p class="mt-6 max-w-2xl text-base leading-7 text-white/80">Compra los lotes de esta semana, o registra tu finca o marca y llega a nuevos mercados sin licencia de exportación propia.</p>
+        </div>
+        <div class="flex flex-col gap-3 sm:flex-row lg:col-span-4 lg:flex-col lg:items-stretch xl:flex-row">
+            <a asp-controller="Home" asp-action="Index" asp-fragment="lotes" class="inline-flex min-h-13 cursor-pointer items-center justify-center gap-3 bg-white px-6 py-4 text-sm font-extrabold text-clay-dark transition-colors hover:bg-cream focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-4 focus-visible:ring-offset-clay">
+                Explorar lotes
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+            </a>
+            <a asp-controller="Account" asp-action="RegisterProvider" class="inline-flex min-h-13 cursor-pointer items-center justify-center border border-white/40 px-6 py-4 text-center text-sm font-extrabold text-white transition-colors hover:border-white hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white">Registrar mi empresa</a>
         </div>
     </div>
 </section>

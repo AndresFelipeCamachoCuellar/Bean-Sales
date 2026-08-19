@@ -9,7 +9,7 @@
 
 @{
     ViewData["Title"] = "Precios y márgenes";
-    Layout = "_Layout";
+    Layout = "_LayoutAdminTailwind";
 
     var co = System.Globalization.CultureInfo.GetCultureInfo("es-CO");
 
@@ -20,134 +20,135 @@
     var isSuperAdmin = User.IsInRole(Roles.SuperAdmin);
     var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
 
-    string TabClass(string tab) => Model.Tab == tab ? "bean-tab active" : "bean-tab";
+    string TabClass(string tab) => Model.Tab == tab
+        ? "inline-flex min-h-11 cursor-pointer items-center border-b-2 border-clay px-1 py-3 text-sm font-extrabold text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-clay"
+        : "inline-flex min-h-11 cursor-pointer items-center border-b-2 border-transparent px-1 py-3 text-sm font-bold text-ink/55 transition-colors hover:border-ink/25 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-clay";
 }
 
-<div class="bean-panel-head">
-    <div>
-        <h1 class="bean-panel-title">Precios y márgenes</h1>
-        <p class="bean-panel-sub">
-            El costo lo pone el proveedor; el precio de venta lo pone Bean.
-            Objetivo @Model.TargetMarginPercent.ToString("N0") % · mínimo @Model.MinimumMarginPercent.ToString("N0") %.
-        </p>
+<header class="flex flex-col gap-6 border-b border-ink/15 pb-7 xl:flex-row xl:items-end xl:justify-between">
+    <div class="max-w-3xl">
+        <h1 class="font-display text-3xl leading-none tracking-[-0.04em] text-ink sm:text-4xl">Precios y márgenes</h1>
+        <p class="mt-3 text-sm leading-6 text-ink/65 sm:text-base">El costo lo pone el proveedor; el precio de venta lo pone Bean. Objetivo <strong class="text-ink">@Model.TargetMarginPercent.ToString("N0") %</strong> · mínimo <strong class="text-ink">@Model.MinimumMarginPercent.ToString("N0") %</strong>.</p>
     </div>
 
-    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-        <form method="get" asp-action="Index" style="display:flex; gap:8px; align-items:center;">
+    <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center xl:w-auto">
+        <form method="get" asp-action="Index" class="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row xl:min-w-[30rem]">
             <input type="hidden" name="tab" value="@Model.Tab" />
-            <input type="text" name="q" value="@Model.Query" class="bean-input" style="min-width:230px;"
-                   placeholder="Buscar por lote, nombre o proveedor…" />
-            <button type="submit" class="bean-btn-pill outline"><i class="fas fa-search"></i> Buscar</button>
+            <label for="pricing-q" class="sr-only">Buscar lote, nombre o proveedor</label>
+            <input id="pricing-q" type="text" name="q" value="@Model.Query" class="min-h-11 min-w-0 flex-1 border border-ink/25 bg-white px-4 py-2 text-base text-ink caret-clay outline-none transition-colors placeholder:text-ink/45 hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25" placeholder="Buscar por lote, nombre o proveedor…" />
+            <button type="submit" class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 border border-ink/20 bg-white px-5 py-2 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
+                Buscar
+            </button>
         </form>
         @if (isSuperAdmin)
         {
-            <a asp-action="Settings" class="bean-btn-pill outline"><i class="fas fa-sliders-h"></i> Configuración</a>
+            <a asp-action="Settings" class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 border border-ink/20 bg-white px-5 py-2 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6"/></svg>
+                Configuración
+            </a>
         }
     </div>
-</div>
+</header>
 
-<div class="bean-tabs" style="margin-top:16px;">
-    <a class="@(TabClass("alertas"))" asp-action="Index" asp-route-tab="alertas" asp-route-q="@Model.Query">
-        Márgenes por revisar <span class="cnt">· @Model.CountAlerts</span>
+<nav class="mt-5 flex gap-6 overflow-x-auto border-b border-ink/15" aria-label="Vistas de precios">
+    <a class="@(TabClass("alertas"))" asp-action="Index" asp-route-tab="alertas" asp-route-q="@Model.Query" aria-current="@(Model.Tab == "alertas" ? "page" : null)">
+        Márgenes por revisar <span class="ml-2 font-data text-[10px] text-clay-dark">@Model.CountAlerts</span>
     </a>
-    <a class="@(TabClass("todos"))" asp-action="Index" asp-route-tab="todos" asp-route-q="@Model.Query">
-        Todos los lotes <span class="cnt">· @Model.CountAll</span>
+    <a class="@(TabClass("todos"))" asp-action="Index" asp-route-tab="todos" asp-route-q="@Model.Query" aria-current="@(Model.Tab == "todos" ? "page" : null)">
+        Todos los lotes <span class="ml-2 font-data text-[10px] text-clay-dark">@Model.CountAll</span>
     </a>
-</div>
+</nav>
 
 @if (TempData["PricingOk"] != null)
 {
-    <div class="bean-panel-note" style="margin-top:16px;">
-        <i class="fas fa-check-circle"></i>
+    <div class="mt-6 flex items-start gap-3 border border-leaf/30 bg-leaf/10 px-4 py-3 text-sm font-semibold leading-6 text-leaf" role="status">
+        <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg>
         <div>@TempData["PricingOk"]</div>
     </div>
 }
 @if (TempData["PricingError"] != null)
 {
-    <div class="bean-panel-note danger" style="margin-top:16px;">
-        <i class="fas fa-exclamation-triangle"></i>
+    <div class="mt-6 flex items-start gap-3 border border-clay/35 bg-clay/10 px-4 py-3 text-sm font-semibold leading-6 text-clay-dark" role="alert">
+        <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5M12 17h.01"/></svg>
         <div>@TempData["PricingError"]</div>
     </div>
 }
 
 @if (Model.Rows.Count == 0)
 {
-    <div class="bean-appr-empty" style="margin-top:22px;">
-        <div class="ico"><i class="fas fa-percentage"></i></div>
-        <h3>Nada por revisar aquí</h3>
-        <p>Cuando el costo de un proveedor rompa el margen mínimo, o falte fijar un precio de venta, el lote aparece en esta bandeja.</p>
-    </div>
+    <section class="mt-8 grid min-h-72 place-items-center border border-oat bg-white px-6 py-12 text-center" aria-labelledby="sin-precios-title">
+        <div class="max-w-xl">
+            <svg class="mx-auto size-14 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.5 15.5 7-7M9 9h.01M15 15h.01"/></svg>
+            <h2 id="sin-precios-title" class="mt-6 text-2xl font-extrabold tracking-[-0.03em] text-ink">Nada por revisar aquí</h2>
+            <p class="mt-3 text-sm leading-6 text-ink/65">Cuando el costo de un proveedor rompa el margen mínimo, o falte fijar un precio de venta, el lote aparecerá en esta bandeja.</p>
+        </div>
+    </section>
 }
 else
 {
-    <div class="bean-panel-tablewrap">
-        <table class="bean-panel-table">
-            <thead>
+    <div class="mt-8 overflow-x-auto border border-ink/15 bg-white shadow-tray">
+        <table class="min-w-[1120px] w-full border-collapse text-left text-sm tabular-nums">
+            <caption class="sr-only">Costos, precios y márgenes de los lotes</caption>
+            <thead class="bg-ink font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
                 <tr>
-                    <th>Lote</th>
-                    <th>Proveedor</th>
-                    <th>Costo</th>
-                    <th>PVP</th>
-                    <th>Margen</th>
-                    <th>Sugerido</th>
-                    <th>Acciones</th>
+                    <th scope="col" class="px-4 py-4 sm:pl-6">Lote</th>
+                    <th scope="col" class="px-4 py-4">Proveedor</th>
+                    <th scope="col" class="px-4 py-4 text-right">Costo</th>
+                    <th scope="col" class="px-4 py-4 text-right">PVP</th>
+                    <th scope="col" class="px-4 py-4 text-right">Margen</th>
+                    <th scope="col" class="px-4 py-4 text-right">Sugerido</th>
+                    <th scope="col" class="min-w-[25rem] px-4 py-4 text-right sm:pr-6">Acciones</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody class="divide-y divide-oat">
                 @foreach (var row in Model.Rows)
                 {
                     var margin = row.Margin;
                     var suggested = Model.Suggested(row);
 
-                    <tr>
-                        <td class="bean-td-name">
-                            <a asp-action="History" asp-route-id="@row.ProductID" style="color:inherit; text-decoration:none;">
-                                @row.Name
-                            </a>
+                    <tr class="hover:bg-cream/70">
+                        <th scope="row" class="px-4 py-4 sm:pl-6">
+                            <a asp-action="History" asp-route-id="@row.ProductID" class="cursor-pointer font-extrabold text-ink underline decoration-transparent underline-offset-4 transition-colors hover:text-clay-dark hover:decoration-clay focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">@row.Name</a>
                             @if (!string.IsNullOrWhiteSpace(row.Lot))
                             {
-                                <div style="font-size:12.5px; color:var(--bean-muted);">Lote @row.Lot</div>
+                                <span class="mt-1 block text-xs font-semibold text-ink/50">Lote @row.Lot</span>
                             }
-                        </td>
-                        <td>@(row.ProviderName ?? "—")</td>
-                        <td>@row.SupplierPrice.ToString("C0", co)</td>
-                        <td style="font-weight:700; color:var(--bean-ink);">
-                            @(row.Price > 0 ? row.Price.ToString("C0", co) : "sin fijar")
-                        </td>
-                        <td>
+                        </th>
+                        <td class="px-4 py-4">@(row.ProviderName ?? "—")</td>
+                        <td class="whitespace-nowrap px-4 py-4 text-right">@row.SupplierPrice.ToString("C0", co)</td>
+                        <td class="whitespace-nowrap px-4 py-4 text-right font-extrabold text-ink">@(row.Price > 0 ? row.Price.ToString("C0", co) : "sin fijar")</td>
+                        <td class="whitespace-nowrap px-4 py-4 text-right">
                             @if (margin.IsCalculable)
                             {
-                                <span style="@(row.MarginAlert ? "color:#B4552E; font-weight:700;" : "")">
-                                    @margin.Percent.ToString("N2") %
-                                </span>
-                                <div style="font-size:12.5px; color:var(--bean-muted);">@margin.Amount.ToString("C0", co)</div>
+                                <span class="font-data text-xs font-semibold @(row.MarginAlert ? "text-clay-dark" : "text-leaf")">@margin.Percent.ToString("N2") %</span>
+                                <span class="mt-1 block text-xs font-semibold text-ink/45">@margin.Amount.ToString("C0", co)</span>
                             }
                             else
                             {
-                                <span style="color:#B4552E; font-weight:700;">—</span>
+                                <span class="font-bold text-clay-dark">—</span>
                             }
                         </td>
-                        <td>@(suggested > 0 ? suggested.ToString("C0", co) : "—")</td>
-                        <td class="bean-td-actions">
-                            @if (canUpdate)
-                            {
-                                <form asp-action="SetPrice" method="post" style="display:flex; gap:6px; align-items:center;">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@row.ProductID" />
-                                    <input type="hidden" name="returnUrl" value="@returnUrl" />
-                                    <input type="number" name="price" step="0.01" min="0"
-                                           value="@(row.Price > 0 ? row.Price : suggested)"
-                                           class="bean-input" style="width:120px;" />
-                                    <input type="text" name="reason" class="bean-input" style="width:150px;"
-                                           placeholder="Motivo (si baja del mínimo)" />
-                                    <button type="submit" class="bean-btn-pill primary">Fijar</button>
-                                </form>
-                            }
-                            <a asp-action="History" asp-route-id="@row.ProductID" class="bean-btn-pill outline icon" title="Histórico de precios">
-                                @* fa-history es el nombre de Font Awesome 5 (el que carga _Layout).
-                                   NO usar fa-clock-rotate-left: es el nombre de FA6 y aquí renderiza vacío. *@
-                                <i class="fas fa-history"></i>
-                            </a>
+                        <td class="whitespace-nowrap px-4 py-4 text-right">@(suggested > 0 ? suggested.ToString("C0", co) : "—")</td>
+                        <td class="px-4 py-3 sm:pr-6">
+                            <div class="flex items-center justify-end gap-2">
+                                @if (canUpdate)
+                                {
+                                    <form asp-action="SetPrice" method="post" class="flex items-center gap-2">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@row.ProductID" />
+                                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                        <label for="price-@row.ProductID" class="sr-only">Precio de venta de @row.Name</label>
+                                        <input id="price-@row.ProductID" type="number" name="price" step="0.01" min="0" value="@(row.Price > 0 ? row.Price : suggested)" class="min-h-11 w-28 border border-ink/25 bg-cream px-3 py-2 text-sm text-ink outline-none transition-colors hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25" />
+                                        <label for="reason-@row.ProductID" class="sr-only">Motivo del cambio de @row.Name</label>
+                                        <input id="reason-@row.ProductID" type="text" name="reason" class="min-h-11 w-40 border border-ink/25 bg-cream px-3 py-2 text-sm text-ink outline-none transition-colors placeholder:text-ink/45 hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25" placeholder="Motivo si baja del mínimo" />
+                                        <button type="submit" class="inline-flex min-h-11 cursor-pointer items-center justify-center bg-clay px-4 py-2 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-white">Fijar</button>
+                                    </form>
+                                }
+                                <a asp-action="History" asp-route-id="@row.ProductID" class="inline-grid size-11 shrink-0 cursor-pointer place-items-center border border-ink/20 text-ink transition-colors hover:border-clay hover:bg-clay hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay" title="Histórico de precios" aria-label="Ver histórico de precios de @row.Name">
+                                    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                 }
@@ -155,21 +156,17 @@ else
         </table>
     </div>
 
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-top:16px;">
-        <span style="font-size:13px; color:var(--bean-muted);">
-            Página @Model.Page de @Model.TotalPages · @Model.TotalCount lotes
-        </span>
-        <div style="display:flex; gap:8px;">
+    <nav class="mt-6 flex flex-col gap-4 border-t border-ink/15 pt-5 sm:flex-row sm:items-center sm:justify-between" aria-label="Paginación de precios">
+        <span class="text-sm font-semibold text-ink/55">Página @Model.Page de @Model.TotalPages · @Model.TotalCount lotes</span>
+        <div class="flex gap-2">
             @if (Model.Page > 1)
             {
-                <a class="bean-btn-pill outline" asp-action="Index" asp-route-tab="@Model.Tab"
-                   asp-route-q="@Model.Query" asp-route-page="@(Model.Page - 1)">&larr; Anterior</a>
+                <a class="inline-flex min-h-11 cursor-pointer items-center justify-center border border-ink/20 bg-white px-4 py-2 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay" asp-action="Index" asp-route-tab="@Model.Tab" asp-route-q="@Model.Query" asp-route-page="@(Model.Page - 1)">← Anterior</a>
             }
             @if (Model.Page < Model.TotalPages)
             {
-                <a class="bean-btn-pill outline" asp-action="Index" asp-route-tab="@Model.Tab"
-                   asp-route-q="@Model.Query" asp-route-page="@(Model.Page + 1)">Siguiente &rarr;</a>
+                <a class="inline-flex min-h-11 cursor-pointer items-center justify-center border border-ink/20 bg-white px-4 py-2 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay" asp-action="Index" asp-route-tab="@Model.Tab" asp-route-q="@Model.Query" asp-route-page="@(Model.Page + 1)">Siguiente →</a>
             }
         </div>
-    </div>
+    </nav>
 }

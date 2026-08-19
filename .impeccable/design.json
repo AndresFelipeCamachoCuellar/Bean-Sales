@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-08T14:52:57.791Z",
+  "title": "Design System: Bean",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "neutral",
+        "displayName": "Cafe tinta",
+        "tonalRamp": ["oklch(15% 0.016 53.569)", "oklch(26% 0.016 53.569)", "oklch(38% 0.016 53.569)", "oklch(50% 0.016 53.569)", "oklch(62% 0.016 53.569)", "oklch(74% 0.016 53.569)", "oklch(86% 0.016 53.569)", "oklch(95% 0.016 53.569)"]
+      },
+      "roast": {
+        "role": "neutral",
+        "displayName": "Cafe tostado",
+        "tonalRamp": ["oklch(15% 0.024 49.491)", "oklch(26% 0.024 49.491)", "oklch(38% 0.024 49.491)", "oklch(50% 0.024 49.491)", "oklch(62% 0.024 49.491)", "oklch(74% 0.024 49.491)", "oklch(86% 0.024 49.491)", "oklch(95% 0.024 49.491)"]
+      },
+      "clay": {
+        "role": "primary",
+        "displayName": "Arcilla de marca",
+        "tonalRamp": ["oklch(15% 0.134 41.695)", "oklch(26% 0.134 41.695)", "oklch(38% 0.134 41.695)", "oklch(50% 0.134 41.695)", "oklch(62% 0.134 41.695)", "oklch(74% 0.134 41.695)", "oklch(86% 0.134 41.695)", "oklch(95% 0.134 41.695)"]
+      },
+      "clay-dark": {
+        "role": "primary",
+        "displayName": "Arcilla profunda",
+        "tonalRamp": ["oklch(15% 0.116 40.867)", "oklch(26% 0.116 40.867)", "oklch(38% 0.116 40.867)", "oklch(50% 0.116 40.867)", "oklch(62% 0.116 40.867)", "oklch(74% 0.116 40.867)", "oklch(86% 0.116 40.867)", "oklch(95% 0.116 40.867)"]
+      },
+      "clay-light": {
+        "role": "primary",
+        "displayName": "Arcilla al sol",
+        "tonalRamp": ["oklch(15% 0.113 48.786)", "oklch(26% 0.113 48.786)", "oklch(38% 0.113 48.786)", "oklch(50% 0.113 48.786)", "oklch(62% 0.113 48.786)", "oklch(74% 0.113 48.786)", "oklch(86% 0.113 48.786)", "oklch(95% 0.113 48.786)"]
+      },
+      "cream": {
+        "role": "neutral",
+        "displayName": "Crema",
+        "tonalRamp": ["oklch(15% 0.009 78.282)", "oklch(26% 0.009 78.282)", "oklch(38% 0.009 78.282)", "oklch(50% 0.009 78.282)", "oklch(62% 0.009 78.282)", "oklch(74% 0.009 78.282)", "oklch(86% 0.009 78.282)", "oklch(95% 0.009 78.282)"]
+      },
+      "oat": {
+        "role": "neutral",
+        "displayName": "Avena",
+        "tonalRamp": ["oklch(15% 0.022 80.685)", "oklch(26% 0.022 80.685)", "oklch(38% 0.022 80.685)", "oklch(50% 0.022 80.685)", "oklch(62% 0.022 80.685)", "oklch(74% 0.022 80.685)", "oklch(86% 0.022 80.685)", "oklch(95% 0.022 80.685)"]
+      },
+      "husk": {
+        "role": "neutral",
+        "displayName": "Cascarilla",
+        "tonalRamp": ["oklch(15% 0.033 71.841)", "oklch(26% 0.033 71.841)", "oklch(38% 0.033 71.841)", "oklch(50% 0.033 71.841)", "oklch(62% 0.033 71.841)", "oklch(74% 0.033 71.841)", "oklch(86% 0.033 71.841)", "oklch(95% 0.033 71.841)"]
+      },
+      "leaf": {
+        "role": "secondary",
+        "displayName": "Hoja de cafetal",
+        "tonalRamp": ["oklch(15% 0.07 151.207)", "oklch(26% 0.07 151.207)", "oklch(38% 0.07 151.207)", "oklch(50% 0.07 151.207)", "oklch(62% 0.07 151.207)", "oklch(74% 0.07 151.207)", "oklch(86% 0.07 151.207)", "oklch(95% 0.07 151.207)"]
+      },
+      "honey": {
+        "role": "tertiary",
+        "displayName": "Miel de cereza",
+        "tonalRamp": ["oklch(15% 0.129 80.688)", "oklch(26% 0.129 80.688)", "oklch(38% 0.129 80.688)", "oklch(50% 0.129 80.688)", "oklch(62% 0.129 80.688)", "oklch(74% 0.129 80.688)", "oklch(86% 0.129 80.688)", "oklch(95% 0.129 80.688)"]
+      },
+      "white": {
+        "role": "neutral",
+        "displayName": "Blanco",
+        "tonalRamp": ["oklch(15% 0 0)", "oklch(26% 0 0)", "oklch(38% 0 0)", "oklch(50% 0 0)", "oklch(62% 0 0)", "oklch(74% 0 0)", "oklch(86% 0 0)", "oklch(95% 0 0)"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Promesa unica del hero." },
+      "headline": { "displayName": "Headline", "purpose": "Titulos editoriales y de seccion." },
+      "title": { "displayName": "Title", "purpose": "Nombre de lote y titulos compactos." },
+      "body": { "displayName": "Body", "purpose": "Explicacion, procedencia y trazabilidad." },
+      "label": { "displayName": "Label / Data", "purpose": "Codigos de lote, origen, proceso y disponibilidad." },
+      "action": { "displayName": "Action", "purpose": "Botones y enlaces de conversion." }
+    },
+    "shadows": [
+      { "name": "tray", "value": "0 24px 70px -34px rgba(29, 21, 16, 0.5)", "purpose": "Separa el lote protagonista de la mesa tostada." },
+      { "name": "lift", "value": "0 28px 70px -28px rgba(29, 21, 16, 0.35)", "purpose": "Eleva menus, selectores y el enlace de salto." }
+    ],
+    "motion": [
+      { "name": "state-color", "value": "150ms cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Cambio estandar de color en enlaces, botones y controles." },
+      { "name": "brand-turn", "value": "300ms cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Giro breve de la gota de marca al pasar el puntero." },
+      { "name": "image-drift", "value": "700ms cubic-bezier(0, 0, 0.2, 1)", "purpose": "Ampliacion contenida de fotografias de lote en hover." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Clay Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Accion principal sobre superficies oscuras o neutrales.",
+      "html": "<button class=\"ds-btn-primary\">Explorar lotes <svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M5 12h14m-6-6 6 6-6 6\"/></svg></button>",
+      "css": ".ds-btn-primary{display:inline-flex;min-height:3.25rem;align-items:center;justify-content:center;gap:.75rem;border:0;border-radius:0;background:var(--color-clay,#b4552e);color:#fff;padding:1rem 1.75rem;font-family:var(--font-sans,Manrope,sans-serif);font-size:.875rem;font-weight:800;cursor:pointer;transition:background-color 150ms cubic-bezier(.4,0,.2,1)}.ds-btn-primary svg{width:1rem;height:1rem;fill:none;stroke:currentColor;stroke-width:2}.ds-btn-primary:hover{background:var(--color-clay-light,#d98a5f)}.ds-btn-primary:active{background:var(--color-clay-dark,#8f4021)}.ds-btn-primary:focus-visible{outline:2px solid #fff;outline-offset:4px}"
+    },
+    {
+      "name": "Dark Commerce Button",
+      "kind": "button",
+      "refersTo": "button-dark",
+      "description": "Accion de compra dentro de una tarjeta clara.",
+      "html": "<button class=\"ds-btn-dark\">Agregar <svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6 8h12l-1 12H7L6 8Z\"/><path d=\"M9 9V6a3 3 0 0 1 6 0v3\"/></svg></button>",
+      "css": ".ds-btn-dark{display:inline-flex;min-height:2.75rem;align-items:center;justify-content:center;gap:.5rem;border:0;border-radius:0;background:var(--color-ink,#1d1510);color:#fff;padding:.75rem 1rem;font-family:var(--font-sans,Manrope,sans-serif);font-size:.875rem;font-weight:700;cursor:pointer;transition:background-color 150ms cubic-bezier(.4,0,.2,1)}.ds-btn-dark svg{width:1rem;height:1rem;fill:none;stroke:currentColor;stroke-width:2}.ds-btn-dark:hover{background:var(--color-clay,#b4552e)}.ds-btn-dark:active{background:var(--color-clay-dark,#8f4021)}.ds-btn-dark:focus-visible{outline:2px solid var(--color-clay,#b4552e);outline-offset:2px}"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Accion secundaria que conserva visible la superficie oscura.",
+      "html": "<button class=\"ds-btn-outline\">Conocer los origenes</button>",
+      "css": ".ds-btn-outline{display:inline-flex;min-height:3.25rem;align-items:center;justify-content:center;border:1px solid rgb(255 255 255/.2);border-radius:0;background:transparent;color:#fff;padding:1rem 1.75rem;font-family:var(--font-sans,Manrope,sans-serif);font-size:.875rem;font-weight:700;cursor:pointer;transition:background-color 150ms cubic-bezier(.4,0,.2,1),border-color 150ms cubic-bezier(.4,0,.2,1)}.ds-btn-outline:hover{border-color:rgb(255 255 255/.5);background:rgb(255 255 255/.05)}.ds-btn-outline:active{background:rgb(255 255 255/.1)}.ds-btn-outline:focus-visible{outline:2px solid var(--color-clay-light,#d98a5f);outline-offset:2px}"
+    },
+    {
+      "name": "Tasting Chip",
+      "kind": "chip",
+      "refersTo": "chip-tasting",
+      "description": "Nota de cata pasiva dentro del cuerpo de un lote.",
+      "html": "<span class=\"ds-chip-tasting\">Chocolate</span>",
+      "css": ".ds-chip-tasting{display:inline-flex;align-items:center;border-radius:9999px;background:var(--color-cream,#fbf7f1);color:rgb(29 21 16/.65);padding:.375rem .75rem;font-family:var(--font-sans,Manrope,sans-serif);font-size:.6875rem;font-weight:600}.ds-chip-tasting:hover{color:var(--color-ink,#1d1510)}.ds-chip-tasting:focus-visible{outline:2px solid var(--color-clay,#b4552e);outline-offset:2px}"
+    },
+    {
+      "name": "Lot Label",
+      "kind": "chip",
+      "refersTo": "label-lot",
+      "description": "Etiqueta cuadrada para codigo de lote y metadata verificable.",
+      "html": "<span class=\"ds-label-lot\">BEAN-01</span>",
+      "css": ".ds-label-lot{display:inline-flex;background:var(--color-cream,#fbf7f1);color:var(--color-ink,#1d1510);padding:.5rem .75rem;font-family:var(--font-data,'Azeret Mono',monospace);font-size:.5625rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase}.ds-label-lot:focus-visible{outline:2px solid var(--color-clay,#b4552e);outline-offset:2px}"
+    },
+    {
+      "name": "Origin Lot Card",
+      "kind": "card",
+      "refersTo": "card-lot",
+      "description": "Bandeja de producto con lote, origen, productor, precio y accion directa.",
+      "html": "<article class=\"ds-lot-card\"><div class=\"ds-lot-media\"><span class=\"ds-lot-initial\">G</span><span class=\"ds-lot-code\">BEAN-01</span><div class=\"ds-lot-origin\"><span>HUILA</span><span>LAVADO</span></div></div><div class=\"ds-lot-body\"><div class=\"ds-lot-heading\"><div><h3>Gran Reserva</h3><p>Finca colombiana</p></div><strong>$48.000</strong></div><div class=\"ds-lot-notes\"><span>Chocolate</span><span>Panela</span></div><div class=\"ds-lot-actions\"><button class=\"ds-lot-view\">Ver lote</button><button class=\"ds-lot-add\">Agregar</button></div></div></article>",
+      "css": ".ds-lot-card{width:min(100%,22rem);color:var(--color-ink,#1d1510);font-family:var(--font-sans,Manrope,sans-serif)}.ds-lot-media{position:relative;display:grid;aspect-ratio:4/5;place-items:center;overflow:hidden;background:var(--color-clay-dark,#8f4021)}.ds-lot-initial{font-family:var(--font-display,'Archivo Black',sans-serif);font-size:4.5rem;letter-spacing:-.08em;color:rgb(251 247 241/.9);transition:transform 700ms cubic-bezier(0,0,.2,1)}.ds-lot-card:hover .ds-lot-initial{transform:scale(1.035)}.ds-lot-code{position:absolute;left:1rem;top:1rem;background:var(--color-cream,#fbf7f1);padding:.5rem .75rem;font-family:var(--font-data,'Azeret Mono',monospace);font-size:.5625rem;font-weight:600;letter-spacing:.14em}.ds-lot-origin{position:absolute;inset:auto 0 0;display:flex;justify-content:space-between;background:rgb(29 21 16/.9);color:#fff;padding:.75rem 1rem;font-family:var(--font-data,'Azeret Mono',monospace);font-size:.5625rem;letter-spacing:.14em}.ds-lot-origin span:last-child{color:var(--color-clay-light,#d98a5f)}.ds-lot-body{border:1px solid var(--color-oat,#f0e7d8);border-top:0;background:#fff;padding:1.5rem}.ds-lot-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}.ds-lot-heading h3{margin:0;font-size:1.25rem;font-weight:800;line-height:1.25;letter-spacing:-.03em}.ds-lot-heading p{margin:.5rem 0 0;color:rgb(29 21 16/.55);font-size:.875rem;font-weight:500}.ds-lot-heading strong{color:var(--color-clay-dark,#8f4021);font-family:var(--font-data,'Azeret Mono',monospace);font-size:.875rem}.ds-lot-notes{display:flex;gap:.5rem;margin-top:1.25rem}.ds-lot-notes span{border-radius:9999px;background:var(--color-cream,#fbf7f1);padding:.375rem .75rem;color:rgb(29 21 16/.65);font-size:.6875rem;font-weight:600}.ds-lot-actions{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:1.75rem}.ds-lot-actions button{min-height:2.75rem;border-radius:0;padding:.75rem 1rem;font:700 .875rem var(--font-sans,Manrope,sans-serif);cursor:pointer}.ds-lot-view{border:1px solid rgb(29 21 16/.2);background:#fff;color:var(--color-ink,#1d1510)}.ds-lot-view:hover{border-color:var(--color-ink,#1d1510);background:var(--color-cream,#fbf7f1)}.ds-lot-add{border:1px solid var(--color-ink,#1d1510);background:var(--color-ink,#1d1510);color:#fff}.ds-lot-add:hover{border-color:var(--color-clay,#b4552e);background:var(--color-clay,#b4552e)}.ds-lot-actions button:focus-visible{outline:2px solid var(--color-clay,#b4552e);outline-offset:2px}"
+    },
+    {
+      "name": "Store Navigation",
+      "kind": "nav",
+      "description": "Barra compacta tinta con marca organica, enlaces lineales y controles de pildora.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Navegacion principal\"><a class=\"ds-brand\" href=\"#\"><span class=\"ds-brand-drop\"><i></i></span><b>BEAN</b></a><div class=\"ds-links\"><a class=\"ds-link-active\" href=\"#\">Cafe</a><a href=\"#\">Origenes</a><a href=\"#\">Nosotros</a></div><button class=\"ds-country\">Colombia <svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m6 9 6 6 6-6\"/></svg></button><button class=\"ds-cart\" aria-label=\"Ver carrito\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6 8h12l-1 12H7L6 8Z\"/><path d=\"M9 9V6a3 3 0 0 1 6 0v3\"/></svg></button></nav>",
+      "css": ".ds-nav{display:flex;min-height:5rem;align-items:center;gap:1.25rem;background:var(--color-ink,#1d1510);color:#fff;padding:0 2.5rem;font-family:var(--font-sans,Manrope,sans-serif)}.ds-brand{display:flex;align-items:center;gap:.75rem;color:#fff;text-decoration:none}.ds-brand-drop{display:grid;width:2.25rem;height:2.25rem;place-items:center;transform:rotate(45deg);border-radius:65% 65% 65% 20%;background:var(--color-clay,#b4552e);transition:transform 300ms cubic-bezier(.4,0,.2,1)}.ds-brand:hover .ds-brand-drop{transform:rotate(55deg)}.ds-brand-drop i{width:.5rem;height:.5rem;border-radius:9999px;background:var(--color-cream,#fbf7f1)}.ds-brand b{font-family:var(--font-display,'Archivo Black',sans-serif);font-size:1.5rem;letter-spacing:-.04em}.ds-links{display:flex;gap:1.75rem;margin-left:1.5rem}.ds-links a{border-bottom:1px solid transparent;color:var(--color-husk,#d7c6b2);padding-bottom:.25rem;font-size:.875rem;font-weight:600;text-decoration:none}.ds-links a:hover{color:#fff}.ds-links .ds-link-active{border-color:var(--color-clay,#b4552e);color:#fff;font-weight:700}.ds-country{display:flex;min-height:2.75rem;align-items:center;gap:.75rem;margin-left:auto;border:1px solid rgb(255 255 255/.15);border-radius:9999px;background:rgb(255 255 255/.05);color:#fff;padding:.5rem .75rem;font-size:.875rem;font-weight:700;cursor:pointer}.ds-country:hover{border-color:rgb(255 255 255/.3);background:rgb(255 255 255/.1)}.ds-country svg{width:1rem;height:1rem;fill:none;stroke:currentColor;stroke-width:2}.ds-cart{display:grid;width:2.75rem;height:2.75rem;place-items:center;border:0;border-radius:9999px;background:var(--color-clay,#b4552e);color:#fff;cursor:pointer}.ds-cart:hover{background:var(--color-clay-light,#d98a5f)}.ds-cart svg{width:1.25rem;height:1.25rem;fill:none;stroke:currentColor;stroke-width:1.8}.ds-nav a:focus-visible,.ds-nav button:focus-visible{outline:2px solid var(--color-clay-light,#d98a5f);outline-offset:4px}@media(max-width:767px){.ds-nav{min-height:4.5rem;padding:0 1rem}.ds-links,.ds-country{display:none}.ds-cart{margin-left:auto}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Patio de origen",
+    "overview": "Bean convierte el catalogo en un patio de secado vivo: una reticula de bandejas, lotes identificados y datos de origen donde el producto real domina sobre la decoracion comercial. Cafe tinta, crema y terracota producen una atmosfera material y colombiana; la composicion combina grandes bloques tipograficos con modulos densos, bordes finos y fotografias de lote.\n\nEl sistema es directo, trazable y orientado a compra. La voz principal hace una promesa breve, la voz de datos registra origen y proceso, y cada superficie conduce del contexto del cafe a una accion concreta. Este lenguaje gobierna todo el producto: tienda, acceso, cuenta, onboarding y panel operativo comparten los mismos tokens y primitives Tailwind.",
+    "keyCharacteristics": [
+      "Contraste alto entre cafe tinta y crema calida.",
+      "Reticulas modulares inspiradas en bandejas de secado.",
+      "Titulares grotescos compactos frente a datos monoespaciados.",
+      "Lotes reales, origen y proceso antes que afirmaciones genericas.",
+      "Geometria rectangular con redondeo reservado para controles compactos."
+    ],
+    "rules": [
+      { "name": "The Clay Signal Rule", "body": "La arcilla marca accion, seleccion o una franja editorial deliberada; no reemplaza indiscriminadamente los fondos tinta, crema o blanco.", "section": "colors" },
+      { "name": "The Three Voices Rule", "body": "Archivo Black promete, Manrope explica y acciona, Azeret Mono registra datos; no intercambies sus responsabilidades.", "section": "typography" },
+      { "name": "The Tray Before Shadow Rule", "body": "Construye profundidad con tono, borde y reticula; usa sombra solo cuando una bandeja o capa realmente se eleva.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do organiza producto, prueba y acciones como bandejas conectadas por bordes finos.",
+      "Do deja que fotografia, nombre, productor, origen y proceso reales definan cada lote.",
+      "Do conserva objetivos tactiles de al menos 2.75rem y foco visible de 2px.",
+      "Do usa la voz monoespaciada solo para informacion corta y verificable."
+    ],
+    "donts": [
+      "Don't conviertas el catalogo en una cuadricula de tarjetas genericas redondeadas y sombras uniformes.",
+      "Don't uses arcilla, hoja o miel como color decorativo sin una funcion de accion, estado o evidencia.",
+      "Don't sustituyas datos reales de lote por testimonios, certificaciones o metricas inventadas.",
+      "Don't redondees botones y contenedores editoriales; las pildoras pertenecen a controles e indicadores compactos."
+    ]
+  }
+}

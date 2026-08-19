@@ -29,7 +29,8 @@ public class DebugController : Controller
         var roles = await _userManager.GetRolesAsync(user);
         
         var moduleExists = await _context.ParametricModules.AnyAsync(m => m.Code == Modules.Users);
-        var permExists = await _context.ParametricPermissions.AnyAsync(p => p.Code == Permissions.Read && p.Module.Code == Modules.Users);
+        var permExists = await _context.ParametricPermissions.AnyAsync(p =>
+            p.Code == Permissions.Read && p.Module != null && p.Module.Code == Modules.Users);
         
         // Check raw permissions in DB
         var superAdminRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == Roles.SuperAdmin);

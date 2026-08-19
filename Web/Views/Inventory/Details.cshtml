@@ -4,7 +4,7 @@
 
 @{
     ViewData["Title"] = "Movimientos de inventario";
-    Layout = "_Layout";
+    Layout = "_LayoutAdminTailwind";
 
     var co = System.Globalization.CultureInfo.GetCultureInfo("es-CO");
 
@@ -20,10 +20,10 @@
     };
 }
 
-<div class="bean-panel-head">
-    <div>
-        <h1 class="bean-panel-title">@Model.Name</h1>
-        <p class="bean-panel-sub">
+<header class="flex flex-col gap-6 border-b border-ink/15 pb-7 lg:flex-row lg:items-end lg:justify-between">
+    <div class="min-w-0 max-w-3xl">
+        <h1 class="text-balance font-display text-3xl leading-none tracking-[-0.04em] text-ink sm:text-4xl">@Model.Name</h1>
+        <p class="mt-3 text-sm font-semibold leading-6 text-ink/60 sm:text-base">
             @(Model.ProviderName ?? "Sin proveedor")
             @if (!string.IsNullOrWhiteSpace(Model.Lot))
             {
@@ -32,95 +32,97 @@
             · @(EstadoLabel(Model.ProductStatus))
         </p>
     </div>
-    <a asp-action="Index" class="bean-btn-pill outline"><i class="fas fa-arrow-left"></i> Volver al inventario</a>
-</div>
+    <a asp-action="Index" class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 self-start border border-ink/20 bg-white px-5 py-3 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream lg:self-auto">
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5m6 6-6-6 6-6"/></svg>
+        Volver al inventario
+    </a>
+</header>
 
 @if (TempData["InventoryOk"] != null)
 {
-    <div class="bean-panel-note" style="margin-top:16px;">
-        <i class="fas fa-check-circle"></i>
+    <div class="mt-6 flex items-start gap-3 border border-leaf/30 bg-leaf/10 px-4 py-3 text-sm font-semibold leading-6 text-leaf" role="status">
+        <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg>
         <div>@TempData["InventoryOk"]</div>
     </div>
 }
 @if (TempData["InventoryError"] != null)
 {
-    <div class="bean-panel-note danger" style="margin-top:16px;">
-        <i class="fas fa-exclamation-triangle"></i>
+    <div class="mt-6 flex items-start gap-3 border border-clay/35 bg-clay/10 px-4 py-3 text-sm font-semibold leading-6 text-clay-dark" role="alert">
+        <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5M12 17h.01"/></svg>
         <div>@TempData["InventoryError"]</div>
     </div>
 }
 
-@* ---- Saldo por bodega ---- *@
-<div class="bean-panel-card">
-    <h2 class="bean-panel-title" style="font-size:19px; margin:0 0 6px;">Saldo por bodega</h2>
-    <p class="bean-panel-sub" style="margin:0 0 14px;">
-        <strong>Disponible</strong> = en mano − reservado. El catálogo publica el disponible total del lote
-        (hoy: <strong>@Model.ProductStock</strong> unidades).
-    </p>
+<section class="mt-8 border border-ink/15 bg-white" aria-labelledby="saldos-title">
+    <div class="border-b border-oat px-4 py-5 sm:px-6">
+        <h2 id="saldos-title" class="text-xl font-extrabold tracking-[-0.03em] text-ink">Saldo por bodega</h2>
+        <p class="mt-2 max-w-3xl text-sm leading-6 text-ink/60"><strong class="text-ink">Disponible</strong> = en mano − reservado. El catálogo publica el disponible total del lote: <strong class="text-ink">@Model.ProductStock unidades</strong>.</p>
+    </div>
 
     @if (Model.Balances.Count == 0)
     {
-        <div class="bean-panel-note">
-            <i class="fas fa-info-circle"></i>
+        <div class="m-4 flex items-start gap-3 border border-ink/15 bg-cream px-4 py-3 text-sm font-semibold leading-6 text-ink/70 sm:m-6" role="status">
+            <svg class="mt-0.5 size-5 shrink-0 text-clay-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></svg>
             <div>Este lote todavía no tiene saldo en ninguna bodega.</div>
         </div>
     }
     else
     {
-        <div class="bean-panel-tablewrap bean-inv-scroll" style="margin-top:0;">
-            <table class="bean-panel-table">
-                <thead>
+        <div class="overflow-x-auto">
+            <table class="min-w-[760px] w-full border-collapse text-left text-sm tabular-nums">
+                <caption class="sr-only">Saldos del lote por bodega</caption>
+                <thead class="bg-ink font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
                     <tr>
-                        <th>Bodega</th>
-                        <th>En mano</th>
-                        <th>Reservado</th>
-                        <th>Disponible</th>
-                        <th>Punto de reorden</th>
-                        <th>Propiedad</th>
+                        <th scope="col" class="px-4 py-4 sm:px-6">Bodega</th>
+                        <th scope="col" class="px-4 py-4 text-center">En mano</th>
+                        <th scope="col" class="px-4 py-4 text-center">Reservado</th>
+                        <th scope="col" class="px-4 py-4 text-center">Disponible</th>
+                        <th scope="col" class="min-w-44 px-4 py-4">Punto de reorden</th>
+                        <th scope="col" class="px-4 py-4">Propiedad</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-oat">
                     @foreach (var b in Model.Balances)
                     {
-                        <tr>
-                            <td class="bean-td-name">
-                                @b.Code
-                                <div class="bean-inv-lotmeta">
+                        <tr class="hover:bg-cream/70">
+                            <th scope="row" class="px-4 py-4 sm:px-6">
+                                <span class="font-data text-xs font-semibold text-clay-dark">@b.Code</span>
+                                <span class="mt-1 flex items-center gap-2 text-sm font-semibold text-ink">
                                     @b.Name · @b.City
                                     @if (!b.WarehouseIsActive)
                                     {
-                                        <span class="bean-role-chip">Inactiva</span>
+                                        <span class="rounded-full bg-ink/10 px-2 py-1 font-data text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/60">Inactiva</span>
                                     }
-                                </div>
-                            </td>
-                            <td>@b.QuantityOnHand</td>
-                            <td>@b.QuantityReserved</td>
-                            <td>
+                                </span>
+                            </th>
+                            <td class="px-4 py-4 text-center">@b.QuantityOnHand</td>
+                            <td class="px-4 py-4 text-center">@b.QuantityReserved</td>
+                            <td class="px-4 py-4 text-center">
                                 @if (b.QuantityAvailable <= 0)
                                 {
-                                    <span class="bean-inv-qty empty"><span class="dot"></span>@b.QuantityAvailable</span>
+                                    <span class="inline-flex items-center gap-2 font-data text-xs font-semibold text-clay-dark"><span class="size-2 rounded-full bg-clay" aria-hidden="true"></span>@b.QuantityAvailable</span>
                                 }
                                 else if (b.IsLow)
                                 {
-                                    <span class="bean-inv-qty low"><span class="dot"></span>@b.QuantityAvailable</span>
+                                    <span class="inline-flex items-center gap-2 font-data text-xs font-semibold text-honey"><span class="size-2 rounded-full bg-honey" aria-hidden="true"></span>@b.QuantityAvailable</span>
                                 }
                                 else
                                 {
-                                    <span class="bean-inv-qty ok"><span class="dot"></span>@b.QuantityAvailable</span>
+                                    <span class="inline-flex items-center gap-2 font-data text-xs font-semibold text-leaf"><span class="size-2 rounded-full bg-leaf" aria-hidden="true"></span>@b.QuantityAvailable</span>
                                 }
                             </td>
-                            <td>
+                            <td class="px-4 py-3">
                                 @if (Model.CanAdjust && b.HasStockItem)
                                 {
-                                    <form asp-action="SetReorderPoint" method="post" class="bean-inv-inlineform">
+                                    <form asp-action="SetReorderPoint" method="post" class="flex items-center gap-2">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@Model.ProductID" />
                                         <input type="hidden" name="warehouseId" value="@b.WarehouseID" />
-                                        <input type="number" name="reorderPoint" min="0" step="1"
-                                               value="@b.ReorderPoint" class="bean-input" style="width:90px;"
-                                               placeholder="—" />
-                                        <button type="submit" class="bean-btn-pill outline icon" title="Guardar punto de reorden">
-                                            <i class="fas fa-save"></i>
+                                        <label class="sr-only" for="reorder-@b.WarehouseID">Punto de reorden para @b.Code</label>
+                                        <input id="reorder-@b.WarehouseID" type="number" name="reorderPoint" min="0" step="1" value="@b.ReorderPoint"
+                                               class="min-h-11 w-24 border border-ink/25 bg-cream px-3 py-2 text-sm text-ink outline-none transition-colors placeholder:text-ink/40 hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25" placeholder="—" />
+                                        <button type="submit" class="grid size-11 shrink-0 cursor-pointer place-items-center border border-ink/20 text-ink transition-colors hover:border-clay hover:bg-clay hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay" title="Guardar punto de reorden" aria-label="Guardar punto de reorden de @b.Code">
+                                            <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 4h12l2 2v14H5V4Z"/><path d="M8 4v6h8V4M8 20v-6h8v6"/></svg>
                                         </button>
                                     </form>
                                 }
@@ -129,52 +131,48 @@
                                     <text>@(b.ReorderPoint.HasValue ? b.ReorderPoint.Value.ToString() : "—")</text>
                                 }
                             </td>
-                            <td><span class="bean-role-chip">@(StockMovementUi.OwnershipLabel(b.Ownership))</span></td>
+                            <td class="px-4 py-4"><span class="inline-flex rounded-full bg-oat px-3 py-1 font-data text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/70">@(StockMovementUi.OwnershipLabel(b.Ownership))</span></td>
                         </tr>
                     }
                 </tbody>
-                <tfoot>
+                <tfoot class="border-t border-ink/20 bg-oat/65 font-data text-xs font-semibold text-ink">
                     <tr>
-                        <th>Total</th>
-                        <th>@Model.TotalOnHand</th>
-                        <th>@Model.TotalReserved</th>
-                        <th>@Model.TotalAvailable</th>
-                        <th></th>
-                        <th></th>
+                        <th scope="row" class="px-4 py-4 sm:px-6">Total</th>
+                        <td class="px-4 py-4 text-center">@Model.TotalOnHand</td>
+                        <td class="px-4 py-4 text-center">@Model.TotalReserved</td>
+                        <td class="bg-ink px-4 py-4 text-center text-white">@Model.TotalAvailable</td>
+                        <td></td>
+                        <td></td>
                     </tr>
                 </tfoot>
             </table>
         </div>
     }
-</div>
+</section>
 
-@* ---- Ajuste manual ---- *@
 @if (Model.CanAdjust)
 {
-    <div class="bean-panel-card">
-        <h2 class="bean-panel-title" style="font-size:19px; margin:0 0 6px;">Ajuste manual</h2>
-        <p class="bean-panel-sub" style="margin:0 0 14px;">
-            Para cuadrar diferencias de conteo, mermas o correcciones. Queda como asiento
-            <strong>permanente</strong> en el libro de movimientos: no se puede borrar, solo compensar con otro ajuste.
-        </p>
+    <section class="mt-8 border border-ink/15 bg-white p-4 sm:p-6" aria-labelledby="ajuste-title">
+        <h2 id="ajuste-title" class="text-xl font-extrabold tracking-[-0.03em] text-ink">Ajuste manual</h2>
+        <p class="mt-2 max-w-4xl text-sm leading-6 text-ink/60">Cuadra diferencias de conteo, mermas o correcciones. El asiento queda <strong class="text-ink">permanente</strong> en el libro: solo puede compensarse con otro ajuste.</p>
 
         @if (Model.WarehouseOptions.Count == 0)
         {
-            <div class="bean-panel-note danger">
-                <i class="fas fa-exclamation-triangle"></i>
+            <div class="mt-5 flex items-start gap-3 border border-clay/35 bg-clay/10 px-4 py-3 text-sm font-semibold leading-6 text-clay-dark" role="alert">
+                <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5M12 17h.01"/></svg>
                 <div>No hay bodegas operativas: crea una antes de poder ajustar inventario.</div>
             </div>
         }
         else
         {
-            <form asp-action="Adjust" method="post" class="bean-inv-adjustform"
+            <form asp-action="Adjust" method="post" class="mt-6 grid gap-5 lg:grid-cols-[minmax(12rem,1fr)_10rem_minmax(18rem,2fr)_auto] lg:items-end"
                   onsubmit="return confirm('El ajuste queda registrado de forma permanente en el libro de inventario. ¿Continuar?');">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="id" value="@Model.ProductID" />
 
-                <div class="bean-field">
-                    <label class="bean-label" for="adj-wh">Bodega</label>
-                    <select id="adj-wh" name="warehouseId" class="bean-select" required>
+                <div>
+                    <label class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/65" for="adj-wh">Bodega</label>
+                    <select id="adj-wh" name="warehouseId" class="mt-2 min-h-12 w-full cursor-pointer border border-ink/25 bg-cream px-3 py-2 text-sm font-semibold text-ink outline-none transition-colors hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25" required>
                         @foreach (var opt in Model.WarehouseOptions)
                         {
                             <option value="@opt.Id">@opt.Label</option>
@@ -182,103 +180,94 @@
                     </select>
                 </div>
 
-                <div class="bean-field">
-                    <label class="bean-label" for="adj-qty">Cantidad (+ entra · − sale)</label>
-                    <input id="adj-qty" type="number" name="quantity" step="1" class="bean-input"
-                           style="width:150px;" required placeholder="ej. -3" />
+                <div>
+                    <label class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/65" for="adj-qty">Cantidad (+ / −)</label>
+                    <input id="adj-qty" type="number" name="quantity" step="1" class="mt-2 min-h-12 w-full border border-ink/25 bg-cream px-4 py-2 text-base text-ink caret-clay outline-none transition-colors placeholder:text-ink/45 hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25" required placeholder="ej. -3" />
                 </div>
 
-                <div class="bean-field" style="flex:1; min-width:240px;">
-                    <label class="bean-label" for="adj-reason">Motivo (obligatorio)</label>
-                    <input id="adj-reason" type="text" name="reason" class="bean-input" maxlength="300" required
-                           placeholder="ej. Conteo físico del 7 de agosto: faltaban 3 bolsas" />
+                <div>
+                    <label class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/65" for="adj-reason">Motivo (obligatorio)</label>
+                    <input id="adj-reason" type="text" name="reason" class="mt-2 min-h-12 w-full border border-ink/25 bg-cream px-4 py-2 text-base text-ink caret-clay outline-none transition-colors placeholder:text-ink/45 hover:border-ink/45 focus-visible:border-clay focus-visible:ring-2 focus-visible:ring-clay/25" maxlength="300" required placeholder="ej. Conteo físico del 7 de agosto: faltaban 3 bolsas" />
                 </div>
 
-                <div class="bean-field" style="justify-content:flex-end;">
-                    <button type="submit" class="bean-btn-pill primary">
-                        <i class="fas fa-balance-scale"></i> Registrar ajuste
-                    </button>
-                </div>
+                <button type="submit" class="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 bg-clay px-5 py-3 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-white">
+                    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v18M5 7h14M6 7l-3 6h6L6 7ZM18 7l-3 6h6l-3-6ZM8 21h8"/></svg>
+                    Registrar ajuste
+                </button>
             </form>
         }
-    </div>
+    </section>
 }
 
-@* ---- Libro mayor ---- *@
-<div class="bean-panel-card">
-    <h2 class="bean-panel-title" style="font-size:19px; margin:0 0 6px;">Historial de movimientos</h2>
-    <p class="bean-panel-sub" style="margin:0 0 14px;">
-        Libro mayor inmutable: @Model.TotalMovements @(Model.TotalMovements == 1 ? "asiento" : "asientos") en total.
-    </p>
+<section class="mt-8 border border-ink/15 bg-white" aria-labelledby="movimientos-title">
+    <div class="border-b border-oat px-4 py-5 sm:px-6">
+        <h2 id="movimientos-title" class="text-xl font-extrabold tracking-[-0.03em] text-ink">Historial de movimientos</h2>
+        <p class="mt-2 text-sm leading-6 text-ink/60">Libro mayor inmutable: @Model.TotalMovements @(Model.TotalMovements == 1 ? "asiento" : "asientos") en total.</p>
+    </div>
 
     @if (Model.Movements.Count == 0)
     {
-        <div class="bean-panel-note">
-            <i class="fas fa-info-circle"></i>
+        <div class="m-4 flex items-start gap-3 border border-ink/15 bg-cream px-4 py-3 text-sm font-semibold leading-6 text-ink/70 sm:m-6" role="status">
+            <svg class="mt-0.5 size-5 shrink-0 text-clay-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></svg>
             <div>Todavía no hay movimientos para este lote.</div>
         </div>
     }
     else
     {
-        <div class="bean-panel-tablewrap bean-inv-scroll" style="margin-top:0;">
-            <table class="bean-panel-table">
-                <thead>
+        <div class="overflow-x-auto">
+            <table class="min-w-[1100px] w-full border-collapse text-left text-sm tabular-nums">
+                <caption class="sr-only">Libro mayor de movimientos del lote</caption>
+                <thead class="bg-ink font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
                     <tr>
-                        <th>Fecha</th>
-                        <th>Tipo</th>
-                        <th>Bodega</th>
-                        <th>Cantidad</th>
-                        <th>Referencia</th>
-                        <th>Costo unit.</th>
-                        <th>Usuario</th>
-                        <th>Motivo</th>
+                        <th scope="col" class="px-4 py-4 sm:pl-6">Fecha</th>
+                        <th scope="col" class="px-4 py-4">Tipo</th>
+                        <th scope="col" class="px-4 py-4">Bodega</th>
+                        <th scope="col" class="px-4 py-4 text-center">Cantidad</th>
+                        <th scope="col" class="px-4 py-4">Referencia</th>
+                        <th scope="col" class="px-4 py-4 text-right">Costo unit.</th>
+                        <th scope="col" class="px-4 py-4">Usuario</th>
+                        <th scope="col" class="min-w-64 px-4 py-4 sm:pr-6">Motivo</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-oat">
                     @foreach (var m in Model.Movements)
                     {
-                        <tr>
-                            <td style="white-space:nowrap;">@m.CreatedOn.ToString("d MMM yyyy '·' HH:mm", co)</td>
-                            <td><span class="@(StockMovementUi.CssClass(m.MovementType))"><span class="dot"></span>@(StockMovementUi.Label(m.MovementType))</span></td>
-                            <td>@m.WarehouseCode</td>
-                            <td class="@(m.Quantity < 0 ? "bean-inv-neg" : "bean-inv-pos")">
-                                @(m.Quantity > 0 ? "+" : string.Empty)@m.Quantity
-                            </td>
-                            <td>
+                        <tr class="hover:bg-cream/70">
+                            <td class="whitespace-nowrap px-4 py-4 sm:pl-6">@m.CreatedOn.ToString("d MMM yyyy '·' HH:mm", co)</td>
+                            <td class="px-4 py-4"><span class="inline-flex rounded-full bg-oat px-3 py-1 font-data text-[10px] font-semibold uppercase tracking-[0.08em] text-ink/75">@(StockMovementUi.Label(m.MovementType))</span></td>
+                            <td class="px-4 py-4 font-data text-xs font-semibold text-clay-dark">@m.WarehouseCode</td>
+                            <td class="px-4 py-4 text-center font-data text-xs font-semibold @(m.Quantity < 0 ? "text-clay-dark" : "text-leaf")">@(m.Quantity > 0 ? "+" : string.Empty)@m.Quantity</td>
+                            <td class="px-4 py-4">
                                 @if (m.ReferenceShortId != null)
                                 {
-                                    <span class="bean-role-chip">@m.ReferenceType #@m.ReferenceShortId</span>
+                                    <span class="inline-flex rounded-full bg-ink/10 px-3 py-1 font-data text-[10px] font-semibold uppercase tracking-[0.08em] text-ink/70">@m.ReferenceType #@m.ReferenceShortId</span>
                                 }
                                 else
                                 {
                                     <text>—</text>
                                 }
                             </td>
-                            <td>@(m.UnitCost.HasValue ? m.UnitCost.Value.ToString("C0", co) : "—")</td>
-                            <td style="font-size:12.5px; color:var(--bean-muted);">@m.CreatedBy</td>
-                            <td style="max-width:280px;">@(string.IsNullOrWhiteSpace(m.Reason) ? "—" : m.Reason)</td>
+                            <td class="whitespace-nowrap px-4 py-4 text-right">@(m.UnitCost.HasValue ? m.UnitCost.Value.ToString("C0", co) : "—")</td>
+                            <td class="px-4 py-4 text-xs font-semibold text-ink/55">@m.CreatedBy</td>
+                            <td class="px-4 py-4 leading-6 text-ink/70 sm:pr-6">@(string.IsNullOrWhiteSpace(m.Reason) ? "—" : m.Reason)</td>
                         </tr>
                     }
                 </tbody>
             </table>
         </div>
 
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-top:16px;">
-            <span style="font-size:13px; color:var(--bean-muted);">
-                Página @Model.Page de @Model.TotalPages · saldo de esta página: @Model.PageMovementBalance
-            </span>
-            <div style="display:flex; gap:8px;">
+        <nav class="flex flex-col gap-4 border-t border-oat px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6" aria-label="Paginación de movimientos">
+            <span class="text-sm font-semibold text-ink/55">Página @Model.Page de @Model.TotalPages · saldo de esta página: @Model.PageMovementBalance</span>
+            <div class="flex gap-2">
                 @if (Model.HasPrev)
                 {
-                    <a class="bean-btn-pill outline" asp-action="Details" asp-route-id="@Model.ProductID"
-                       asp-route-page="@(Model.Page - 1)">&larr; Anterior</a>
+                    <a class="inline-flex min-h-11 cursor-pointer items-center justify-center border border-ink/20 bg-white px-4 py-2 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay" asp-action="Details" asp-route-id="@Model.ProductID" asp-route-page="@(Model.Page - 1)">← Anterior</a>
                 }
                 @if (Model.HasNext)
                 {
-                    <a class="bean-btn-pill outline" asp-action="Details" asp-route-id="@Model.ProductID"
-                       asp-route-page="@(Model.Page + 1)">Siguiente &rarr;</a>
+                    <a class="inline-flex min-h-11 cursor-pointer items-center justify-center border border-ink/20 bg-white px-4 py-2 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay" asp-action="Details" asp-route-id="@Model.ProductID" asp-route-page="@(Model.Page + 1)">Siguiente →</a>
                 }
             </div>
-        </div>
+        </nav>
     }
-</div>
+</section>

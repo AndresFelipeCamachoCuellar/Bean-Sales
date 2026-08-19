@@ -7,68 +7,86 @@
 
 @{
     ViewData["Title"] = "Perfil de la Empresa";
-    Layout = "_Layout";
+    Layout = "_LayoutAdminTailwind";
     var user = await UserManager.GetUserAsync(User);
     var canEdit = await PermissionService.HasPermissionAsync(user, Modules.CompanyProfile, Permissions.Update);
 }
 
-<div class="bean-panel-head">
-    <div>
-        <h1 class="bean-panel-title">Perfil de la empresa</h1>
-        <p class="bean-panel-sub">Consulta y administra la información general de tu empresa en la plataforma.</p>
+<div class="flex flex-col gap-6 border-b border-ink/15 pb-7 sm:flex-row sm:items-end sm:justify-between">
+    <div class="max-w-2xl">
+        <h1 class="font-display text-3xl leading-none tracking-[-0.04em] text-ink sm:text-4xl">Perfil de la empresa</h1>
+        <p class="mt-3 text-sm leading-6 text-ink/65 sm:text-base">Consulta y administra la información general de tu empresa en la plataforma.</p>
     </div>
     @if (canEdit)
     {
-        <a asp-action="Edit" class="bean-prov-newlot"><i class="fas fa-edit"></i> Editar información</a>
+        <a asp-action="Edit" class="inline-flex min-h-11 shrink-0 cursor-pointer items-center justify-center gap-2 bg-clay px-5 py-3 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream">
+            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                <path d="m4 16-.8 4 4-.8L18.5 7.9l-3.2-3.2L4 16Z" /><path d="m13.8 6.2 3.2 3.2" />
+            </svg>
+            Editar información
+        </a>
     }
 </div>
 
 @if (TempData["SuccessMessage"] != null)
 {
-    <div class="bean-form-card" style="margin-top:18px; border-color:var(--bean-terra); color:var(--bean-ink);">
-        <i class="fas fa-check-circle" style="color:var(--bean-terra);"></i> @TempData["SuccessMessage"]
+    <div class="mt-6 flex items-start gap-3 border border-leaf/35 bg-leaf/10 p-4 text-sm font-bold leading-6 text-ink" role="status">
+        <svg class="mt-0.5 size-5 shrink-0 text-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" /><path d="m8 12 2.5 2.5L16 9" />
+        </svg>
+        <span>@TempData["SuccessMessage"]</span>
     </div>
 }
 
-<div class="bean-form-card">
-    <h2 class="bean-form-section-title">Información general</h2>
-    <div class="bean-form-grid">
-        <div class="bean-field">
-            <span class="bean-label">Nombre de la empresa</span>
-            <div class="bean-field-value">@Model.Name</div>
-        </div>
-        <div class="bean-field">
-            <span class="bean-label">NIT</span>
-            <div class="bean-field-value">@Model.NIT</div>
-        </div>
-        <div class="bean-field">
-            <span class="bean-label">Email corporativo</span>
-            <div class="bean-field-value">@Model.Email</div>
-        </div>
-        <div class="bean-field">
-            <span class="bean-label">Teléfono</span>
-            <div class="bean-field-value">@Model.Phone</div>
-        </div>
+<section class="mt-6 border border-ink/15 bg-white" aria-labelledby="company-general-title">
+    <div class="border-b border-ink/15 bg-ink px-5 py-4 text-white sm:px-6">
+        <h2 id="company-general-title" class="text-base font-extrabold">Información general</h2>
     </div>
-
-    <h2 class="bean-form-section-title">Ubicación y estado</h2>
-    <div class="bean-form-grid">
-        <div class="bean-field" style="grid-column: 1 / -1;">
-            <span class="bean-label">Dirección</span>
-            <div class="bean-field-value">@Model.Address</div>
+    <dl class="grid sm:grid-cols-2">
+        <div class="border-b border-ink/10 p-5 sm:border-r sm:p-6">
+            <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/55">Nombre de la empresa</dt>
+            <dd class="mt-2 break-words text-base font-extrabold text-ink">@Model.Name</dd>
         </div>
-        <div class="bean-field">
-            <span class="bean-label">Estado en plataforma</span>
-            <div>
+        <div class="border-b border-ink/10 p-5 sm:p-6">
+            <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/55">NIT</dt>
+            <dd class="mt-2 font-data text-sm font-semibold text-ink">@Model.NIT</dd>
+        </div>
+        <div class="border-b border-ink/10 p-5 sm:border-b-0 sm:border-r sm:p-6">
+            <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/55">Email corporativo</dt>
+            <dd class="mt-2 break-all text-sm font-bold text-ink">@Model.Email</dd>
+        </div>
+        <div class="p-5 sm:p-6">
+            <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/55">Teléfono</dt>
+            <dd class="mt-2 text-sm font-bold text-ink">@Model.Phone</dd>
+        </div>
+    </dl>
+</section>
+
+<section class="mt-6 border border-ink/15 bg-white" aria-labelledby="company-status-title">
+    <div class="border-b border-ink/15 px-5 py-4 sm:px-6">
+        <h2 id="company-status-title" class="text-base font-extrabold text-ink">Ubicación y estado</h2>
+    </div>
+    <dl class="grid sm:grid-cols-[minmax(0,2fr)_minmax(14rem,1fr)]">
+        <div class="border-b border-ink/10 p-5 sm:border-b-0 sm:border-r sm:p-6">
+            <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/55">Dirección</dt>
+            <dd class="mt-2 break-words text-sm font-bold leading-6 text-ink">@Model.Address</dd>
+        </div>
+        <div class="p-5 sm:p-6">
+            <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/55">Estado en plataforma</dt>
+            <dd class="mt-3">
                 @if (Model.ApprovalStatus == "Approved")
                 {
-                    <span class="bean-status active"><span class="dot"></span>Aprobado</span>
+                    <span class="inline-flex items-center gap-2 rounded-full border border-leaf/30 bg-leaf/10 px-3 py-1.5 font-data text-[10px] font-semibold uppercase tracking-[0.1em] text-leaf">
+                        <span class="size-1.5 rounded-full bg-leaf" aria-hidden="true"></span>Aprobado
+                    </span>
                 }
                 else
                 {
-                    <span class="bean-status pending"><span class="dot"></span>@Model.ApprovalStatus</span>
+                    <span class="inline-flex items-center gap-2 rounded-full border border-honey/35 bg-honey/10 px-3 py-1.5 font-data text-[10px] font-semibold uppercase tracking-[0.1em] text-ink">
+                        <span class="size-1.5 rounded-full bg-honey" aria-hidden="true"></span>@Model.ApprovalStatus
+                    </span>
                 }
-            </div>
+            </dd>
         </div>
-    </div>
-</div>
+    </dl>
+</section>

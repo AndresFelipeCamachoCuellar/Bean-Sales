@@ -8,83 +8,100 @@
 
 @{
     ViewData["Title"] = "Administración de Usuarios";
+    Layout = "_LayoutAdminTailwind";
     var currentUser = await UserManager.GetUserAsync(User);
     var canCreate = currentUser != null && await PermissionService.HasPermissionAsync(currentUser, Modules.Users, Permissions.Create);
+    var canUpdate = currentUser != null && await PermissionService.HasPermissionAsync(currentUser, Modules.Users, Permissions.Update);
 }
 
-<div class="bean-panel-head">
-    <div>
-        <h1 class="bean-panel-title">Administración de usuarios</h1>
-        <p class="bean-panel-sub">Gestiona las cuentas del equipo, sus roles y su estado de acceso.</p>
+<div class="space-y-6">
+    <div class="flex flex-col gap-5 border-b border-oat pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div class="max-w-2xl">
+            <h1 class="text-2xl font-extrabold tracking-[-0.03em] text-ink sm:text-3xl">Administración de usuarios</h1>
+            <p class="mt-2 text-sm leading-6 text-ink/65 sm:text-base">Gestiona las cuentas del equipo, sus roles y su estado de acceso.</p>
+        </div>
+        @if (canCreate)
+        {
+            <a asp-action="Create"
+               class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 self-start bg-clay px-5 text-sm font-extrabold text-white transition-colors hover:bg-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream sm:self-auto">
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M12 5v14M5 12h14" />
+                </svg>
+                Crear nuevo usuario
+            </a>
+        }
     </div>
-    @if (canCreate)
-    {
-        <a asp-action="Create" class="bean-prov-newlot"><i class="fas fa-plus"></i> Crear nuevo usuario</a>
-    }
-</div>
 
-<div class="bean-panel-tablewrap">
-    <table class="bean-panel-table" id="usersTable">
-        <thead>
-            <tr>
-                <th>@Html.DisplayNameFor(model => model.FullName)</th>
-                <th>@Html.DisplayNameFor(model => model.Email)</th>
-                <th>@Html.DisplayNameFor(model => model.DocumentNumber)</th>
-                <th>@Html.DisplayNameFor(model => model.Roles)</th>
-                <th>@Html.DisplayNameFor(model => model.Status)</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model)
-            {
-                var isCurrentUser = item.Email == currentUser?.Email;
-
-                 @* Permission check *@
-                var canUpdate = currentUser != null && await PermissionService.HasPermissionAsync(currentUser, Modules.Users, Permissions.Update);
-
+    <div class="overflow-hidden border border-oat bg-white">
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[860px] border-collapse text-left" id="usersTable">
+                <thead class="bg-ink text-white">
                 <tr>
-                    <td class="bean-td-name">@Html.DisplayFor(modelItem => item.FullName)</td>
-                    <td>@Html.DisplayFor(modelItem => item.Email)</td>
-                    <td>@Html.DisplayFor(modelItem => item.DocumentNumber)</td>
-                    <td>
-                        @foreach (var role in item.Roles)
-                        {
-                            <span class="bean-role-chip">@role</span>
-                        }
-                    </td>
-                    <td>
-                        @if (canUpdate && !isCurrentUser)
-                        {
-                            <form asp-action="ToggleStatus" asp-route-id="@item.Id" method="post" style="display:inline;">
-                                @Html.AntiForgeryToken()
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" role="switch" onchange="this.form.submit()" @(item.Status ? "checked" : "") style="cursor: pointer;">
-                                </div>
-                            </form>
-                        }
-                        else
-                        {
-                            @if(item.Status)
+                    <th class="px-5 py-4 font-data text-[10px] font-semibold uppercase tracking-[0.14em]">@Html.DisplayNameFor(model => model.FullName)</th>
+                    <th class="px-5 py-4 font-data text-[10px] font-semibold uppercase tracking-[0.14em]">@Html.DisplayNameFor(model => model.Email)</th>
+                    <th class="px-5 py-4 font-data text-[10px] font-semibold uppercase tracking-[0.14em]">@Html.DisplayNameFor(model => model.DocumentNumber)</th>
+                    <th class="px-5 py-4 font-data text-[10px] font-semibold uppercase tracking-[0.14em]">@Html.DisplayNameFor(model => model.Roles)</th>
+                    <th class="px-5 py-4 font-data text-[10px] font-semibold uppercase tracking-[0.14em]">@Html.DisplayNameFor(model => model.Status)</th>
+                    <th class="px-5 py-4 text-right font-data text-[10px] font-semibold uppercase tracking-[0.14em]">Acciones</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-oat">
+                @foreach (var item in Model)
+                {
+                    var isCurrentUser = item.Email == currentUser?.Email;
+
+                    <tr class="transition-colors hover:bg-cream/70">
+                        <td class="px-5 py-4 text-sm font-extrabold text-ink">@Html.DisplayFor(modelItem => item.FullName)</td>
+                        <td class="px-5 py-4 text-sm text-ink/70">@Html.DisplayFor(modelItem => item.Email)</td>
+                        <td class="px-5 py-4 font-data text-xs text-ink/70">@Html.DisplayFor(modelItem => item.DocumentNumber)</td>
+                        <td class="px-5 py-4">
+                            <div class="flex flex-wrap gap-1.5">
+                                @foreach (var role in item.Roles)
+                                {
+                                    <span class="inline-flex min-h-7 items-center rounded-full bg-oat px-3 font-data text-[10px] font-semibold uppercase tracking-[0.08em] text-ink">@role</span>
+                                }
+                            </div>
+                        </td>
+                        <td class="px-5 py-4">
+                            @if (canUpdate && !isCurrentUser)
                             {
-                                <span class="bean-status active"><span class="dot"></span>Activo</span>
+                                <form asp-action="ToggleStatus" asp-route-id="@item.Id" method="post" class="inline-flex">
+                                    @Html.AntiForgeryToken()
+                                    <label class="relative inline-flex min-h-11 cursor-pointer items-center gap-3 text-sm font-bold text-ink focus-within:outline-none focus-within:ring-2 focus-within:ring-clay focus-within:ring-offset-2 focus-within:ring-offset-white">
+                                        <input class="peer sr-only" type="checkbox" role="switch" aria-label="Cambiar estado de @item.FullName" onchange="this.form.submit()" @(item.Status ? "checked" : "")>
+                                        <span class="relative h-6 w-11 rounded-full bg-husk transition-colors after:absolute after:left-1 after:top-1 after:size-4 after:rounded-full after:bg-white after:transition-transform peer-checked:bg-leaf peer-checked:after:translate-x-5" aria-hidden="true"></span>
+                                        <span class="@(item.Status ? "text-leaf" : "text-ink/55")">@(item.Status ? "Activo" : "Inactivo")</span>
+                                    </label>
+                                </form>
                             }
                             else
                             {
-                                <span class="bean-status rejected"><span class="dot"></span>Inactivo</span>
+                                @if (item.Status)
+                                {
+                                    <span class="inline-flex items-center gap-2 text-sm font-bold text-leaf"><span class="size-2 rounded-full bg-leaf" aria-hidden="true"></span>Activo</span>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex items-center gap-2 text-sm font-bold text-clay-dark"><span class="size-2 rounded-full bg-clay-dark" aria-hidden="true"></span>Inactivo</span>
+                                }
                             }
-                        }
-                    </td>
-                    <td>
-                        @if (canUpdate && !isCurrentUser)
-                        {
-                            <a asp-action="Edit" asp-route-id="@item.Id" class="bean-btn-pill outline icon" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+                        </td>
+                        <td class="px-5 py-4 text-right">
+                            @if (canUpdate && !isCurrentUser)
+                            {
+                                <a asp-action="Edit" asp-route-id="@item.Id"
+                                   class="inline-grid size-11 cursor-pointer place-items-center border border-ink/15 text-ink transition-colors hover:border-clay hover:bg-cream hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay"
+                                   title="Editar" aria-label="Editar a @item.FullName">
+                                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                        <path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z" /><path d="m13.5 6.5 4 4" />
+                                    </svg>
+                                </a>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>

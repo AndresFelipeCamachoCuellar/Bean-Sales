@@ -108,7 +108,7 @@ public class CompanyProfileController : Controller
 
             // Additional Security: Ensure the user belongs to this provider
             var user = await _userManager.GetUserAsync(User);
-            if (user.ProviderID != provider.ProviderID)
+            if (user?.ProviderID != provider.ProviderID)
             {
                 return Forbid();
             }

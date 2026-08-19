@@ -20,7 +20,7 @@ Hub **B2B2C de consolidación y exportación de café de especialidad colombiano
 - **Framework:** ASP.NET Core MVC — **.NET 10**
 - **Datos:** Entity Framework Core 10 + SQL Server
 - **Autenticación:** ASP.NET Core Identity (usuarios, roles y permisos granulares propios)
-- **Frontend:** Vistas Razor, Bootstrap 5 y **design system propio** (`Web/wwwroot/css/bean-theme.css`) — base café oscuro `#1d1510`, acento terracota, tipografías **Bitter** (titulares) y **DM Sans** (cuerpo)
+- **Frontend:** Vistas Razor + Tailwind CSS **4.3.3** con design system **`Patio de origen`** (`Web/Styles/bean-tailwind.css`) — tinta/crema/arcilla, tipografías Archivo Black, Manrope y Azeret Mono
 - **Tests:** xUnit (`Tests/`)
 - **CI/CD:** GitHub Actions → MonsterASP.NET (Web Deploy)
 
@@ -231,7 +231,8 @@ Bean-Sales/
 │  │  └─ Seeds/                # ContextSeed.cs + Data/colombia-cities.json (169 municipios)
 │  ├─ Migrations/              # Migraciones EF Core
 │  ├─ Constants/               # Roles, Modules, Permissions
-│  └─ wwwroot/css/bean-theme.css   # Design system
+│  ├─ Styles/bean-tailwind.css     # Fuente del design system Tailwind
+│  └─ wwwroot/css/bean-tailwind.css # Bundle generado
 ├─ Tests/                      # Pruebas unitarias xUnit (fuera de la solución a propósito)
 ├─ Docs/                       # Documentación de producto, diseño y despliegue
 └─ .github/workflows/          # CI/CD

@@ -32,6 +32,17 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Instalar Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Compilar estilos Tailwind
+        run: |
+          npm ci
+          npm run css:build
+
       - name: Restaurar dependencias (RID win-x86)
         run: dotnet restore Web/Web.csproj -r win-x86
 

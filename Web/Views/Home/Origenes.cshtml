@@ -2,10 +2,9 @@
 
 @using Web.Models.Enums
 @{
+    Layout = "_LayoutHome";
     ViewData["Title"] = "Orígenes";
-    // Cultura fija para formato de precio COP ("$62.000"). Solo presentación.
     var co = new System.Globalization.CultureInfo("es-CO");
-    // Etiqueta de proceso en español para los badges.
     Func<CoffeeProcess, string> procLabel = p => p switch
     {
         CoffeeProcess.Washed => "Lavado",
@@ -13,152 +12,224 @@
         CoffeeProcess.Natural => "Natural",
         _ => p.ToString()
     };
-    var toneIndex = 0;   // Tono decorativo de la imagen placeholder.
-    var blockIndex = 0;  // Escalonado de la animación de entrada.
+    var productIndex = 0;
+    var regionIndex = 0;
 }
 
-<!-- ===== CABECERA DE SECCIÓN ===== -->
-<section class="bean-pagehead">
-    <span class="bean-float f1"></span>
-    <span class="bean-float f2"></span>
-    <div class="bean-container">
-        <div class="bean-pagehead-eyebrow">Trazabilidad finca a taza</div>
-        <h1 class="bean-fadeup">Orígenes</h1>
-        <p class="bean-fadeup" style="animation-delay:.08s">
-            Cada lote que llega a tu taza tiene nombre propio: una región, una finca y una altura.
-            Estas son las procedencias con café publicado hoy para tu país.
-        </p>
-        @if (Model.TotalLots > 0)
+<section class="overflow-hidden bg-ink text-white">
+    <div class="mx-auto grid max-w-[90rem] lg:min-h-[35rem] lg:grid-cols-12">
+        <div class="flex flex-col justify-center px-4 py-16 sm:px-6 sm:py-20 lg:col-span-8 lg:border-r lg:border-white/10 lg:px-10 lg:py-28 xl:px-16">
+            <h1 class="max-w-5xl text-balance font-display text-[clamp(3.6rem,9vw,7rem)] leading-[0.86] tracking-[-0.04em]">
+                Orígenes que<br /><span class="text-clay-light">puedes rastrear.</span>
+            </h1>
+            <p class="mt-8 max-w-2xl text-pretty text-lg leading-8 text-husk sm:text-xl">
+                Cada lote que llega a tu taza tiene nombre propio: una región, una finca y una altura.
+                Estas son las procedencias con café publicado hoy para tu país.
+            </p>
+            <p class="mt-10 flex items-center gap-3 font-data text-[10px] font-semibold uppercase tracking-[0.18em] text-clay-light">
+                <span class="h-px w-10 bg-clay-light" aria-hidden="true"></span>
+                Trazabilidad finca a taza
+            </p>
+        </div>
+
+        <div class="relative flex min-h-72 items-end overflow-hidden bg-roast px-4 py-10 sm:px-6 lg:col-span-4 lg:min-h-full lg:px-10 lg:py-14">
+            <svg class="absolute inset-0 h-full w-full text-clay-light/20" viewBox="0 0 500 600" fill="none" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M-40 80C90 10 230 160 540 45M-50 190C110 80 280 285 550 145M-45 320C130 175 315 440 555 285M-30 470C145 330 330 600 545 430M-20 590C160 470 350 700 540 555" stroke="currentColor" stroke-width="1.5" />
+            </svg>
+            @if (Model.TotalLots > 0)
+            {
+                <dl class="relative grid w-full grid-cols-2 border border-white/15 bg-ink/75 sm:grid-cols-3 lg:grid-cols-1">
+                    <div class="p-5 sm:p-6">
+                        <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-husk">@(Model.TotalRegions == 1 ? "Región" : "Regiones")</dt>
+                        <dd class="mt-2 font-display text-4xl tracking-[-0.04em] text-white">@Model.TotalRegions</dd>
+                    </div>
+                    <div class="border-l border-white/15 p-5 sm:p-6 lg:border-l-0 lg:border-t">
+                        <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-husk">@(Model.TotalLots == 1 ? "Lote publicado" : "Lotes publicados")</dt>
+                        <dd class="mt-2 font-display text-4xl tracking-[-0.04em] text-white">@Model.TotalLots</dd>
+                    </div>
+                    @if (Model.TotalFarms > 0)
+                    {
+                        <div class="col-span-2 border-t border-white/15 p-5 sm:col-span-1 sm:border-l sm:border-t-0 sm:p-6 lg:border-l-0 lg:border-t">
+                            <dt class="font-data text-[10px] font-semibold uppercase tracking-[0.16em] text-husk">@(Model.TotalFarms == 1 ? "Finca aliada" : "Fincas aliadas")</dt>
+                            <dd class="mt-2 font-display text-4xl tracking-[-0.04em] text-white">@Model.TotalFarms</dd>
+                        </div>
+                    }
+                </dl>
+            }
+        </div>
+    </div>
+</section>
+
+<section class="bg-cream px-4 py-16 sm:px-6 sm:py-20 lg:px-10 lg:py-28">
+    <div class="mx-auto max-w-[90rem]">
+        @if (!Model.Regions.Any())
         {
-            <div class="bean-pagehead-stats bean-fadeup" style="animation-delay:.16s">
-                <div class="bean-stat"><span class="num">@Model.TotalRegions</span><span class="lbl">@(Model.TotalRegions == 1 ? "región" : "regiones")</span></div>
-                <div class="bean-stat"><span class="num">@Model.TotalLots</span><span class="lbl">@(Model.TotalLots == 1 ? "lote publicado" : "lotes publicados")</span></div>
-                @if (Model.TotalFarms > 0)
+            <div class="grid min-h-96 place-items-center border border-oat bg-white px-6 py-16 text-center">
+                <div class="max-w-lg">
+                    <svg class="mx-auto size-16 text-clay" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                        <path d="M7 51 24 22l8 13 7-10 18 26H7Z" />
+                        <path d="M17 51c4-7 9-10 15-10s11 3 15 10M43 13c0 5-4 9-9 9 0-5 4-9 9-9Z" />
+                    </svg>
+                    <h2 class="mt-7 text-balance font-display text-3xl leading-[0.95] tracking-[-0.04em] sm:text-4xl">Aún no hay lotes publicados</h2>
+                    <p class="mx-auto mt-5 max-w-md text-base leading-7 text-ink/65">Todavía no hay orígenes disponibles para tu región seleccionada. Vuelve pronto: publicamos tueste nuevo cada semana.</p>
+                    <a asp-controller="Home" asp-action="Index" asp-fragment="lotes" class="mt-8 inline-flex min-h-13 cursor-pointer items-center justify-center gap-3 bg-clay px-7 py-4 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-4 focus-visible:ring-offset-white">
+                        Ir al catálogo
+                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+                    </a>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="space-y-20 lg:space-y-28">
+                @foreach (var region in Model.Regions)
                 {
-                    <div class="bean-stat"><span class="num">@Model.TotalFarms</span><span class="lbl">@(Model.TotalFarms == 1 ? "finca aliada" : "fincas aliadas")</span></div>
+                    regionIndex++;
+                    var farmsLabel = region.Farms.Count == 0
+                        ? null
+                        : string.Join(" · ", region.Farms.Take(4)) + (region.Farms.Count > 4 ? $" y {region.Farms.Count - 4} más" : "");
+
+                    <article aria-labelledby="region-@regionIndex">
+                        <header class="grid gap-7 border-b border-ink/20 pb-7 lg:grid-cols-12 lg:items-end">
+                            <div class="lg:col-span-7">
+                                <p class="font-data text-[10px] font-semibold uppercase tracking-[0.18em] text-clay-dark">Origen</p>
+                                <h2 id="region-@regionIndex" class="mt-3 text-balance font-display text-4xl leading-[0.92] tracking-[-0.04em] sm:text-5xl lg:text-6xl">@region.Name</h2>
+                                @if (farmsLabel != null)
+                                {
+                                    <p class="mt-5 flex max-w-2xl items-start gap-3 text-sm font-semibold leading-6 text-ink/60 sm:text-base">
+                                        <svg class="mt-0.5 size-5 shrink-0 text-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 21V9M12 15c-5 0-8-3-8-8 5 0 8 3 8 8ZM12 11c4 0 7-3 7-7-4 0-7 3-7 7Z" /></svg>
+                                        @farmsLabel
+                                    </p>
+                                }
+                            </div>
+                            <dl class="grid grid-cols-2 border border-ink/15 bg-white sm:grid-cols-3 lg:col-span-5">
+                                <div class="p-4 sm:p-5">
+                                    <dt class="font-data text-[10px] uppercase tracking-[0.14em] text-ink/45">Publicados</dt>
+                                    <dd class="mt-2 text-sm font-extrabold">@region.LotCount @(region.LotCount == 1 ? "lote" : "lotes")</dd>
+                                </div>
+                                @if (region.Farms.Count > 0)
+                                {
+                                    <div class="border-l border-ink/15 p-4 sm:p-5">
+                                        <dt class="font-data text-[10px] uppercase tracking-[0.14em] text-ink/45">Productores</dt>
+                                        <dd class="mt-2 text-sm font-extrabold">@region.Farms.Count @(region.Farms.Count == 1 ? "finca" : "fincas")</dd>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(region.AltitudeRange))
+                                {
+                                    <div class="col-span-2 border-t border-ink/15 p-4 sm:col-span-1 sm:border-l sm:border-t-0 sm:p-5">
+                                        <dt class="font-data text-[10px] uppercase tracking-[0.14em] text-ink/45">Altura</dt>
+                                        <dd class="mt-2 text-sm font-extrabold">@region.AltitudeRange</dd>
+                                    </div>
+                                }
+                            </dl>
+                        </header>
+
+                        <div class="mt-9 grid gap-x-5 gap-y-12 md:grid-cols-2 xl:grid-cols-3">
+                            @foreach (var product in region.Products)
+                            {
+                                productIndex++;
+                                var productInitial = string.IsNullOrWhiteSpace(product.Name) ? "B" : product.Name.Trim()[..1].ToUpperInvariant();
+
+                                <a asp-controller="Home" asp-action="Details" asp-route-id="@product.ProductID" class="group flex min-w-0 cursor-pointer flex-col focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-4 focus-visible:ring-offset-cream">
+                                    <div class="relative aspect-[4/5] overflow-hidden bg-clay-dark">
+                                        @if (!string.IsNullOrWhiteSpace(product.ImageUrl))
+                                        {
+                                            <img src="@product.ImageUrl" alt="@product.Name" class="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]" loading="lazy" />
+                                        }
+                                        else
+                                        {
+                                            <div class="relative grid h-full place-items-center overflow-hidden">
+                                                <svg class="absolute inset-0 h-full w-full text-clay-light/30" viewBox="0 0 500 650" fill="none" preserveAspectRatio="none" aria-hidden="true">
+                                                    <path d="M-40 80C100 0 250 170 540 35M-50 190C120 70 310 270 550 140M-60 330C140 170 340 430 560 280M-30 480C120 350 340 600 550 430M-50 620C170 470 350 730 560 560" stroke="currentColor" stroke-width="2" />
+                                                </svg>
+                                                <span class="relative font-display text-7xl tracking-[-0.04em] text-cream/90">@productInitial</span>
+                                            </div>
+                                        }
+                                        <div class="absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-4">
+                                            @if (product.Process.HasValue)
+                                            {
+                                                <span class="bg-cream px-3 py-2 font-data text-[10px] font-semibold uppercase tracking-[0.14em] text-ink">@procLabel(product.Process.Value)</span>
+                                            }
+                                            @if (product.Rating.HasValue)
+                                            {
+                                                <span class="ml-auto flex items-center gap-1.5 bg-ink px-3 py-2 font-data text-[10px] font-semibold text-white">
+                                                    <svg class="size-3 fill-honey text-honey" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.4 2.9 5.88 6.49.94-4.7 4.58 1.11 6.47L12 17.22l-5.8 3.05 1.11-6.47-4.7-4.58 6.49-.94L12 2.4Z" /></svg>
+                                                    @product.Rating.Value.ToString("0.0", co)
+                                                </span>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <div class="flex flex-1 flex-col border-b border-x border-oat bg-white p-5 sm:p-6">
+                                        <div class="flex items-start justify-between gap-4">
+                                            <div class="min-w-0">
+                                                <h3 class="text-balance text-xl font-extrabold leading-tight tracking-[-0.03em] text-ink group-hover:text-clay-dark">@product.Name</h3>
+                                                <p class="mt-2 truncate text-sm font-medium text-ink/55">@product.Provider?.Name</p>
+                                            </div>
+                                            <p class="shrink-0 font-data text-sm font-semibold text-clay-dark">$@product.Price.ToString("#,##0", co) <span class="sr-only">por 340 gramos</span></p>
+                                        </div>
+
+                                        <dl class="mt-6 grid grid-cols-2 border-t border-ink/10 text-sm">
+                                            @if (!string.IsNullOrWhiteSpace(product.Farm))
+                                            {
+                                                <div class="border-b border-ink/10 py-3 pr-3">
+                                                    <dt class="font-data text-[10px] uppercase tracking-[0.14em] text-ink/45">Finca</dt>
+                                                    <dd class="mt-1 truncate font-bold">@product.Farm</dd>
+                                                </div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(product.Altitude))
+                                            {
+                                                <div class="border-b border-ink/10 py-3 pl-3">
+                                                    <dt class="font-data text-[10px] uppercase tracking-[0.14em] text-ink/45">Altura</dt>
+                                                    <dd class="mt-1 truncate font-bold">@product.Altitude</dd>
+                                                </div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(product.Variety))
+                                            {
+                                                <div class="py-3 pr-3">
+                                                    <dt class="font-data text-[10px] uppercase tracking-[0.14em] text-ink/45">Variedad</dt>
+                                                    <dd class="mt-1 truncate font-bold">@product.Variety</dd>
+                                                </div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(product.Lot))
+                                            {
+                                                <div class="py-3 pl-3">
+                                                    <dt class="font-data text-[10px] uppercase tracking-[0.14em] text-ink/45">Lote</dt>
+                                                    <dd class="mt-1 truncate font-bold">@product.Lot</dd>
+                                                </div>
+                                            }
+                                        </dl>
+
+                                        <div class="mt-auto flex items-center justify-between gap-4 border-t border-ink/10 pt-5">
+                                            <span class="text-xs font-semibold text-ink/50">340 g</span>
+                                            <span class="inline-flex items-center gap-2 text-sm font-extrabold text-ink">
+                                                Ver detalle
+                                                <svg class="size-4 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </a>
+                            }
+                        </div>
+                    </article>
                 }
             </div>
         }
     </div>
 </section>
 
-<!-- ===== REGIONES ===== -->
-<section class="bean-catalog">
-    <div class="bean-container">
-        @if (!Model.Regions.Any())
-        {
-            <div class="bean-empty">
-                <div class="ico"><i class="fas fa-mountain"></i></div>
-                <h3>Aún no hay lotes publicados</h3>
-                <p>Todavía no hay orígenes disponibles para tu región seleccionada. Vuelve pronto: publicamos tueste nuevo cada semana.</p>
-                <a asp-controller="Home" asp-action="Index" asp-fragment="lotes" class="btn-bean">Ir al catálogo →</a>
-            </div>
-        }
-        else
-        {
-            foreach (var region in Model.Regions)
-            {
-                blockIndex++;
-                var blockDelay = (blockIndex * 0.06).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
-                var farmsLabel = region.Farms.Count == 0
-                    ? null
-                    : string.Join(" · ", region.Farms.Take(4)) + (region.Farms.Count > 4 ? $" y {region.Farms.Count - 4} más" : "");
-
-                <article class="bean-origin-block bean-fadeup" style="animation-delay:@(blockDelay)s">
-                    <header class="bean-origin-head">
-                        <div class="bean-origin-title">
-                            <div class="eyebrow">Origen</div>
-                            <h2>@region.Name</h2>
-                            @if (farmsLabel != null)
-                            {
-                                <p class="farms"><i class="fas fa-seedling"></i> @farmsLabel</p>
-                            }
-                        </div>
-                        <div class="bean-origin-meta">
-                            <span class="bean-origin-pill">
-                                <i class="fas fa-box"></i>
-                                @region.LotCount @(region.LotCount == 1 ? "lote" : "lotes")
-                            </span>
-                            @if (region.Farms.Count > 0)
-                            {
-                                <span class="bean-origin-pill">
-                                    <i class="fas fa-tractor"></i>
-                                    @region.Farms.Count @(region.Farms.Count == 1 ? "finca" : "fincas")
-                                </span>
-                            }
-                            @if (!string.IsNullOrWhiteSpace(region.AltitudeRange))
-                            {
-                                <span class="bean-origin-pill">
-                                    <i class="fas fa-mountain"></i>
-                                    @region.AltitudeRange
-                                </span>
-                            }
-                        </div>
-                    </header>
-
-                    <div class="bean-grid bean-origin-grid">
-                        @foreach (var product in region.Products)
-                        {
-                            var tone = "o" + ((toneIndex % 6) + 1);
-                            toneIndex++;
-                            var imgStyle = string.IsNullOrEmpty(product.ImageUrl)
-                                ? ""
-                                : $"background-image:url('{product.ImageUrl}');background-size:cover;background-position:center;";
-
-                            <a class="bean-card bean-origin-card" asp-controller="Home" asp-action="Details" asp-route-id="@product.ProductID">
-                                <div class="bean-card-img bean-img @tone" style="@imgStyle">
-                                    <div class="top-badges">
-                                        @if (product.Process.HasValue)
-                                        {
-                                            <span class="bean-badge bean-badge-process">@procLabel(product.Process.Value)</span>
-                                        }
-                                        @if (product.Rating.HasValue)
-                                        {
-                                            <span class="bean-badge bean-badge-rating"><span class="star">★</span> @product.Rating.Value.ToString("0.0", co)</span>
-                                        }
-                                    </div>
-                                </div>
-                                <div class="bean-card-body">
-                                    <h3 class="bean-card-name">@product.Name</h3>
-                                    <div class="bean-card-provider">@product.Provider?.Name</div>
-                                    <ul class="bean-origin-facts">
-                                        @if (!string.IsNullOrWhiteSpace(product.Farm))
-                                        {
-                                            <li><span>Finca</span><strong>@product.Farm</strong></li>
-                                        }
-                                        @if (!string.IsNullOrWhiteSpace(product.Altitude))
-                                        {
-                                            <li><span>Altura</span><strong>@product.Altitude</strong></li>
-                                        }
-                                        @if (!string.IsNullOrWhiteSpace(product.Variety))
-                                        {
-                                            <li><span>Variedad</span><strong>@product.Variety</strong></li>
-                                        }
-                                        @if (!string.IsNullOrWhiteSpace(product.Lot))
-                                        {
-                                            <li><span>Lote</span><strong>@product.Lot</strong></li>
-                                        }
-                                    </ul>
-                                    <div class="bean-card-foot">
-                                        <div class="bean-card-price">$@product.Price.ToString("#,##0", co) <small>/ 340 g</small></div>
-                                        <span class="bean-origin-link">Ver detalle →</span>
-                                    </div>
-                                </div>
-                            </a>
-                        }
-                    </div>
-                </article>
-            }
-        }
-
-        <!-- ===== CTA final ===== -->
-        <div class="bean-b2b">
-            <div>
-                <div class="eyebrow">¿Listo para probar?</div>
-                <h3>Elige tu origen y recibe café tostado esta semana.</h3>
-                <p>Todos los lotes se tuestan bajo pedido y se envían con su ficha de trazabilidad completa.</p>
-            </div>
-            <a asp-controller="Home" asp-action="Index" asp-fragment="lotes" class="btn-bean">Ver el catálogo →</a>
+<section class="bg-clay px-4 py-16 text-white sm:px-6 sm:py-20 lg:px-10">
+    <div class="mx-auto grid max-w-[90rem] gap-10 lg:grid-cols-12 lg:items-end">
+        <div class="lg:col-span-8">
+            <p class="font-data text-[10px] font-semibold uppercase tracking-[0.18em] text-cream">¿Listo para probar?</p>
+            <h2 class="mt-5 max-w-4xl text-balance font-display text-4xl leading-[0.95] tracking-[-0.04em] sm:text-5xl lg:text-6xl">Elige tu origen y recibe café tostado esta semana.</h2>
+            <p class="mt-6 max-w-2xl text-base leading-7 text-white/80">Todos los lotes se tuestan bajo pedido y se envían con su ficha de trazabilidad completa.</p>
+        </div>
+        <div class="lg:col-span-4 lg:flex lg:justify-end">
+            <a asp-controller="Home" asp-action="Index" asp-fragment="lotes" class="inline-flex min-h-13 cursor-pointer items-center justify-center gap-3 bg-white px-7 py-4 text-sm font-extrabold text-clay-dark transition-colors hover:bg-cream focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-4 focus-visible:ring-offset-clay">
+                Ver el catálogo
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+            </a>
         </div>
     </div>
 </section>

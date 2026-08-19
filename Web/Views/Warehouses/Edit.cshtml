@@ -2,29 +2,29 @@
 
 @{
     ViewData["Title"] = "Editar bodega";
-    Layout = "_Layout";
+    Layout = "_LayoutAdminTailwind";
 }
 
-<div class="bean-panel-head">
-    <div>
-        <h1 class="bean-panel-title">Editar @Model.Code</h1>
-        <p class="bean-panel-sub">@Model.Name</p>
+<header class="flex flex-col gap-6 border-b border-ink/15 pb-7 lg:flex-row lg:items-end lg:justify-between">
+    <div class="min-w-0 max-w-3xl">
+        <h1 class="text-balance font-display text-3xl leading-none tracking-[-0.04em] text-ink sm:text-4xl">Editar @Model.Code</h1>
+        <p class="mt-3 text-sm font-semibold leading-6 text-ink/60 sm:text-base">@Model.Name</p>
     </div>
-    <a asp-action="Index" class="bean-btn-pill outline"><i class="fas fa-arrow-left"></i> Volver</a>
-</div>
+    <a asp-action="Index" class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 self-start border border-ink/20 bg-white px-5 py-3 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-cream lg:self-auto">
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5m6 6-6-6 6-6"/></svg>
+        Volver
+    </a>
+</header>
 
 @if (Model.UnitsOnHand > 0)
 {
-    <div class="bean-panel-note">
-        <i class="fas fa-info-circle"></i>
-        <div>
-            Esta bodega tiene <strong>@Model.UnitsOnHand unidades físicas</strong>.
-            Mientras haya stock no se puede desactivar ni dar de baja.
-        </div>
+    <div class="mt-6 flex items-start gap-3 border border-honey/45 bg-honey/10 px-4 py-3 text-sm font-semibold leading-6 text-ink" role="status">
+        <svg class="mt-0.5 size-5 shrink-0 text-honey" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></svg>
+        <div>Esta bodega tiene <strong>@Model.UnitsOnHand unidades físicas</strong>. Mientras haya stock no se puede desactivar ni dar de baja.</div>
     </div>
 }
 
-<div class="bean-form-card">
+<div class="mt-8 border border-ink/15 bg-white p-4 sm:p-6 lg:p-8">
     <form asp-action="Edit" method="post">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="WarehouseID" />
@@ -32,13 +32,17 @@
 
         <partial name="_WarehouseForm" model="Model" />
 
-        <div class="bean-form-actions">
-            <a asp-action="Index" class="bean-btn-pill outline">Cancelar</a>
-            <button type="submit" class="bean-btn-pill primary"><i class="fas fa-save"></i> Guardar cambios</button>
+        <div class="mt-8 flex flex-col-reverse gap-3 border-t border-oat pt-6 sm:flex-row sm:justify-end">
+            <a asp-action="Index" class="inline-flex min-h-12 cursor-pointer items-center justify-center border border-ink/20 px-6 py-3 text-sm font-extrabold text-ink transition-colors hover:border-clay hover:text-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay">Cancelar</a>
+            <button type="submit" class="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 bg-clay px-6 py-3 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-white">
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 4h12l2 2v14H5V4Z"/><path d="M8 4v6h8V4M8 20v-6h8v6"/></svg>
+                Guardar cambios
+            </button>
         </div>
     </form>
 </div>
 
 @section Scripts {
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <partial name="_ValidationScriptsPartial" />
 }

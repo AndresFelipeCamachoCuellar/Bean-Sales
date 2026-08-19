@@ -2,143 +2,141 @@
 
 @{
     ViewData["Title"] = "Bodegas";
-    Layout = "_Layout";
+    Layout = "_LayoutAdminTailwind";
 }
 
-<div class="bean-panel-head">
-    <div>
-        <h1 class="bean-panel-title">Bodegas</h1>
-        <p class="bean-panel-sub">
-            Ubicaciones físicas donde vive el café. Cada país tiene una bodega por defecto:
-            es la que despacha y la que fija el <strong>origen</strong> de la cotización de envío.
-        </p>
+<header class="flex flex-col gap-6 border-b border-ink/15 pb-7 lg:flex-row lg:items-end lg:justify-between">
+    <div class="max-w-3xl">
+        <h1 class="font-display text-3xl leading-none tracking-[-0.04em] text-ink sm:text-4xl">Bodegas</h1>
+        <p class="mt-3 max-w-2xl text-sm leading-6 text-ink/65 sm:text-base">Ubicaciones físicas donde vive el café. Cada país tiene una bodega por defecto: despacha y fija el <strong class="text-ink">origen</strong> de la cotización de envío.</p>
     </div>
 
     @if (Model.CanCreate)
     {
-        <a asp-action="Create" class="bean-prov-newlot"><i class="fas fa-plus"></i> Nueva bodega</a>
+        <a asp-action="Create" class="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 self-start bg-clay px-6 py-3 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-4 focus-visible:ring-offset-cream lg:self-auto">
+            <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Nueva bodega
+        </a>
     }
-</div>
+</header>
 
 @if (TempData["InventoryOk"] != null)
 {
-    <div class="bean-panel-note" style="margin-top:16px;">
-        <i class="fas fa-check-circle"></i>
+    <div class="mt-6 flex items-start gap-3 border border-leaf/30 bg-leaf/10 px-4 py-3 text-sm font-semibold leading-6 text-leaf" role="status">
+        <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg>
         <div>@TempData["InventoryOk"]</div>
     </div>
 }
 @if (TempData["InventoryError"] != null)
 {
-    <div class="bean-panel-note danger" style="margin-top:16px;">
-        <i class="fas fa-exclamation-triangle"></i>
+    <div class="mt-6 flex items-start gap-3 border border-clay/35 bg-clay/10 px-4 py-3 text-sm font-semibold leading-6 text-clay-dark" role="alert">
+        <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5M12 17h.01"/></svg>
         <div>@TempData["InventoryError"]</div>
     </div>
 }
 
 @if (Model.Rows.Count == 0)
 {
-    <div class="bean-appr-empty" style="margin-top:22px;">
-        <div class="ico"><i class="fas fa-warehouse"></i></div>
-        <h3>Todavía no hay bodegas</h3>
-        <p>Crea la primera para poder recibir lotes y llevar inventario por ubicación.</p>
-        @if (Model.CanCreate)
-        {
-            <div style="margin-top:16px;">
-                <a asp-action="Create" class="bean-btn-pill primary"><i class="fas fa-plus"></i> Crear bodega</a>
-            </div>
-        }
-    </div>
+    <section class="mt-8 grid min-h-80 place-items-center border border-oat bg-white px-6 py-14 text-center" aria-labelledby="sin-bodegas-title">
+        <div class="max-w-lg">
+            <svg class="mx-auto size-14 text-clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 21V8l9-5 9 5v13H3Z"/><path d="M7 21v-8h10v8M7 9h.01M12 9h.01M17 9h.01"/></svg>
+            <h2 id="sin-bodegas-title" class="mt-6 text-2xl font-extrabold tracking-[-0.03em] text-ink">Todavía no hay bodegas</h2>
+            <p class="mt-3 text-sm leading-6 text-ink/65">Crea la primera para recibir lotes y llevar inventario por ubicación.</p>
+            @if (Model.CanCreate)
+            {
+                <a asp-action="Create" class="mt-7 inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 bg-clay px-6 py-3 text-sm font-extrabold text-white transition-colors hover:bg-clay-light focus:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-4 focus-visible:ring-offset-white">
+                    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    Crear bodega
+                </a>
+            }
+        </div>
+    </section>
 }
 else
 {
-    <div class="bean-panel-tablewrap bean-inv-scroll">
-        <table class="bean-panel-table">
-            <thead>
+    <div class="mt-8 overflow-x-auto border border-ink/15 bg-white shadow-tray">
+        <table class="min-w-[1040px] w-full border-collapse text-left text-sm tabular-nums">
+            <caption class="sr-only">Bodegas y existencias por ubicación</caption>
+            <thead class="bg-ink font-data text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
                 <tr>
-                    <th>Código</th>
-                    <th>Nombre</th>
-                    <th>Ubicación</th>
-                    <th>DANE</th>
-                    <th>Lotes</th>
-                    <th>En mano</th>
-                    <th>Disponible</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
+                    <th scope="col" class="px-4 py-4 sm:pl-6">Código</th>
+                    <th scope="col" class="px-4 py-4">Nombre</th>
+                    <th scope="col" class="px-4 py-4">Ubicación</th>
+                    <th scope="col" class="px-4 py-4">DANE</th>
+                    <th scope="col" class="px-4 py-4 text-center">Lotes</th>
+                    <th scope="col" class="px-4 py-4 text-center">En mano</th>
+                    <th scope="col" class="px-4 py-4 text-center">Disponible</th>
+                    <th scope="col" class="px-4 py-4">Estado</th>
+                    <th scope="col" class="px-4 py-4 text-right sm:pr-6">Acciones</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody class="divide-y divide-oat">
                 @foreach (var w in Model.Rows)
                 {
-                    <tr>
-                        <td class="bean-td-name">
-                            @w.Code
+                    <tr class="hover:bg-cream/70">
+                        <th scope="row" class="px-4 py-4 sm:pl-6">
+                            <span class="font-data text-xs font-semibold text-clay-dark">@w.Code</span>
                             @if (w.IsDefault)
                             {
-                                <span class="bean-role-chip" title="Despacha por defecto en su país">Por defecto</span>
+                                <span class="ml-2 inline-flex rounded-full bg-clay/10 px-2.5 py-1 font-data text-[10px] font-semibold uppercase tracking-[0.08em] text-clay-dark" title="Despacha por defecto en su país">Por defecto</span>
                             }
-                        </td>
-                        <td>@w.Name</td>
-                        <td>
-                            @w.City
-                            <div class="bean-inv-lotmeta">@w.CountryName</div>
-                        </td>
-                        <td>
+                        </th>
+                        <td class="px-4 py-4 font-bold text-ink">@w.Name</td>
+                        <td class="px-4 py-4">@w.City<span class="mt-1 block text-xs font-semibold text-ink/50">@w.CountryName</span></td>
+                        <td class="px-4 py-4 font-data text-xs">
                             @if (string.IsNullOrWhiteSpace(w.DaneCode))
                             {
-                                <span title="Sin DANE se cotiza el envío desde el origen de appsettings">—</span>
+                                <span class="text-ink/40" title="Sin DANE se cotiza el envío desde el origen de appsettings">—</span>
                             }
                             else
                             {
                                 <text>@w.DaneCode</text>
                             }
                         </td>
-                        <td>@w.ProductCount</td>
-                        <td>@w.UnitsOnHand</td>
-                        <td><strong>@w.UnitsAvailable</strong></td>
-                        <td>
+                        <td class="px-4 py-4 text-center">@w.ProductCount</td>
+                        <td class="px-4 py-4 text-center">@w.UnitsOnHand</td>
+                        <td class="bg-cream/60 px-4 py-4 text-center font-data text-sm font-semibold text-ink">@w.UnitsAvailable</td>
+                        <td class="px-4 py-4">
                             @if (w.IsActive)
                             {
-                                <span class="bean-status active"><span class="dot"></span>Operativa</span>
+                                <span class="inline-flex items-center gap-2 rounded-full bg-leaf/10 px-3 py-1 font-data text-[10px] font-semibold uppercase tracking-[0.08em] text-leaf"><span class="size-2 rounded-full bg-leaf" aria-hidden="true"></span>Operativa</span>
                             }
                             else
                             {
-                                <span class="bean-status draft"><span class="dot"></span>Inactiva</span>
+                                <span class="inline-flex items-center gap-2 rounded-full bg-ink/10 px-3 py-1 font-data text-[10px] font-semibold uppercase tracking-[0.08em] text-ink/60"><span class="size-2 rounded-full bg-ink/35" aria-hidden="true"></span>Inactiva</span>
                             }
                         </td>
-                        <td>
-                            <div class="bean-td-actions">
+                        <td class="px-4 py-3 sm:pr-6">
+                            <div class="flex items-center justify-end gap-2">
                                 @if (Model.CanUpdate)
                                 {
-                                    <a asp-action="Edit" asp-route-id="@w.WarehouseID" class="bean-btn-pill outline icon" title="Editar">
-                                        <i class="fas fa-edit"></i>
+                                    <a asp-action="Edit" asp-route-id="@w.WarehouseID" class="inline-grid size-11 cursor-pointer place-items-center border border-ink/20 text-ink transition-colors hover:border-clay hover:bg-clay hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay" title="Editar" aria-label="Editar bodega @w.Code">
+                                        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m4 20 4.5-1L19 8.5 15.5 5 5 15.5 4 20Z"/><path d="m13.5 7 3.5 3.5"/></svg>
                                     </a>
                                 }
                                 @if (Model.CanDelete && w.CanDeactivate)
                                 {
-                                    <form asp-action="Delete" asp-route-id="@w.WarehouseID" method="post" style="display:inline;"
-                                          onsubmit="return confirm('¿Dar de baja la bodega @w.Code? El historial de movimientos se conserva.');">
+                                    <form asp-action="Delete" asp-route-id="@w.WarehouseID" method="post" onsubmit="return confirm('¿Dar de baja la bodega @w.Code? El historial de movimientos se conserva.');">
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="bean-btn-pill danger icon" title="Dar de baja">
-                                            <i class="fas fa-trash"></i>
+                                        <button type="submit" class="grid size-11 cursor-pointer place-items-center border border-clay/30 text-clay-dark transition-colors hover:bg-clay hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-clay" title="Dar de baja" aria-label="Dar de baja la bodega @w.Code">
+                                            <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg>
                                         </button>
                                     </form>
                                 }
                                 else if (Model.CanDelete)
                                 {
-                                    <span class="bean-role-chip" title="Una bodega con stock físico no se puede dar de baja">
-                                        Con stock
-                                    </span>
+                                    <span class="inline-flex rounded-full bg-honey/15 px-3 py-1 font-data text-[10px] font-semibold uppercase tracking-[0.08em] text-ink/70" title="Una bodega con stock físico no se puede dar de baja">Con stock</span>
                                 }
                             </div>
                         </td>
                     </tr>
                 }
             </tbody>
-            <tfoot>
+            <tfoot class="border-t border-ink/20 bg-oat/65 font-data text-xs font-semibold text-ink">
                 <tr>
-                    <th colspan="5">@Model.ActiveCount de @Model.Rows.Count operativas</th>
-                    <th>@Model.TotalUnits</th>
-                    <th colspan="3"></th>
+                    <th scope="row" colspan="5" class="px-4 py-4 sm:pl-6">@Model.ActiveCount de @Model.Rows.Count operativas</th>
+                    <td class="px-4 py-4 text-center">@Model.TotalUnits</td>
+                    <td colspan="3"></td>
                 </tr>
             </tfoot>
         </table>

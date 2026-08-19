@@ -1,0 +1,24 @@
+@import "tailwindcss" source(none);
+
+@source "../Views/**/*.cshtml";
+@source "../wwwroot/js/**/*.js";
+
+@theme {
+    --font-display: "Archivo Black", "Arial Narrow", sans-serif;
+    --font-sans: "Manrope", "Segoe UI", sans-serif;
+    --font-data: "Azeret Mono", Consolas, monospace;
+
+    --color-ink: #1d1510;
+    --color-roast: #2a1d16;
+    --color-clay: #b4552e;
+    --color-clay-dark: #8f4021;
+    --color-clay-light: #d98a5f;
+    --color-cream: #fbf7f1;
+    --color-oat: #f0e7d8;
+    --color-husk: #d7c6b2;
+    --color-leaf: #3f6a4a;
+    --color-honey: #c9962f;
+
+    --shadow-tray: 0 24px 70px -34px rgba(29, 21, 16, 0.5);
+    --shadow-lift: 0 28px 70px -28px rgba(29, 21, 16, 0.35);
+}

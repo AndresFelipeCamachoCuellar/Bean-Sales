@@ -19,25 +19,7 @@ namespace Web.Controllers
 
         public async Task<IActionResult> Index()
         {
-             // 1. Get User Country (Cookie or Default)
-            var selectedCountryIdStr = HttpContext.Request.Cookies["UserCountryId"];
-            Guid? selectedCountryId = null;
-
-            if (Guid.TryParse(selectedCountryIdStr, out var parsedId))
-            {
-                selectedCountryId = parsedId;
-            }
-            else
-            {
-                // Default to Colombia or first available
-                var defaultCountry = await _context.Countries.FirstOrDefaultAsync(c => c.Name == "Colombia" && c.Status);
-                if (defaultCountry != null)
-                {
-                    selectedCountryId = defaultCountry.CountryID;
-                    // Set cookie for consistency
-                     Response.Cookies.Append("UserCountryId", selectedCountryId.Value.ToString(), new CookieOptions { Expires = DateTime.Now.AddDays(30) });
-                }
-            }
+            var selectedCountryId = await GetSelectedCountryIdAsync();
             
             ViewBag.CurrentCountryId = selectedCountryId;
 
@@ -68,23 +50,7 @@ namespace Web.Controllers
         // EN MEMORIA (tras ToListAsync) para no traducir GroupBy a SQL.
         public async Task<IActionResult> Origenes()
         {
-            // 1. País del usuario (cookie o Colombia por defecto) — igual que Index().
-            var selectedCountryIdStr = HttpContext.Request.Cookies["UserCountryId"];
-            Guid? selectedCountryId = null;
-
-            if (Guid.TryParse(selectedCountryIdStr, out var parsedId))
-            {
-                selectedCountryId = parsedId;
-            }
-            else
-            {
-                var defaultCountry = await _context.Countries.FirstOrDefaultAsync(c => c.Name == "Colombia" && c.Status);
-                if (defaultCountry != null)
-                {
-                    selectedCountryId = defaultCountry.CountryID;
-                    Response.Cookies.Append("UserCountryId", selectedCountryId.Value.ToString(), new CookieOptions { Expires = DateTime.Now.AddDays(30) });
-                }
-            }
+            var selectedCountryId = await GetSelectedCountryIdAsync();
 
             ViewBag.CurrentCountryId = selectedCountryId;
 
@@ -177,6 +143,12 @@ namespace Web.Controllers
 
         public async Task<IActionResult> Details(Guid id)
         {
+            var selectedCountryId = await GetSelectedCountryIdAsync();
+            if (!selectedCountryId.HasValue)
+            {
+                return NotFound();
+            }
+
             var product = await _context.Products
                 .Include(p => p.Provider)
                 .Include(p => p.ProductCountries)
@@ -185,11 +157,13 @@ namespace Web.Controllers
                 // Origenes, el carrito y los pedidos usan Product.ImageUrl (la portada
                 // denormalizada) para no traer N imágenes por producto.
                 .Include(p => p.Images.Where(i => i.Status))
-                .FirstOrDefaultAsync(p => p.ProductID == id && p.Status); // Ensure active? Status=true means not soft deleted.
-                // Should we check ProductStatus.Active? Ideally yes, but maybe user wants to share link?
-                // Let's hide if not active for public.
+                .FirstOrDefaultAsync(p =>
+                    p.ProductID == id &&
+                    p.Status &&
+                    p.ProductStatus == ProductStatus.Active &&
+                    p.ProductCountries.Any(pc => pc.CountryID == selectedCountryId.Value && pc.IsAvailable));
             
-            if (product == null || product.ProductStatus != ProductStatus.Active)
+            if (product == null)
             {
                 return NotFound();
             }
@@ -198,14 +172,61 @@ namespace Web.Controllers
         }
 
         [HttpPost]
-        public IActionResult SetCountry(Guid countryId)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SetCountry(Guid countryId)
         {
+            var isActiveCountry = await _context.Countries
+                .AsNoTracking()
+                .AnyAsync(country => country.CountryID == countryId && country.Status);
+            if (!isActiveCountry)
+            {
+                return BadRequest();
+            }
+
             Response.Cookies.Append("UserCountryId", countryId.ToString(), new CookieOptions { Expires = DateTime.Now.AddDays(30) });
             return RedirectToAction(nameof(Index));
         }
 
+        private async Task<Guid?> GetSelectedCountryIdAsync()
+        {
+            var selectedCountryIdStr = HttpContext.Request.Cookies["UserCountryId"];
+            if (Guid.TryParse(selectedCountryIdStr, out var parsedId) &&
+                await _context.Countries.AsNoTracking().AnyAsync(country =>
+                    country.CountryID == parsedId && country.Status))
+            {
+                return parsedId;
+            }
+
+            var defaultCountryId = await _context.Countries
+                .AsNoTracking()
+                .Where(country => country.Status)
+                .OrderBy(country => country.Name == "Colombia" ? 0 : 1)
+                .ThenBy(country => country.Name)
+                .Select(country => (Guid?)country.CountryID)
+                .FirstOrDefaultAsync();
+
+            if (defaultCountryId.HasValue)
+            {
+                Response.Cookies.Append(
+                    "UserCountryId",
+                    defaultCountryId.Value.ToString(),
+                    new CookieOptions { Expires = DateTime.Now.AddDays(30) });
+            }
+
+            return defaultCountryId;
+        }
+
         public IActionResult Privacy()
         {
+            return View();
+        }
+
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult StatusPage(int code)
+        {
+            var statusCode = code is >= 400 and <= 599 ? code : 404;
+            Response.StatusCode = statusCode;
+            ViewBag.StatusCode = statusCode;
             return View();
         }
 
